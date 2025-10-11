@@ -27,7 +27,6 @@ apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
-    git \
     libjpeg-dev \
     zlib1g-dev \
     libfreetype6-dev \
@@ -35,7 +34,8 @@ apt-get install -y \
     libopenjp2-7-dev \
     libtiff5-dev \
     libffi-dev \
-    libssl-dev
+    libssl-dev \
+    build-essential
 
 # Enable SPI for e-ink display
 echo "🖥️  Enabling SPI interface..."
@@ -70,23 +70,12 @@ sudo -u "$ARTFRAME_USER" bash -c "
     pip install wheel setuptools
 "
 
-echo "📥 Installing Artframe (assuming source is available)..."
-# Note: In production, this would clone from a repository
-# For now, we'll assume the source is copied to the install directory
-
-if [ -f "requirements.txt" ]; then
-    sudo -u "$ARTFRAME_USER" bash -c "
-        source venv/bin/activate
-        pip install -r requirements.txt
-    "
-fi
-
-if [ -f "setup.py" ]; then
-    sudo -u "$ARTFRAME_USER" bash -c "
-        source venv/bin/activate
-        pip install -e .
-    "
-fi
+echo "📥 Installing Artframe..."
+# Install in editable mode from pyproject.toml
+sudo -u "$ARTFRAME_USER" bash -c "
+    source venv/bin/activate
+    pip install -e .
+"
 
 echo "⚙️  Creating configuration..."
 mkdir -p "$INSTALL_DIR/config"
@@ -110,32 +99,19 @@ if [ -f "systemd/artframe.service" ]; then
         systemd/artframe.service > "/etc/systemd/system/$SERVICE_NAME.service"
 
     echo "✓ Service file installed from systemd/artframe.service"
+
+    # Enable service
+    systemctl daemon-reload
+    systemctl enable "$SERVICE_NAME"
+    echo "✓ Systemd service enabled"
 else
-    echo "⚠️  Warning: systemd/artframe.service not found, using default configuration"
-    # Fallback to basic service file
-    cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
-[Unit]
-Description=Artframe Digital Photo Frame
-After=network.target
-
-[Service]
-Type=simple
-User=$ARTFRAME_USER
-Group=$ARTFRAME_USER
-WorkingDirectory=$INSTALL_DIR
-Environment="PATH=$INSTALL_DIR/venv/bin"
-ExecStart=$INSTALL_DIR/venv/bin/python -m artframe
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
+    echo "⚠️  Warning: systemd/artframe.service not found"
+    echo "   Systemd service not installed. You'll need to:"
+    echo "   1. Ensure systemd/artframe.service exists in the repository"
+    echo "   2. Manually install the service, or"
+    echo "   3. Run Artframe manually without systemd"
+    SYSTEMD_SKIPPED=true
 fi
-
-echo "🔄 Enabling systemd service..."
-systemctl daemon-reload
-systemctl enable "$SERVICE_NAME"
 
 echo "📋 Creating maintenance scripts..."
 
@@ -184,11 +160,23 @@ echo "✅ Artframe setup completed!"
 echo ""
 echo "📝 Next steps:"
 echo "1. Edit the configuration file: $INSTALL_DIR/config/artframe.yaml"
-echo "2. Set your API keys as environment variables or in the config"
-echo "3. Test the installation: sudo -u $ARTFRAME_USER $INSTALL_DIR/venv/bin/python -m artframe.main test"
-echo "4. Start the service: systemctl start $SERVICE_NAME"
-echo "5. Check service status: systemctl status $SERVICE_NAME"
-echo "6. View logs: journalctl -u $SERVICE_NAME -f"
+
+if [ "$SYSTEMD_SKIPPED" = true ]; then
+    echo ""
+    echo "⚠️  Systemd service was not installed (service file missing)"
+    echo "   To run manually:"
+    echo "   sudo -u $ARTFRAME_USER $INSTALL_DIR/venv/bin/python -m artframe"
+    echo ""
+    echo "   Or install systemd service manually (see systemd/README.md)"
+else
+    echo "2. Start the service: systemctl start $SERVICE_NAME"
+    echo "3. Check service status: systemctl status $SERVICE_NAME"
+    echo "4. View logs: journalctl -u $SERVICE_NAME -f"
+    echo ""
+    echo "   To stop: systemctl stop $SERVICE_NAME"
+    echo "   To restart: systemctl restart $SERVICE_NAME"
+fi
+
 echo ""
 echo "⚠️  If you enabled SPI, please reboot the system before starting Artframe"
 echo ""

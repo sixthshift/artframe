@@ -1,0 +1,9 @@
+{
+    "id": "immich_photos",
+    "display_name": "Immich Photos",
+    "class": "ImmichPhotos",
+    "description": "Display photos from Immich server with optional AI style transformation",
+    "author": "Artframe Team",
+    "version": "1.0.0",
+    "icon": "icon.png"
+}

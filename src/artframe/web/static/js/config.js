@@ -1,66 +1,9 @@
+/**
+ * Configuration page JavaScript
+ * Handles system-level configuration only
+ */
+
 let currentConfig = null;
-let styleCounter = 0;
-
-function renderStylesEditor(styles) {
-    if (!styles || styles.length === 0) {
-        return '<div class="no-styles">No styles defined. Click "Add Style" to create one.</div>';
-    }
-
-    return styles.map((style, index) => {
-        // Handle both old format (string) and new format (object)
-        const styleName = typeof style === 'string' ? style : style.name;
-        const stylePrompt = typeof style === 'string' ? '' : style.prompt;
-
-        return `
-            <div class="style-item" data-index="${index}">
-                <div class="style-header">
-                    <input type="text"
-                           class="style-name"
-                           id="style-name-${index}"
-                           placeholder="Style name (e.g., watercolor)"
-                           value="${styleName || ''}"
-                           required>
-                    <button type="button" class="btn-remove" onclick="removeStyle(${index})">❌</button>
-                </div>
-                <textarea
-                    class="style-prompt"
-                    id="style-prompt-${index}"
-                    placeholder="Enter the full prompt for this style (e.g., Transform this image into a watercolor painting with soft edges...)"
-                    rows="3"
-                    required>${stylePrompt || ''}</textarea>
-            </div>
-        `;
-    }).join('');
-}
-
-function addStyle() {
-    const stylesEditor = document.getElementById('styles-editor');
-    const currentStyles = collectStyles();
-    currentStyles.push({ name: '', prompt: '' });
-    stylesEditor.innerHTML = renderStylesEditor(currentStyles);
-}
-
-function removeStyle(index) {
-    const stylesEditor = document.getElementById('styles-editor');
-    const currentStyles = collectStyles();
-    currentStyles.splice(index, 1);
-    stylesEditor.innerHTML = renderStylesEditor(currentStyles);
-}
-
-function collectStyles() {
-    const styleElements = document.querySelectorAll('.style-item');
-    const styles = [];
-
-    styleElements.forEach((element, index) => {
-        const name = document.getElementById(`style-name-${index}`).value.trim();
-        const prompt = document.getElementById(`style-prompt-${index}`).value.trim();
-        if (name && prompt) {
-            styles.push({ name, prompt });
-        }
-    });
-
-    return styles;
-}
 
 async function fetchConfig() {
     try {
@@ -79,157 +22,98 @@ async function fetchConfig() {
 
 function renderConfigForm(config) {
     const artframe = config.artframe || {};
-    const schedule = artframe.schedule || {};
-    const source = artframe.source || {};
-    const sourceConfig = source.config || {};
-    const style = artframe.style || {};
-    const styleConfig = style.config || {};
+    const scheduler = artframe.scheduler || {};
     const display = artframe.display || {};
-    const displayConfig = display.config || {};
     const cache = artframe.cache || {};
     const logging = artframe.logging || {};
+    const web = artframe.web || {};
 
     const formHtml = `
         <form id="config-form" class="config-form">
-            <!-- Schedule Section -->
-            <div class="config-section">
-                <h3>📅 Schedule</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="schedule-time">Update Time</label>
-                        <input type="time" id="schedule-time" value="${schedule.update_time || '06:00'}" required>
-                        <span class="help-text">Daily time to update the display</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="schedule-timezone">Timezone</label>
-                        <input type="text" id="schedule-timezone" value="${schedule.timezone || 'UTC'}" required>
-                        <span class="help-text">e.g., America/New_York, Europe/London</span>
-                    </div>
-                </div>
+            <div class="config-notice">
+                <p>ℹ️ <strong>Plugin settings</strong> are now managed in the <a href="/plugins">Plugins</a> tab.</p>
+                <p>This page only contains system-level configuration.</p>
             </div>
 
-            <!-- Photo Source Section -->
+            <!-- Scheduler Section -->
             <div class="config-section">
-                <h3>📷 Photo Source</h3>
+                <h3>⏰ Scheduler</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="source-provider">Provider</label>
-                        <select id="source-provider" required onchange="updateSourceFields()">
-                            <option value="immich" ${source.provider === 'immich' ? 'selected' : ''}>Immich</option>
-                            <option value="none" ${source.provider === 'none' ? 'selected' : ''}>None (Disabled)</option>
-                        </select>
-                    </div>
-                    <div id="source-dynamic-fields">
-                        <!-- Dynamic fields will be inserted here -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Style Section -->
-            <div class="config-section">
-                <h3>🎨 Style Settings</h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="style-provider">Provider</label>
-                        <select id="style-provider" required>
-                            <option value="nanobanana" ${style.provider === 'nanobanana' ? 'selected' : ''}>NanoBanana</option>
-                            <option value="mock" ${style.provider === 'mock' ? 'selected' : ''}>Mock (Testing)</option>
-                        </select>
+                        <label for="scheduler-timezone">Timezone</label>
+                        <input type="text" id="scheduler-timezone" value="${scheduler.timezone || 'America/New_York'}" required>
+                        <span class="help-text">e.g., America/New_York, Europe/London, Asia/Tokyo</span>
                     </div>
                     <div class="form-group">
-                        <label for="style-api-url">API URL</label>
-                        <input type="url" id="style-api-url" value="${styleConfig.api_url || ''}" placeholder="https://api.nanobanana.com">
-                        <span class="help-text">NanoBanana API URL (required for NanoBanana provider)</span>
+                        <label for="scheduler-default-duration">Default Duration (seconds)</label>
+                        <input type="number" id="scheduler-default-duration" value="${scheduler.default_duration || 3600}" min="1" required>
+                        <span class="help-text">Default time to display each playlist item</span>
                     </div>
                     <div class="form-group">
-                        <label for="style-api-key">API Key</label>
-                        <input type="text" id="style-api-key" value="${styleConfig.api_key || ''}" placeholder="Enter API key">
-                        <span class="help-text">NanoBanana API key (leave empty for mock testing)</span>
-                    </div>
-                    <div class="form-group full-width">
-                        <label>Available Styles</label>
-                        <div id="styles-editor" class="styles-editor">
-                            ${renderStylesEditor(styleConfig.styles || [])}
-                        </div>
-                        <button type="button" class="btn btn-small btn-secondary" onclick="addStyle()">➕ Add Style</button>
-                        <span class="help-text">Define custom art styles with detailed prompts</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="style-rotation">Rotation Mode</label>
-                        <select id="style-rotation" required>
-                            <option value="daily" ${styleConfig.rotation === 'daily' ? 'selected' : ''}>Daily</option>
-                            <option value="random" ${styleConfig.rotation === 'random' ? 'selected' : ''}>Random</option>
-                            <option value="sequential" ${styleConfig.rotation === 'sequential' ? 'selected' : ''}>Sequential</option>
-                        </select>
+                        <label for="scheduler-refresh-interval">Refresh Interval (seconds)</label>
+                        <input type="number" id="scheduler-refresh-interval" value="${scheduler.refresh_interval || 86400}" min="1" required>
+                        <span class="help-text">Daily refresh for e-ink display health (86400 = 24 hours)</span>
                     </div>
                 </div>
             </div>
 
             <!-- Display Section -->
             <div class="config-section">
-                <h3>📺 Display</h3>
+                <h3>📺 Display Hardware</h3>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="display-driver">Driver</label>
                         <select id="display-driver" required>
-                            <option value="spectra6" ${display.driver === 'spectra6' ? 'selected' : ''}>Spectra 6</option>
+                            <option value="spectra6" ${display.driver === 'spectra6' ? 'selected' : ''}>Spectra 6 E-ink</option>
                             <option value="mock" ${display.driver === 'mock' ? 'selected' : ''}>Mock (Testing)</option>
                         </select>
+                        <span class="help-text">E-ink display driver</span>
                     </div>
                     <div class="form-group">
                         <label for="display-width">Width (pixels)</label>
-                        <input type="number" id="display-width" value="${displayConfig.width || 600}" min="1" required onchange="updateDisplayInfo()">
+                        <input type="number" id="display-width" value="${display.width || 600}" min="1" required onchange="updateDisplayInfo()">
                         <span class="help-text">Display width in pixels</span>
                     </div>
                     <div class="form-group">
                         <label for="display-height">Height (pixels)</label>
-                        <input type="number" id="display-height" value="${displayConfig.height || 448}" min="1" required onchange="updateDisplayInfo()">
+                        <input type="number" id="display-height" value="${display.height || 448}" min="1" required onchange="updateDisplayInfo()">
                         <span class="help-text">Display height in pixels</span>
                     </div>
                     <div class="form-group">
                         <label for="display-rotation">Rotation</label>
                         <select id="display-rotation" required onchange="updateDisplayInfo()">
-                            <option value="0" ${displayConfig.rotation === 0 ? 'selected' : ''}>0°</option>
-                            <option value="90" ${displayConfig.rotation === 90 ? 'selected' : ''}>90°</option>
-                            <option value="180" ${displayConfig.rotation === 180 ? 'selected' : ''}>180°</option>
-                            <option value="270" ${displayConfig.rotation === 270 ? 'selected' : ''}>270°</option>
+                            <option value="0" ${display.rotation === 0 ? 'selected' : ''}>0°</option>
+                            <option value="90" ${display.rotation === 90 ? 'selected' : ''}>90°</option>
+                            <option value="180" ${display.rotation === 180 ? 'selected' : ''}>180°</option>
+                            <option value="270" ${display.rotation === 270 ? 'selected' : ''}>270°</option>
                         </select>
+                        <span class="help-text">Display orientation</span>
                     </div>
                     <div class="form-group">
                         <label>Display Info</label>
                         <div id="display-info" class="display-info-box"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="display-metadata">Show Metadata</label>
-                        <input type="checkbox" id="display-metadata" ${displayConfig.show_metadata ? 'checked' : ''}>
-                        <span class="help-text">Display photo date/location overlay</span>
-                    </div>
                 </div>
             </div>
 
-            <!-- Cache Section -->
+            <!-- Storage/Cache Section -->
             <div class="config-section">
-                <h3>💾 Cache</h3>
+                <h3>💾 Storage & Cache</h3>
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="cache-directory">Directory</label>
-                        <input type="text" id="cache-directory" value="${cache.directory || '/var/cache/artframe'}" required>
-                        <span class="help-text">Path to cache directory</span>
-                    </div>
-                    <div class="form-group">
-                        <label for="cache-max-images">Max Images</label>
-                        <input type="number" id="cache-max-images" value="${cache.max_images || 100}" min="1" required>
-                        <span class="help-text">Maximum cached images</span>
+                        <label for="cache-directory">Cache Directory</label>
+                        <input type="text" id="cache-directory" value="${cache.cache_directory || '~/.artframe/cache'}" required>
+                        <span class="help-text">Path to content cache directory (~ expands to home directory)</span>
                     </div>
                     <div class="form-group">
                         <label for="cache-max-size">Max Size (MB)</label>
                         <input type="number" id="cache-max-size" value="${cache.max_size_mb || 500}" min="1" required>
-                        <span class="help-text">Maximum cache size in MB</span>
+                        <span class="help-text">Maximum cache size in megabytes</span>
                     </div>
                     <div class="form-group">
                         <label for="cache-retention">Retention (days)</label>
                         <input type="number" id="cache-retention" value="${cache.retention_days || 30}" min="1" required>
-                        <span class="help-text">Days to keep cached images</span>
+                        <span class="help-text">Days to keep cached content</span>
                     </div>
                 </div>
             </div>
@@ -246,11 +130,44 @@ function renderConfigForm(config) {
                             <option value="WARNING" ${logging.level === 'WARNING' ? 'selected' : ''}>WARNING</option>
                             <option value="ERROR" ${logging.level === 'ERROR' ? 'selected' : ''}>ERROR</option>
                         </select>
+                        <span class="help-text">Minimum log level to capture</span>
                     </div>
                     <div class="form-group">
                         <label for="logging-file">Log File</label>
-                        <input type="text" id="logging-file" value="${logging.file || '/var/log/artframe/artframe.log'}" required>
-                        <span class="help-text">Path to log file</span>
+                        <input type="text" id="logging-file" value="${logging.file || '~/.artframe/logs/artframe.log'}" required>
+                        <span class="help-text">Path to log file (~ expands to home directory)</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="logging-max-size">Max Size (MB)</label>
+                        <input type="number" id="logging-max-size" value="${logging.max_size_mb || 10}" min="1" required>
+                        <span class="help-text">Maximum log file size before rotation</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="logging-backup-count">Backup Count</label>
+                        <input type="number" id="logging-backup-count" value="${logging.backup_count || 5}" min="0" required>
+                        <span class="help-text">Number of rotated log files to keep</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Web Server Section -->
+            <div class="config-section">
+                <h3>🌐 Web Server</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="web-host">Host</label>
+                        <input type="text" id="web-host" value="${web.host || '0.0.0.0'}" required>
+                        <span class="help-text">Web server host (0.0.0.0 = all interfaces, 127.0.0.1 = localhost only)</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="web-port">Port</label>
+                        <input type="number" id="web-port" value="${web.port || 8000}" min="1" max="65535" required>
+                        <span class="help-text">Web server port</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="web-debug">Debug Mode</label>
+                        <input type="checkbox" id="web-debug" ${web.debug ? 'checked' : ''}>
+                        <span class="help-text">Enable Flask debug mode (development only)</span>
                     </div>
                 </div>
             </div>
@@ -259,7 +176,6 @@ function renderConfigForm(config) {
 
     setElementContent('config-content', formHtml);
     updateDisplayInfo();
-    updateSourceFields();
 }
 
 function updateDisplayInfo() {
@@ -289,70 +205,35 @@ function updateDisplayInfo() {
     }
 }
 
-function getSourceConfig() {
-    const provider = document.getElementById('source-provider').value;
-    const fields = sourceProviderFields[provider] || [];
-    const config = {};
-
-    fields.forEach(field => {
-        const element = document.getElementById(field.id);
-        if (element) {
-            const value = element.value;
-            if (value || field.required) {
-                config[field.configKey] = value || undefined;
-            }
-        }
-    });
-
-    return config;
-}
-
 function getFormValues() {
-    const styles = collectStyles();
-
     return {
         artframe: {
-            schedule: {
-                update_time: document.getElementById('schedule-time').value,
-                timezone: document.getElementById('schedule-timezone').value
-            },
-            source: {
-                provider: document.getElementById('source-provider').value,
-                config: getSourceConfig()
-            },
-            style: {
-                provider: document.getElementById('style-provider').value,
-                config: {
-                    api_url: document.getElementById('style-api-url').value,
-                    api_key: document.getElementById('style-api-key').value,
-                    styles: styles,
-                    rotation: document.getElementById('style-rotation').value
-                }
+            scheduler: {
+                timezone: document.getElementById('scheduler-timezone').value,
+                default_duration: parseInt(document.getElementById('scheduler-default-duration').value),
+                refresh_interval: parseInt(document.getElementById('scheduler-refresh-interval').value)
             },
             display: {
                 driver: document.getElementById('display-driver').value,
-                config: {
-                    gpio_pins: currentConfig?.artframe?.display?.config?.gpio_pins || {
-                        busy: 24,
-                        reset: 17,
-                        dc: 25,
-                        cs: 8
-                    },
-                    rotation: parseInt(document.getElementById('display-rotation').value),
-                    show_metadata: document.getElementById('display-metadata').checked,
-                    width: parseInt(document.getElementById('display-width').value),
-                    height: parseInt(document.getElementById('display-height').value)
-                }
+                width: parseInt(document.getElementById('display-width').value),
+                height: parseInt(document.getElementById('display-height').value),
+                rotation: parseInt(document.getElementById('display-rotation').value)
             },
             cache: {
-                directory: document.getElementById('cache-directory').value,
-                max_images: parseInt(document.getElementById('cache-max-images').value),
+                cache_directory: document.getElementById('cache-directory').value,
                 max_size_mb: parseInt(document.getElementById('cache-max-size').value),
                 retention_days: parseInt(document.getElementById('cache-retention').value)
             },
             logging: {
                 level: document.getElementById('logging-level').value,
-                file: document.getElementById('logging-file').value
+                file: document.getElementById('logging-file').value,
+                max_size_mb: parseInt(document.getElementById('logging-max-size').value),
+                backup_count: parseInt(document.getElementById('logging-backup-count').value)
+            },
+            web: {
+                host: document.getElementById('web-host').value,
+                port: parseInt(document.getElementById('web-port').value),
+                debug: document.getElementById('web-debug').checked
             }
         }
     };
@@ -373,6 +254,7 @@ async function saveConfig() {
         saveBtn.disabled = true;
         saveBtn.textContent = '💾 Saving...';
 
+        // Validate configuration
         const validateResult = await apiCall('/api/config', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -384,6 +266,7 @@ async function saveConfig() {
             return;
         }
 
+        // Save to file
         const saveResult = await apiCall('/api/config/save', { method: 'POST' });
 
         if (saveResult.success) {
@@ -452,141 +335,5 @@ async function restartApp() {
     }
 }
 
-async function testSourceConnection() {
-    const testBtn = document.getElementById('test-source-btn');
-
-    testBtn.disabled = true;
-    testBtn.textContent = '🔄 Testing...';
-
-    try {
-        // Get current form values
-        const provider = document.getElementById('source-provider').value;
-        const sourceConfig = getSourceConfig();
-
-        const sourceData = {
-            provider: provider,
-            ...sourceConfig
-        };
-
-        const response = await fetch('/api/test-source', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(sourceData)
-        });
-
-        const result = await response.json();
-
-        if (result.success && result.connection) {
-            showNotification('✓ ' + result.message, 'success');
-        } else if (result.success && !result.connection) {
-            showNotification('✗ ' + result.message, 'error');
-        } else {
-            showNotification('✗ ' + (result.error || 'Test failed'), 'error');
-        }
-
-    } catch (error) {
-        showNotification('✗ Connection test failed: ' + error.message, 'error');
-    } finally {
-        testBtn.disabled = false;
-        testBtn.textContent = '🔗 Test Connection';
-    }
-}
-
-// Source provider field configurations
-const sourceProviderFields = {
-    immich: [
-        {
-            id: 'source-server',
-            label: 'Server URL',
-            type: 'url',
-            placeholder: 'https://immich.example.com',
-            helpText: 'Immich server URL (required)',
-            required: true,
-            configKey: 'server_url'
-        },
-        {
-            id: 'source-api-key',
-            label: 'API Key',
-            type: 'text',
-            placeholder: 'Enter API key',
-            helpText: 'Immich API key for authentication',
-            required: true,
-            configKey: 'api_key'
-        },
-        {
-            id: 'source-album',
-            label: 'Album ID',
-            type: 'text',
-            placeholder: 'Optional album ID',
-            helpText: 'Optional: specific album ID to use',
-            required: false,
-            configKey: 'album_id'
-        },
-        {
-            id: 'source-selection',
-            label: 'Selection Mode',
-            type: 'select',
-            options: [
-                { value: 'random', label: 'Random' },
-                { value: 'newest', label: 'Newest' },
-                { value: 'oldest', label: 'Oldest' }
-            ],
-            helpText: 'How to select photos from the source',
-            required: true,
-            configKey: 'selection'
-        }
-    ],
-    none: []
-};
-
-function updateSourceFields() {
-    const provider = document.getElementById('source-provider').value;
-    const dynamicFields = document.getElementById('source-dynamic-fields');
-    const sourceConfig = currentConfig?.artframe?.source?.config || {};
-
-    const fields = sourceProviderFields[provider] || [];
-
-    let html = '';
-
-    // Add provider-specific fields
-    fields.forEach(field => {
-        const value = sourceConfig[field.configKey] || '';
-
-        html += `<div class="form-group">`;
-        html += `<label for="${field.id}">${field.label}</label>`;
-
-        if (field.type === 'select') {
-            html += `<select id="${field.id}" ${field.required ? 'required' : ''}>`;
-            field.options.forEach(option => {
-                const selected = value === option.value ? 'selected' : '';
-                html += `<option value="${option.value}" ${selected}>${option.label}</option>`;
-            });
-            html += `</select>`;
-        } else {
-            html += `<input type="${field.type}" id="${field.id}" value="${value}" placeholder="${field.placeholder || ''}" ${field.required ? 'required' : ''}>`;
-        }
-
-        if (field.helpText) {
-            html += `<span class="help-text">${field.helpText}</span>`;
-        }
-        html += `</div>`;
-    });
-
-    // Always add test connection button (except for none provider)
-    if (provider !== 'none') {
-        html += `
-            <div class="form-group">
-                <label>Test Connection</label>
-                <button type="button" class="btn btn-secondary" onclick="testSourceConnection()" id="test-source-btn">
-                    🔗 Test Connection
-                </button>
-            </div>
-        `;
-    }
-
-    dynamicFields.innerHTML = html;
-}
-
+// Initialize
 fetchConfig();

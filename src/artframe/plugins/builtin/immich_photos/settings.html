@@ -1,0 +1,183 @@
+<!-- Settings template for Immich Photos plugin -->
+<div class="plugin-settings">
+    <h3>Immich Photos Settings</h3>
+
+    <!-- Immich Connection -->
+    <div class="settings-section">
+        <h4>Immich Server</h4>
+
+        <div class="form-group">
+            <label for="immich_url">Server URL</label>
+            <input type="url"
+                   id="immich_url"
+                   name="immich_url"
+                   value="{{ settings.immich_url or '' }}"
+                   placeholder="https://immich.example.com"
+                   required>
+            <small>Your Immich server URL</small>
+        </div>
+
+        <div class="form-group">
+            <label for="immich_api_key">API Key</label>
+            <input type="password"
+                   id="immich_api_key"
+                   name="immich_api_key"
+                   value="{{ settings.immich_api_key or '' }}"
+                   required>
+            <small>Get this from Immich Settings → Account Settings → API Keys</small>
+        </div>
+
+        <div class="form-group">
+            <label for="album_id">Album ID (Optional)</label>
+            <input type="text"
+                   id="album_id"
+                   name="album_id"
+                   value="{{ settings.album_id or '' }}"
+                   placeholder="Leave empty for all photos">
+            <small>Specific album to pull photos from, or leave empty for all</small>
+        </div>
+
+        <div class="form-group">
+            <label for="selection_mode">Photo Selection</label>
+            <select id="selection_mode" name="selection_mode">
+                <option value="random" {% if settings.selection_mode == 'random' %}selected{% endif %}>Random</option>
+                <option value="newest" {% if settings.selection_mode == 'newest' %}selected{% endif %}>Newest First</option>
+                <option value="oldest" {% if settings.selection_mode == 'oldest' %}selected{% endif %}>Oldest First</option>
+            </select>
+            <small>How to select photos from the source</small>
+        </div>
+    </div>
+
+    <!-- AI Style Transformation -->
+    <div class="settings-section">
+        <h4>AI Style Transformation</h4>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox"
+                       id="use_ai"
+                       name="use_ai"
+                       {% if settings.use_ai %}checked{% endif %}>
+                Enable AI Style Transformation
+            </label>
+            <small>Apply artistic AI styles to photos before display</small>
+        </div>
+
+        <div id="ai-settings" style="{% if not settings.use_ai %}display: none;{% endif %}">
+            <div class="form-group">
+                <label for="ai_service_url">AI Service URL</label>
+                <input type="url"
+                       id="ai_service_url"
+                       name="ai_service_url"
+                       value="{{ settings.ai_service_url or '' }}"
+                       placeholder="https://api.nanobanana.com">
+                <small>NanoBanana or compatible AI service endpoint</small>
+            </div>
+
+            <div class="form-group">
+                <label for="ai_api_key">AI API Key</label>
+                <input type="password"
+                       id="ai_api_key"
+                       name="ai_api_key"
+                       value="{{ settings.ai_api_key or '' }}">
+                <small>API key for AI service</small>
+            </div>
+
+            <div class="form-group">
+                <label for="ai_style">Style</label>
+                <select id="ai_style" name="ai_style">
+                    <option value="ghibli" {% if settings.ai_style == 'ghibli' %}selected{% endif %}>Studio Ghibli</option>
+                    <option value="watercolor" {% if settings.ai_style == 'watercolor' %}selected{% endif %}>Watercolor</option>
+                    <option value="oil_painting" {% if settings.ai_style == 'oil_painting' %}selected{% endif %}>Oil Painting</option>
+                    <option value="impressionist" {% if settings.ai_style == 'impressionist' %}selected{% endif %}>Impressionist</option>
+                    <option value="pencil_sketch" {% if settings.ai_style == 'pencil_sketch' %}selected{% endif %}>Pencil Sketch</option>
+                </select>
+                <small>Artistic style to apply to photos</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .plugin-settings {
+        max-width: 600px;
+    }
+
+    .settings-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .settings-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="url"],
+    .form-group input[type="password"],
+    .form-group select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-group input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #777;
+        font-size: 12px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+</style>
+
+<script>
+    // Toggle AI settings visibility
+    document.getElementById('use_ai').addEventListener('change', function(e) {
+        const aiSettings = document.getElementById('ai-settings');
+        aiSettings.style.display = e.target.checked ? 'block' : 'none';
+
+        // Make AI fields required/optional based on checkbox
+        const aiFields = aiSettings.querySelectorAll('input[type="url"], input[type="password"], select');
+        aiFields.forEach(field => {
+            field.required = e.target.checked;
+        });
+    });
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const useAi = document.getElementById('use_ai');
+        const aiSettings = document.getElementById('ai-settings');
+        const aiFields = aiSettings.querySelectorAll('input[type="url"], input[type="password"], select');
+
+        aiFields.forEach(field => {
+            field.required = useAi.checked;
+        });
+    });
+</script>

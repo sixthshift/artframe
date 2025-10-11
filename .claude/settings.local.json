@@ -5,7 +5,8 @@
       "Bash(python -m mypy:*)",
       "Bash(find:*)",
       "WebSearch",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": [],
     "ask": []

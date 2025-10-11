@@ -2,78 +2,8 @@
 Scheduling utilities for Artframe.
 """
 
-import random
 from datetime import datetime, time
-from typing import List, Dict, Any, Optional
-
-
-class StyleSelector:
-    """Selects artistic styles based on rotation strategy."""
-
-    def __init__(self, styles: List[str], rotation: str = "daily"):
-        """
-        Initialize style selector.
-
-        Args:
-            styles: List of available style names
-            rotation: Rotation strategy ('daily', 'random', 'sequential')
-        """
-        self.styles = styles
-        self.rotation = rotation
-        self.history: List[str] = []
-
-    def select_style(self) -> str:
-        """
-        Select next style based on rotation strategy.
-
-        Returns:
-            str: Selected style name
-        """
-        if not self.styles:
-            raise ValueError("No styles available for selection")
-
-        if self.rotation == "random":
-            return random.choice(self.styles)
-
-        elif self.rotation == "sequential":
-            if not self.history:
-                return self.styles[0]
-
-            last_style = self.history[-1]
-            try:
-                last_index = self.styles.index(last_style)
-                next_index = (last_index + 1) % len(self.styles)
-                return self.styles[next_index]
-            except ValueError:
-                # Last style not in current list, start from beginning
-                return self.styles[0]
-
-        elif self.rotation == "daily":
-            # Use day of year for consistent daily rotation
-            day_of_year = datetime.now().timetuple().tm_yday
-            index = day_of_year % len(self.styles)
-            return self.styles[index]
-
-        else:
-            # Fallback to first style
-            return self.styles[0]
-
-    def record_selection(self, style: str) -> None:
-        """
-        Record a style selection in history.
-
-        Args:
-            style: Style that was selected
-        """
-        self.history.append(style)
-
-        # Keep history reasonable size
-        if len(self.history) > 100:
-            self.history = self.history[-50:]
-
-    def get_last_style(self) -> Optional[str]:
-        """Get the last selected style."""
-        return self.history[-1] if self.history else None
+from typing import Dict, Any, Optional
 
 
 class Scheduler:

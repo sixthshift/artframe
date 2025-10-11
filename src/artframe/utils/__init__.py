@@ -2,6 +2,6 @@
 Utility functions for Artframe.
 """
 
-from .scheduler import StyleSelector, Scheduler
+from .scheduler import Scheduler
 
-__all__ = ["StyleSelector", "Scheduler"]
+__all__ = ["Scheduler"]

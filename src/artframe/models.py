@@ -45,3 +45,15 @@ class StorageStats:
     total_styled_images: int
     total_size_mb: float
     storage_directory: str
+
+
+@dataclass
+class PluginInstance:
+    """Represents an instance of a plugin with specific settings."""
+    id: str
+    plugin_id: str
+    name: str
+    settings: Dict[str, Any]
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
