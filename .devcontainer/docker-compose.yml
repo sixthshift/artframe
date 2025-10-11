@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  artframe-dev:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      # Mount the workspace
+      - ..:/workspace:cached
+
+      # Persist bash history
+      - artframe-bashhistory:/home/vscode/.bash_history
+
+    command: sleep infinity
+
+    environment:
+      - PYTHONPATH=/workspace/src
+      - ARTFRAME_DEV_MODE=true
+
+    # Keep container running
+    stdin_open: true
+    tty: true
+
+volumes:
+  artframe-bashhistory:

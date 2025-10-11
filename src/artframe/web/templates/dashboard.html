@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Controls -->
+    <div class="controls-bar">
+        <button class="btn btn-primary" onclick="triggerUpdate()">🔄 Update Now</button>
+        <button class="btn btn-secondary" onclick="clearDisplay()">🗑️ Clear Display</button>
+        <button class="btn btn-warning" onclick="toggleScheduler()" id="scheduler-toggle-btn">⏸️ Pause Scheduler</button>
+    </div>
+
+    <div class="scheduler-status-bar" id="scheduler-status">
+        <p class="loading">Loading scheduler status...</p>
+    </div>
+
+    <div class="grid">
+        <!-- System Status -->
+        <div class="card">
+            <h2>System Status</h2>
+            <div id="status-content">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="card">
+            <h2>Connections</h2>
+            <div id="connections-content">
+                <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

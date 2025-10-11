@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Display - Artframe{% endblock %}
+
+{% block content %}
+<div class="display-page">
+    <div class="grid">
+        <!-- Current Display -->
+        <div class="card display-preview-card">
+            <h2>Current Display</h2>
+            <div id="current-display-content">
+                <p class="loading">Loading current display...</p>
+            </div>
+        </div>
+
+        <!-- Source Stats -->
+        <div class="card">
+            <h2>Source Statistics</h2>
+            <div id="source-stats-content">
+                <p class="loading">Loading source stats...</p>
+            </div>
+        </div>
+
+        <!-- Display History -->
+        <div class="card full-width">
+            <h2>Recent History</h2>
+            <div id="history-content">
+                <p class="loading">Loading history...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/display.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - Artframe{% endblock %}
+
+{% block content %}
+<div class="config-page">
+    <div class="card">
+        <div class="card-header">
+            <h2>Configuration Editor</h2>
+            <div class="config-actions">
+                <button class="btn btn-small btn-secondary" onclick="revertConfig()" id="revert-btn">↶ Revert</button>
+                <button class="btn btn-small btn-primary" onclick="saveConfig()" id="save-btn">💾 Save</button>
+                <button class="btn btn-small btn-warning" onclick="restartApp()" id="restart-btn" style="display:none;">🔄 Restart</button>
+            </div>
+        </div>
+        <div id="config-content">
+            <p class="loading">Loading configuration...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/config.js') }}"></script>
+{% endblock %}

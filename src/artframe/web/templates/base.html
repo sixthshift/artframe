@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Artframe Dashboard{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1>🖼️ Artframe</h1>
+                    <p class="subtitle">Digital Photo Frame Dashboard</p>
+                </div>
+                <nav class="nav-tabs">
+                    <a href="/" class="nav-tab {% if request.path == '/' %}active{% endif %}">📊 Dashboard</a>
+                    <a href="/display" class="nav-tab {% if request.path == '/display' %}active{% endif %}">📷 Display</a>
+                    <a href="/system" class="nav-tab {% if request.path == '/system' %}active{% endif %}">📈 System</a>
+                    <a href="/config" class="nav-tab {% if request.path == '/config' %}active{% endif %}">⚙️ Config</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Artframe</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/common.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
