@@ -146,7 +146,7 @@ ssh $PI_HOST << 'EOF'
         sudo systemctl status artframe --no-pager -l | head -10
     else
         echo "ℹ️  No systemd service installed"
-        echo "   Run: sudo ./scripts/setup_artframe.sh to install"
+        echo "   Run: sudo ./scripts/install.sh to install"
     fi
 EOF
 
@@ -156,6 +156,6 @@ echo ""
 echo "Summary of next steps if needed:"
 echo "  • Install dependencies: ssh $PI_HOST 'cd artframe && source venv/bin/activate && pip install -r requirements.txt'"
 echo "  • Enable GPIO/SPI: ssh $PI_HOST 'sudo usermod -a -G gpio,spi pi && sudo raspi-config'"
-echo "  • Install service: ssh $PI_HOST 'cd artframe && sudo ./scripts/setup_artframe.sh'"
+echo "  • Install service: ssh $PI_HOST 'cd artframe && sudo ./scripts/install.sh'"
 echo "  • Edit config: ssh $PI_HOST 'nano artframe/config/artframe-pi.yaml'"
 echo "  • Test update: ssh $PI_HOST 'cd artframe && source venv/bin/activate && python -m artframe.main update'"

@@ -1,0 +1,49 @@
+[Unit]
+Description=Artframe Digital Photo Frame
+Documentation=https://github.com/yourusername/artframe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/opt/artframe
+
+# Environment
+Environment="PATH=/opt/artframe/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+
+# Main process
+ExecStart=/opt/artframe/venv/bin/python -m artframe
+ExecStopPost=/opt/artframe/venv/bin/python -m artframe.clear_display
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=600
+
+# Graceful shutdown
+TimeoutStopSec=30
+KillMode=mixed
+KillSignal=SIGTERM
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/log/artframe /var/cache/artframe /opt/artframe/data
+
+# Resource limits
+MemoryMax=512M
+CPUQuota=50%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=artframe
+
+[Install]
+WantedBy=multi-user.target

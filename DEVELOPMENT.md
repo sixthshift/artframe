@@ -22,7 +22,7 @@ git clone <your-repo-url>
 cd artframe
 
 # Run development setup
-./scripts/install_dev.sh
+./scripts/development.sh
 
 # Activate virtual environment
 source venv/bin/activate
@@ -487,7 +487,7 @@ When ready for production:
 cd /home/pi/artframe
 
 # Run full setup
-sudo ./scripts/setup_artframe.sh
+sudo ./scripts/install.sh
 
 # Edit production config
 sudo nano /opt/artframe/config/artframe.yaml

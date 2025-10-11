@@ -850,7 +850,7 @@ jobs:
 **Raspberry Pi Setup Script:**
 ```bash
 #!/bin/bash
-# setup_artframe.sh
+# install.sh
 
 # System dependencies
 sudo apt-get update

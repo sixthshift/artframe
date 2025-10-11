@@ -20,7 +20,7 @@ A Raspberry Pi-based digital photo frame that automatically retrieves daily phot
    ```bash
    git clone https://github.com/yourusername/artframe.git
    cd artframe
-   sudo ./scripts/setup_artframe.sh
+   sudo ./scripts/install.sh
    ```
 
 2. **Configure**:

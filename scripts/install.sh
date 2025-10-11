@@ -99,12 +99,24 @@ if [ ! -f "$INSTALL_DIR/config/artframe.yaml" ] && [ -f "config/artframe.yaml" ]
     echo "⚠️  Please edit the configuration file with your API keys and settings"
 fi
 
-echo "🔧 Creating systemd service..."
-cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
+echo "🔧 Installing systemd service..."
+# Copy service file from repository
+if [ -f "systemd/artframe.service" ]; then
+    # Use template and substitute variables
+    sed -e "s|User=pi|User=$ARTFRAME_USER|g" \
+        -e "s|Group=pi|Group=$ARTFRAME_USER|g" \
+        -e "s|WorkingDirectory=/opt/artframe|WorkingDirectory=$INSTALL_DIR|g" \
+        -e "s|ReadWritePaths=/var/log/artframe /var/cache/artframe|ReadWritePaths=$LOG_DIR $CACHE_DIR $INSTALL_DIR/data|g" \
+        systemd/artframe.service > "/etc/systemd/system/$SERVICE_NAME.service"
+
+    echo "✓ Service file installed from systemd/artframe.service"
+else
+    echo "⚠️  Warning: systemd/artframe.service not found, using default configuration"
+    # Fallback to basic service file
+    cat > "/etc/systemd/system/$SERVICE_NAME.service" << EOF
 [Unit]
 Description=Artframe Digital Photo Frame
 After=network.target
-Wants=network.target
 
 [Service]
 Type=simple
@@ -112,19 +124,14 @@ User=$ARTFRAME_USER
 Group=$ARTFRAME_USER
 WorkingDirectory=$INSTALL_DIR
 Environment="PATH=$INSTALL_DIR/venv/bin"
-ExecStart=$INSTALL_DIR/venv/bin/python -m artframe.main --config $INSTALL_DIR/config/artframe.yaml --log-file $LOG_DIR/artframe.log
+ExecStart=$INSTALL_DIR/venv/bin/python -m artframe
 Restart=always
 RestartSec=10
-
-# Security settings
-NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=strict
-ReadWritePaths=$LOG_DIR $CACHE_DIR
 
 [Install]
 WantedBy=multi-user.target
 EOF
+fi
 
 echo "🔄 Enabling systemd service..."
 systemctl daemon-reload
