@@ -37,7 +37,9 @@ class BasePlugin(ABC):
         self._plugin_dir = None
 
     @abstractmethod
-    def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
+    def generate_image(
+        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+    ) -> Image.Image:
         """
         Generate content image for display.
 
@@ -82,6 +84,7 @@ class BasePlugin(ABC):
         if self._plugin_dir is None:
             # Get the directory of the plugin's Python file
             import inspect
+
             plugin_file = Path(inspect.getfile(self.__class__))
             self._plugin_dir = plugin_file.parent
 
@@ -189,7 +192,9 @@ class BasePlugin(ABC):
         """
         pass
 
-    def on_settings_change(self, old_settings: Dict[str, Any], new_settings: Dict[str, Any]) -> None:
+    def on_settings_change(
+        self, old_settings: Dict[str, Any], new_settings: Dict[str, Any]
+    ) -> None:
         """
         Called when instance settings are updated.
 

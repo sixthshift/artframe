@@ -32,7 +32,7 @@ class ConfigManager:
             raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
 
         try:
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path, "r") as f:
                 self._config = yaml.safe_load(f)
 
             # Expand environment variables
@@ -68,10 +68,9 @@ class ConfigManager:
                 var_name = match.group(1)
                 return os.environ.get(var_name, match.group(0))
 
-            return re.sub(r'\$\{([^}]+)\}', replace_env_var, config)
+            return re.sub(r"\$\{([^}]+)\}", replace_env_var, config)
         else:
             return config
-
 
     def get(self, key: str, default: Any = None) -> Any:
         """
@@ -84,7 +83,7 @@ class ConfigManager:
         Returns:
             Configuration value
         """
-        keys = key.split('.')
+        keys = key.split(".")
         value = self._config
 
         for k in keys:
@@ -97,27 +96,27 @@ class ConfigManager:
 
     def get_source_config(self) -> Dict[str, Any]:
         """Get source plugin configuration."""
-        return self.get('artframe.source', {})
+        return self.get("artframe.source", {})
 
     def get_style_config(self) -> Dict[str, Any]:
         """Get style plugin configuration."""
-        return self.get('artframe.style', {})
+        return self.get("artframe.style", {})
 
     def get_display_config(self) -> Dict[str, Any]:
         """Get display configuration."""
-        return self.get('artframe.display', {})
+        return self.get("artframe.display", {})
 
     def get_storage_config(self) -> Dict[str, Any]:
         """Get storage configuration."""
-        return self.get('artframe.storage', {})
+        return self.get("artframe.storage", {})
 
     def get_schedule_config(self) -> Dict[str, Any]:
         """Get schedule configuration."""
-        return self.get('artframe.schedule', {})
+        return self.get("artframe.schedule", {})
 
     def get_logging_config(self) -> Dict[str, Any]:
         """Get logging configuration."""
-        return self.get('artframe.logging', {})
+        return self.get("artframe.logging", {})
 
     def add_observer(self, callback: Callable[[str, Any], None]) -> None:
         """
@@ -141,7 +140,9 @@ class ConfigManager:
         # Notify observers of changes
         self._notify_changes(old_config, self._config)
 
-    def _notify_changes(self, old_config: Dict[str, Any], new_config: Dict[str, Any], prefix: str = "") -> None:
+    def _notify_changes(
+        self, old_config: Dict[str, Any], new_config: Dict[str, Any], prefix: str = ""
+    ) -> None:
         """Recursively notify observers of configuration changes."""
         for key, value in new_config.items():
             full_key = f"{prefix}.{key}" if prefix else key
@@ -204,13 +205,14 @@ class ConfigManager:
         """
         # Create backup if requested
         if backup and self.config_path.exists():
-            backup_path = self.config_path.with_suffix('.yaml.backup')
+            backup_path = self.config_path.with_suffix(".yaml.backup")
             import shutil
+
             shutil.copy2(self.config_path, backup_path)
 
         # Write to file
         try:
-            with open(self.config_path, 'w') as f:
+            with open(self.config_path, "w") as f:
                 yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
         except Exception as e:
             raise IOError(f"Failed to save configuration: {e}")
@@ -223,4 +225,3 @@ class ConfigManager:
     def config(self) -> Dict[str, Any]:
         """Get read-only copy of current configuration."""
         return self._config.copy()
-

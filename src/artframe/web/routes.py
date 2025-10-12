@@ -9,136 +9,111 @@ from flask import Blueprint, render_template, jsonify, current_app, request
 from typing import Dict, Any
 
 
-bp = Blueprint('dashboard', __name__)
+bp = Blueprint("dashboard", __name__)
 
 
-@bp.route('/')
+@bp.route("/")
 def index():
     """Render main dashboard."""
-    return render_template('dashboard.html')
+    return render_template("dashboard.html")
 
 
-@bp.route('/display')
+@bp.route("/display")
 def display_page():
     """Render display page."""
-    return render_template('display.html')
+    return render_template("display.html")
 
 
-@bp.route('/system')
+@bp.route("/system")
 def system_page():
     """Render system page."""
-    return render_template('system.html')
+    return render_template("system.html")
 
 
-@bp.route('/config')
+@bp.route("/config")
 def config_page():
     """Render configuration page."""
-    return render_template('config.html')
+    return render_template("config.html")
 
 
-@bp.route('/plugins')
+@bp.route("/plugins")
 def plugins_page():
     """Render plugins management page."""
-    return render_template('plugins.html')
+    return render_template("plugins.html")
 
 
-@bp.route('/playlists')
+@bp.route("/playlists")
 def playlists_page():
     """Render playlists management page."""
-    return render_template('playlists.html')
+    return render_template("playlists.html")
 
 
-@bp.route('/api/status')
+@bp.route("/api/status")
 def api_status():
     """Get current system status as JSON."""
     controller = current_app.controller
 
     try:
         status = controller.get_status()
-        return jsonify({
-            'success': True,
-            'data': status
-        })
+        return jsonify({"success": True, "data": status})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/config')
+@bp.route("/api/config")
 def api_config():
     """Get current configuration as JSON."""
     controller = current_app.controller
 
     try:
         config = controller.config_manager.config
-        return jsonify({
-            'success': True,
-            'data': config
-        })
+        return jsonify({"success": True, "data": config})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/connections')
+@bp.route("/api/connections")
 def api_connections():
     """Test all external connections."""
     controller = current_app.controller
 
     try:
         connections = controller.test_connections()
-        return jsonify({
-            'success': True,
-            'data': connections
-        })
+        return jsonify({"success": True, "data": connections})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/update', methods=['POST'])
+@bp.route("/api/update", methods=["POST"])
 def api_trigger_update():
     """Trigger immediate photo update."""
     controller = current_app.controller
 
     try:
         success = controller.manual_refresh()
-        return jsonify({
-            'success': success,
-            'message': 'Update completed successfully' if success else 'Update failed'
-        })
+        return jsonify(
+            {
+                "success": success,
+                "message": "Update completed successfully" if success else "Update failed",
+            }
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/clear', methods=['POST'])
+@bp.route("/api/clear", methods=["POST"])
 def api_clear_display():
     """Clear the display."""
     controller = current_app.controller
 
     try:
         controller.display_controller.clear_display()
-        return jsonify({
-            'success': True,
-            'message': 'Display cleared'
-        })
+        return jsonify({"success": True, "message": "Display cleared"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/config', methods=['PUT'])
+@bp.route("/api/config", methods=["PUT"])
 def api_update_config():
     """Update in-memory configuration (validation only, not saved)."""
     controller = current_app.controller
@@ -146,68 +121,51 @@ def api_update_config():
     try:
         new_config = request.get_json()
         if not new_config:
-            return jsonify({
-                'success': False,
-                'error': 'No configuration data provided'
-            }), 400
+            return jsonify({"success": False, "error": "No configuration data provided"}), 400
 
         # Validate and update in-memory config
         controller.config_manager.update_config(new_config)
 
-        return jsonify({
-            'success': True,
-            'message': 'Configuration updated in memory (not saved to file yet)'
-        })
+        return jsonify(
+            {"success": True, "message": "Configuration updated in memory (not saved to file yet)"}
+        )
     except ValueError as e:
-        return jsonify({
-            'success': False,
-            'error': f'Invalid configuration: {e}'
-        }), 400
+        return jsonify({"success": False, "error": f"Invalid configuration: {e}"}), 400
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/config/save', methods=['POST'])
+@bp.route("/api/config/save", methods=["POST"])
 def api_save_config():
     """Save current in-memory configuration to YAML file."""
     controller = current_app.controller
 
     try:
         controller.config_manager.save_to_file(backup=True)
-        return jsonify({
-            'success': True,
-            'message': 'Configuration saved to file. Restart required for changes to take effect.',
-            'restart_required': True
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "Configuration saved to file. Restart required for changes to take effect.",
+                "restart_required": True,
+            }
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'Failed to save configuration: {e}'
-        }), 500
+        return jsonify({"success": False, "error": f"Failed to save configuration: {e}"}), 500
 
 
-@bp.route('/api/config/revert', methods=['POST'])
+@bp.route("/api/config/revert", methods=["POST"])
 def api_revert_config():
     """Revert in-memory config to what's on disk."""
     controller = current_app.controller
 
     try:
         controller.config_manager.revert_to_file()
-        return jsonify({
-            'success': True,
-            'message': 'Configuration reverted to saved version'
-        })
+        return jsonify({"success": True, "message": "Configuration reverted to saved version"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/restart', methods=['POST'])
+@bp.route("/api/restart", methods=["POST"])
 def api_restart():
     """Restart the application."""
     try:
@@ -215,159 +173,140 @@ def api_restart():
         # In production, systemd will restart the service automatically
         os.kill(os.getpid(), signal.SIGTERM)
 
-        return jsonify({
-            'success': True,
-            'message': 'Restart initiated'
-        })
+        return jsonify({"success": True, "message": "Restart initiated"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/scheduler/status')
+@bp.route("/api/scheduler/status")
 def api_scheduler_status():
     """Get scheduler status."""
     controller = current_app.controller
 
     try:
         status = controller.scheduler.get_status()
-        return jsonify({
-            'success': True,
-            'data': status
-        })
+        return jsonify({"success": True, "data": status})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/scheduler/pause', methods=['POST'])
+@bp.route("/api/scheduler/pause", methods=["POST"])
 def api_scheduler_pause():
     """Pause automatic updates (daily e-ink refresh still occurs)."""
     controller = current_app.controller
 
     try:
         controller.scheduler.pause()
-        return jsonify({
-            'success': True,
-            'message': 'Scheduler paused. Daily e-ink refresh will still occur for screen health.',
-            'status': controller.scheduler.get_status()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "Scheduler paused. Daily e-ink refresh will still occur for screen health.",
+                "status": controller.scheduler.get_status(),
+            }
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/scheduler/resume', methods=['POST'])
+@bp.route("/api/scheduler/resume", methods=["POST"])
 def api_scheduler_resume():
     """Resume automatic updates."""
     controller = current_app.controller
 
     try:
         controller.scheduler.resume()
-        return jsonify({
-            'success': True,
-            'message': 'Scheduler resumed',
-            'status': controller.scheduler.get_status()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "Scheduler resumed",
+                "status": controller.scheduler.get_status(),
+            }
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/display/current')
+@bp.route("/api/display/current")
 def api_display_current():
     """Get current display information."""
     controller = current_app.controller
 
     try:
         state = controller.display_controller.get_state()
-        return jsonify({
-            'success': True,
-            'data': {
-                'image_id': state.current_image_id,
-                'last_update': state.last_refresh.isoformat() if state.last_refresh else None,
-                'style': 'Unknown',  # TODO: Track style with image
-                'status': state.status
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "image_id": state.current_image_id,
+                    "last_update": state.last_refresh.isoformat() if state.last_refresh else None,
+                    "style": "Unknown",  # TODO: Track style with image
+                    "status": state.status,
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/display/history')
+@bp.route("/api/display/history")
 def api_display_history():
     """Get display history."""
     try:
         # TODO: Implement history tracking
-        return jsonify({
-            'success': True,
-            'data': []
-        })
+        return jsonify({"success": True, "data": []})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/display/health')
+@bp.route("/api/display/health")
 def api_display_health():
     """Get e-ink display health metrics."""
     controller = current_app.controller
 
     try:
         state = controller.display_controller.get_state()
-        return jsonify({
-            'success': True,
-            'data': {
-                'refresh_count': 0,  # TODO: Track refresh count
-                'last_refresh': state.last_refresh.isoformat() if state.last_refresh else None,
-                'status': state.status,
-                'error_count': state.error_count
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "refresh_count": 0,  # TODO: Track refresh count
+                    "last_refresh": state.last_refresh.isoformat() if state.last_refresh else None,
+                    "status": state.status,
+                    "error_count": state.error_count,
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/source/stats')
+@bp.route("/api/source/stats")
 def api_source_stats():
     """Get source statistics."""
     controller = current_app.controller
 
     try:
         # Basic stats for now
-        return jsonify({
-            'success': True,
-            'data': {
-                'provider': controller.config_manager.get_source_config().get('provider', 'Unknown'),
-                'total_photos': 'N/A',  # TODO: Get from source plugin
-                'album_name': controller.config_manager.get_source_config().get('config', {}).get('album_id', 'N/A'),
-                'last_sync': 'N/A'  # TODO: Track sync time
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "provider": controller.config_manager.get_source_config().get(
+                        "provider", "Unknown"
+                    ),
+                    "total_photos": "N/A",  # TODO: Get from source plugin
+                    "album_name": controller.config_manager.get_source_config()
+                    .get("config", {})
+                    .get("album_id", "N/A"),
+                    "last_sync": "N/A",  # TODO: Track sync time
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/system/info')
+@bp.route("/api/system/info")
 def api_system_info():
     """Get system information."""
     try:
@@ -377,70 +316,68 @@ def api_system_info():
 
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
-        disk = psutil.disk_usage('/')
+        disk = psutil.disk_usage("/")
         uptime_seconds = psutil.boot_time()
         uptime = str(timedelta(seconds=int(psutil.time.time() - uptime_seconds)))
 
         # Try to get temperature (Raspberry Pi)
         temp = None
         try:
-            with open('/sys/class/thermal/thermal_zone0/temp', 'r') as f:
+            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 temp = round(int(f.read()) / 1000, 1)
         except:
             pass
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'cpu_percent': round(cpu_percent, 1),
-                'memory_percent': round(memory.percent, 1),
-                'disk_percent': round(disk.percent, 1),
-                'temperature': temp,
-                'uptime': uptime,
-                'platform': platform.system()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "cpu_percent": round(cpu_percent, 1),
+                    "memory_percent": round(memory.percent, 1),
+                    "disk_percent": round(disk.percent, 1),
+                    "temperature": temp,
+                    "uptime": uptime,
+                    "platform": platform.system(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/system/logs')
+@bp.route("/api/system/logs")
 def api_system_logs():
     """Get system logs."""
     try:
         import logging
         from pathlib import Path
 
-        level_filter = request.args.get('level', 'all')
+        level_filter = request.args.get("level", "all")
 
         # TODO: Read from actual log file
         # For now, return placeholder
-        return jsonify({
-            'success': True,
-            'data': [
-                {
-                    'timestamp': '2025-09-27 20:00:00',
-                    'level': 'INFO',
-                    'message': 'Artframe controller initialized successfully'
-                },
-                {
-                    'timestamp': '2025-09-27 20:00:30',
-                    'level': 'INFO',
-                    'message': 'Starting Artframe scheduled loop'
-                }
-            ]
-        })
+        return jsonify(
+            {
+                "success": True,
+                "data": [
+                    {
+                        "timestamp": "2025-09-27 20:00:00",
+                        "level": "INFO",
+                        "message": "Artframe controller initialized successfully",
+                    },
+                    {
+                        "timestamp": "2025-09-27 20:00:30",
+                        "level": "INFO",
+                        "message": "Starting Artframe scheduled loop",
+                    },
+                ],
+            }
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/system/logs/export')
+@bp.route("/api/system/logs/export")
 def api_system_logs_export():
     """Export system logs as text file."""
     try:
@@ -449,21 +386,20 @@ def api_system_logs_export():
         logs_text += "2025-09-27 20:00:00 INFO Artframe controller initialized successfully\n"
 
         from flask import Response
+
         return Response(
             logs_text,
-            mimetype='text/plain',
-            headers={'Content-Disposition': 'attachment;filename=artframe-logs.txt'}
+            mimetype="text/plain",
+            headers={"Content-Disposition": "attachment;filename=artframe-logs.txt"},
         )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ===== Plugin Management APIs =====
 
-@bp.route('/api/plugins')
+
+@bp.route("/api/plugins")
 def api_plugins_list():
     """Get list of all available plugins."""
     try:
@@ -471,28 +407,24 @@ def api_plugins_list():
 
         plugins_data = []
         for metadata in list_plugin_metadata():
-            plugins_data.append({
-                'id': metadata.plugin_id,
-                'display_name': metadata.display_name,
-                'class_name': metadata.class_name,
-                'description': metadata.description,
-                'author': metadata.author,
-                'version': metadata.version,
-                'icon': metadata.icon
-            })
+            plugins_data.append(
+                {
+                    "id": metadata.plugin_id,
+                    "display_name": metadata.display_name,
+                    "class_name": metadata.class_name,
+                    "description": metadata.description,
+                    "author": metadata.author,
+                    "version": metadata.version,
+                    "icon": metadata.icon,
+                }
+            )
 
-        return jsonify({
-            'success': True,
-            'data': plugins_data
-        })
+        return jsonify({"success": True, "data": plugins_data})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/<plugin_id>')
+@bp.route("/api/plugins/<plugin_id>")
 def api_plugin_details(plugin_id):
     """Get details for a specific plugin."""
     try:
@@ -500,31 +432,27 @@ def api_plugin_details(plugin_id):
 
         metadata = get_plugin_metadata(plugin_id)
         if metadata is None:
-            return jsonify({
-                'success': False,
-                'error': f'Plugin not found: {plugin_id}'
-            }), 404
+            return jsonify({"success": False, "error": f"Plugin not found: {plugin_id}"}), 404
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': metadata.plugin_id,
-                'display_name': metadata.display_name,
-                'class_name': metadata.class_name,
-                'description': metadata.description,
-                'author': metadata.author,
-                'version': metadata.version,
-                'icon': metadata.icon
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": metadata.plugin_id,
+                    "display_name": metadata.display_name,
+                    "class_name": metadata.class_name,
+                    "description": metadata.description,
+                    "author": metadata.author,
+                    "version": metadata.version,
+                    "icon": metadata.icon,
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/<plugin_id>/settings-template')
+@bp.route("/api/plugins/<plugin_id>/settings-template")
 def api_plugin_settings_template(plugin_id):
     """Get plugin's settings HTML template."""
     try:
@@ -532,40 +460,30 @@ def api_plugin_settings_template(plugin_id):
 
         plugin = get_plugin(plugin_id)
         if plugin is None:
-            return jsonify({
-                'success': False,
-                'error': f'Plugin not found: {plugin_id}'
-            }), 404
+            return jsonify({"success": False, "error": f"Plugin not found: {plugin_id}"}), 404
 
         # Look for settings.html in plugin directory
         plugin_dir = plugin.get_plugin_directory()
-        settings_file = plugin_dir / 'settings.html'
+        settings_file = plugin_dir / "settings.html"
 
         if not settings_file.exists():
-            return jsonify({
-                'success': False,
-                'error': 'No settings template found for this plugin'
-            }), 404
+            return (
+                jsonify({"success": False, "error": "No settings template found for this plugin"}),
+                404,
+            )
 
-        with open(settings_file, 'r') as f:
+        with open(settings_file, "r") as f:
             template_html = f.read()
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'template': template_html
-            }
-        })
+        return jsonify({"success": True, "data": {"template": template_html}})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ===== Plugin Instance Management APIs =====
 
-@bp.route('/api/plugins/instances', methods=['GET'])
+
+@bp.route("/api/plugins/instances", methods=["GET"])
 def api_instances_list():
     """Get list of all plugin instances."""
     try:
@@ -574,83 +492,71 @@ def api_instances_list():
 
         instances_data = []
         for inst in instances:
-            instances_data.append({
-                'id': inst.id,
-                'plugin_id': inst.plugin_id,
-                'name': inst.name,
-                'settings': inst.settings,
-                'enabled': inst.enabled,
-                'created_at': inst.created_at.isoformat(),
-                'updated_at': inst.updated_at.isoformat()
-            })
+            instances_data.append(
+                {
+                    "id": inst.id,
+                    "plugin_id": inst.plugin_id,
+                    "name": inst.name,
+                    "settings": inst.settings,
+                    "enabled": inst.enabled,
+                    "created_at": inst.created_at.isoformat(),
+                    "updated_at": inst.updated_at.isoformat(),
+                }
+            )
 
-        return jsonify({
-            'success': True,
-            'data': instances_data
-        })
+        return jsonify({"success": True, "data": instances_data})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances', methods=['POST'])
+@bp.route("/api/plugins/instances", methods=["POST"])
 def api_instances_create():
     """Create a new plugin instance."""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
+            return jsonify({"success": False, "error": "No data provided"}), 400
 
-        plugin_id = data.get('plugin_id')
-        name = data.get('name')
-        settings = data.get('settings', {})
+        plugin_id = data.get("plugin_id")
+        name = data.get("name")
+        settings = data.get("settings", {})
 
         if not plugin_id:
-            return jsonify({
-                'success': False,
-                'error': 'plugin_id is required'
-            }), 400
+            return jsonify({"success": False, "error": "plugin_id is required"}), 400
 
         if not name:
-            return jsonify({
-                'success': False,
-                'error': 'name is required'
-            }), 400
+            return jsonify({"success": False, "error": "name is required"}), 400
 
         instance_manager = current_app.instance_manager
         instance = instance_manager.create_instance(plugin_id, name, settings)
 
         if instance is None:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to create instance (check validation)'
-            }), 400
+            return (
+                jsonify(
+                    {"success": False, "error": "Failed to create instance (check validation)"}
+                ),
+                400,
+            )
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': instance.id,
-                'plugin_id': instance.plugin_id,
-                'name': instance.name,
-                'settings': instance.settings,
-                'enabled': instance.enabled,
-                'created_at': instance.created_at.isoformat(),
-                'updated_at': instance.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": instance.id,
+                    "plugin_id": instance.plugin_id,
+                    "name": instance.name,
+                    "settings": instance.settings,
+                    "enabled": instance.enabled,
+                    "created_at": instance.created_at.isoformat(),
+                    "updated_at": instance.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>', methods=['GET'])
+@bp.route("/api/plugins/instances/<instance_id>", methods=["GET"])
 def api_instance_details(instance_id):
     """Get details for a specific instance."""
     try:
@@ -658,74 +564,63 @@ def api_instance_details(instance_id):
         instance = instance_manager.get_instance(instance_id)
 
         if instance is None:
-            return jsonify({
-                'success': False,
-                'error': 'Instance not found'
-            }), 404
+            return jsonify({"success": False, "error": "Instance not found"}), 404
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': instance.id,
-                'plugin_id': instance.plugin_id,
-                'name': instance.name,
-                'settings': instance.settings,
-                'enabled': instance.enabled,
-                'created_at': instance.created_at.isoformat(),
-                'updated_at': instance.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": instance.id,
+                    "plugin_id": instance.plugin_id,
+                    "name": instance.name,
+                    "settings": instance.settings,
+                    "enabled": instance.enabled,
+                    "created_at": instance.created_at.isoformat(),
+                    "updated_at": instance.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>', methods=['PUT'])
+@bp.route("/api/plugins/instances/<instance_id>", methods=["PUT"])
 def api_instance_update(instance_id):
     """Update an instance."""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
+            return jsonify({"success": False, "error": "No data provided"}), 400
 
-        name = data.get('name')
-        settings = data.get('settings')
+        name = data.get("name")
+        settings = data.get("settings")
 
         instance_manager = current_app.instance_manager
         success = instance_manager.update_instance(instance_id, name, settings)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to update instance'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to update instance"}), 400
 
         instance = instance_manager.get_instance(instance_id)
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': instance.id,
-                'plugin_id': instance.plugin_id,
-                'name': instance.name,
-                'settings': instance.settings,
-                'enabled': instance.enabled,
-                'created_at': instance.created_at.isoformat(),
-                'updated_at': instance.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": instance.id,
+                    "plugin_id": instance.plugin_id,
+                    "name": instance.name,
+                    "settings": instance.settings,
+                    "enabled": instance.enabled,
+                    "created_at": instance.created_at.isoformat(),
+                    "updated_at": instance.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>', methods=['DELETE'])
+@bp.route("/api/plugins/instances/<instance_id>", methods=["DELETE"])
 def api_instance_delete(instance_id):
     """Delete an instance."""
     try:
@@ -733,23 +628,14 @@ def api_instance_delete(instance_id):
         success = instance_manager.delete_instance(instance_id)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to delete instance'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to delete instance"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Instance deleted successfully'
-        })
+        return jsonify({"success": True, "message": "Instance deleted successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>/enable', methods=['POST'])
+@bp.route("/api/plugins/instances/<instance_id>/enable", methods=["POST"])
 def api_instance_enable(instance_id):
     """Enable an instance."""
     try:
@@ -757,23 +643,14 @@ def api_instance_enable(instance_id):
         success = instance_manager.enable_instance(instance_id)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to enable instance'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to enable instance"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Instance enabled successfully'
-        })
+        return jsonify({"success": True, "message": "Instance enabled successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>/disable', methods=['POST'])
+@bp.route("/api/plugins/instances/<instance_id>/disable", methods=["POST"])
 def api_instance_disable(instance_id):
     """Disable an instance."""
     try:
@@ -781,23 +658,14 @@ def api_instance_disable(instance_id):
         success = instance_manager.disable_instance(instance_id)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to disable instance'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to disable instance"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Instance disabled successfully'
-        })
+        return jsonify({"success": True, "message": "Instance disabled successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/plugins/instances/<instance_id>/test', methods=['POST'])
+@bp.route("/api/plugins/instances/<instance_id>/test", methods=["POST"])
 def api_instance_test(instance_id):
     """Test run a plugin instance."""
     try:
@@ -806,33 +674,26 @@ def api_instance_test(instance_id):
 
         # Get device config from display controller
         device_config = {
-            'width': 600,  # TODO: Get from actual display
-            'height': 448,
-            'rotation': 0,
-            'color_mode': 'grayscale'
+            "width": 600,  # TODO: Get from actual display
+            "height": 448,
+            "rotation": 0,
+            "color_mode": "grayscale",
         }
 
         success, error_msg = instance_manager.test_instance(instance_id, device_config)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': error_msg or 'Test failed'
-            }), 400
+            return jsonify({"success": False, "error": error_msg or "Test failed"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Instance test successful'
-        })
+        return jsonify({"success": True, "message": "Instance test successful"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 # ===== Playlist Management APIs =====
 
-@bp.route('/api/playlists', methods=['GET'])
+
+@bp.route("/api/playlists", methods=["GET"])
 def api_playlists_list():
     """Get list of all playlists."""
     try:
@@ -841,98 +702,91 @@ def api_playlists_list():
 
         playlists_data = []
         for playlist in playlists:
-            playlists_data.append({
-                'id': playlist.id,
-                'name': playlist.name,
-                'description': playlist.description,
-                'enabled': playlist.enabled,
-                'items': [
-                    {
-                        'instance_id': item.instance_id,
-                        'duration_seconds': item.duration_seconds,
-                        'order': item.order
-                    }
-                    for item in playlist.items
-                ],
-                'created_at': playlist.created_at.isoformat(),
-                'updated_at': playlist.updated_at.isoformat()
-            })
+            playlists_data.append(
+                {
+                    "id": playlist.id,
+                    "name": playlist.name,
+                    "description": playlist.description,
+                    "enabled": playlist.enabled,
+                    "items": [
+                        {
+                            "instance_id": item.instance_id,
+                            "duration_seconds": item.duration_seconds,
+                            "order": item.order,
+                        }
+                        for item in playlist.items
+                    ],
+                    "created_at": playlist.created_at.isoformat(),
+                    "updated_at": playlist.updated_at.isoformat(),
+                }
+            )
 
         active_playlist_id = playlist_manager.get_active_playlist_id()
 
-        return jsonify({
-            'success': True,
-            'data': playlists_data,
-            'active_playlist_id': active_playlist_id
-        })
+        return jsonify(
+            {"success": True, "data": playlists_data, "active_playlist_id": active_playlist_id}
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists', methods=['POST'])
+@bp.route("/api/playlists", methods=["POST"])
 def api_playlist_create():
     """Create a new playlist."""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
+            return jsonify({"success": False, "error": "No data provided"}), 400
 
-        name = data.get('name')
-        description = data.get('description', '')
-        items_data = data.get('items', [])
+        name = data.get("name")
+        description = data.get("description", "")
+        items_data = data.get("items", [])
 
         if not name:
-            return jsonify({
-                'success': False,
-                'error': 'name is required'
-            }), 400
+            return jsonify({"success": False, "error": "name is required"}), 400
 
         # Parse items
         from ..models import PlaylistItem
+
         items = []
         for item_data in items_data:
-            items.append(PlaylistItem(
-                instance_id=item_data['instance_id'],
-                duration_seconds=item_data['duration_seconds'],
-                order=item_data.get('order', len(items))
-            ))
+            items.append(
+                PlaylistItem(
+                    instance_id=item_data["instance_id"],
+                    duration_seconds=item_data["duration_seconds"],
+                    order=item_data.get("order", len(items)),
+                )
+            )
 
         playlist_manager = current_app.playlist_manager
         playlist = playlist_manager.create_playlist(name, description, items)
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': playlist.id,
-                'name': playlist.name,
-                'description': playlist.description,
-                'enabled': playlist.enabled,
-                'items': [
-                    {
-                        'instance_id': item.instance_id,
-                        'duration_seconds': item.duration_seconds,
-                        'order': item.order
-                    }
-                    for item in playlist.items
-                ],
-                'created_at': playlist.created_at.isoformat(),
-                'updated_at': playlist.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": playlist.id,
+                    "name": playlist.name,
+                    "description": playlist.description,
+                    "enabled": playlist.enabled,
+                    "items": [
+                        {
+                            "instance_id": item.instance_id,
+                            "duration_seconds": item.duration_seconds,
+                            "order": item.order,
+                        }
+                        for item in playlist.items
+                    ],
+                    "created_at": playlist.created_at.isoformat(),
+                    "updated_at": playlist.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists/<playlist_id>', methods=['GET'])
+@bp.route("/api/playlists/<playlist_id>", methods=["GET"])
 def api_playlist_details(playlist_id):
     """Get details for a specific playlist."""
     try:
@@ -940,108 +794,96 @@ def api_playlist_details(playlist_id):
         playlist = playlist_manager.get_playlist(playlist_id)
 
         if playlist is None:
-            return jsonify({
-                'success': False,
-                'error': 'Playlist not found'
-            }), 404
+            return jsonify({"success": False, "error": "Playlist not found"}), 404
 
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': playlist.id,
-                'name': playlist.name,
-                'description': playlist.description,
-                'enabled': playlist.enabled,
-                'items': [
-                    {
-                        'instance_id': item.instance_id,
-                        'duration_seconds': item.duration_seconds,
-                        'order': item.order
-                    }
-                    for item in playlist.items
-                ],
-                'created_at': playlist.created_at.isoformat(),
-                'updated_at': playlist.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": playlist.id,
+                    "name": playlist.name,
+                    "description": playlist.description,
+                    "enabled": playlist.enabled,
+                    "items": [
+                        {
+                            "instance_id": item.instance_id,
+                            "duration_seconds": item.duration_seconds,
+                            "order": item.order,
+                        }
+                        for item in playlist.items
+                    ],
+                    "created_at": playlist.created_at.isoformat(),
+                    "updated_at": playlist.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists/<playlist_id>', methods=['PUT'])
+@bp.route("/api/playlists/<playlist_id>", methods=["PUT"])
 def api_playlist_update(playlist_id):
     """Update a playlist."""
     try:
         data = request.get_json()
         if not data:
-            return jsonify({
-                'success': False,
-                'error': 'No data provided'
-            }), 400
+            return jsonify({"success": False, "error": "No data provided"}), 400
 
-        name = data.get('name')
-        description = data.get('description')
-        enabled = data.get('enabled')
-        items_data = data.get('items')
+        name = data.get("name")
+        description = data.get("description")
+        enabled = data.get("enabled")
+        items_data = data.get("items")
 
         # Parse items if provided
         items = None
         if items_data is not None:
             from ..models import PlaylistItem
+
             items = []
             for item_data in items_data:
-                items.append(PlaylistItem(
-                    instance_id=item_data['instance_id'],
-                    duration_seconds=item_data['duration_seconds'],
-                    order=item_data.get('order', len(items))
-                ))
+                items.append(
+                    PlaylistItem(
+                        instance_id=item_data["instance_id"],
+                        duration_seconds=item_data["duration_seconds"],
+                        order=item_data.get("order", len(items)),
+                    )
+                )
 
         playlist_manager = current_app.playlist_manager
         success = playlist_manager.update_playlist(
-            playlist_id,
-            name=name,
-            description=description,
-            items=items,
-            enabled=enabled
+            playlist_id, name=name, description=description, items=items, enabled=enabled
         )
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to update playlist'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to update playlist"}), 400
 
         playlist = playlist_manager.get_playlist(playlist_id)
-        return jsonify({
-            'success': True,
-            'data': {
-                'id': playlist.id,
-                'name': playlist.name,
-                'description': playlist.description,
-                'enabled': playlist.enabled,
-                'items': [
-                    {
-                        'instance_id': item.instance_id,
-                        'duration_seconds': item.duration_seconds,
-                        'order': item.order
-                    }
-                    for item in playlist.items
-                ],
-                'created_at': playlist.created_at.isoformat(),
-                'updated_at': playlist.updated_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": playlist.id,
+                    "name": playlist.name,
+                    "description": playlist.description,
+                    "enabled": playlist.enabled,
+                    "items": [
+                        {
+                            "instance_id": item.instance_id,
+                            "duration_seconds": item.duration_seconds,
+                            "order": item.order,
+                        }
+                        for item in playlist.items
+                    ],
+                    "created_at": playlist.created_at.isoformat(),
+                    "updated_at": playlist.updated_at.isoformat(),
+                },
             }
-        })
+        )
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists/<playlist_id>', methods=['DELETE'])
+@bp.route("/api/playlists/<playlist_id>", methods=["DELETE"])
 def api_playlist_delete(playlist_id):
     """Delete a playlist."""
     try:
@@ -1049,23 +891,14 @@ def api_playlist_delete(playlist_id):
         success = playlist_manager.delete_playlist(playlist_id)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to delete playlist'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to delete playlist"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Playlist deleted successfully'
-        })
+        return jsonify({"success": True, "message": "Playlist deleted successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists/<playlist_id>/activate', methods=['POST'])
+@bp.route("/api/playlists/<playlist_id>/activate", methods=["POST"])
 def api_playlist_activate(playlist_id):
     """Set a playlist as active."""
     try:
@@ -1073,23 +906,14 @@ def api_playlist_activate(playlist_id):
         success = playlist_manager.set_active_playlist(playlist_id)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to activate playlist'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to activate playlist"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Playlist activated successfully'
-        })
+        return jsonify({"success": True, "message": "Playlist activated successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route('/api/playlists/deactivate', methods=['POST'])
+@bp.route("/api/playlists/deactivate", methods=["POST"])
 def api_playlist_deactivate():
     """Deactivate the current playlist."""
     try:
@@ -1097,17 +921,8 @@ def api_playlist_deactivate():
         success = playlist_manager.set_active_playlist(None)
 
         if not success:
-            return jsonify({
-                'success': False,
-                'error': 'Failed to deactivate playlist'
-            }), 400
+            return jsonify({"success": False, "error": "Failed to deactivate playlist"}), 400
 
-        return jsonify({
-            'success': True,
-            'message': 'Playlist deactivated successfully'
-        })
+        return jsonify({"success": True, "message": "Playlist deactivated successfully"})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500

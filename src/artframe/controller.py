@@ -43,16 +43,14 @@ class ArtframeController:
         self.scheduler = self._create_scheduler()
 
         # Initialize plugin and playlist management
-        storage_dir = Path.home() / '.artframe' / 'data'
+        storage_dir = Path.home() / ".artframe" / "data"
         self.instance_manager = InstanceManager(storage_dir)
         self.playlist_manager = PlaylistManager(storage_dir)
 
         # Create playlist executor
         device_config = self._get_device_config()
         self.playlist_executor = PlaylistExecutor(
-            self.playlist_manager,
-            self.instance_manager,
-            device_config
+            self.playlist_manager, self.instance_manager, device_config
         )
 
         # Track state
@@ -62,9 +60,9 @@ class ArtframeController:
     def _create_storage_manager(self) -> StorageManager:
         """Create and configure storage manager."""
         # Get cache config
-        cache_config = self.config_manager.config.get('artframe', {}).get('cache', {})
+        cache_config = self.config_manager.config.get("artframe", {}).get("cache", {})
 
-        storage_dir = cache_config.get('cache_directory', '~/.artframe/cache')
+        storage_dir = cache_config.get("cache_directory", "~/.artframe/cache")
 
         # Expand user home directory
         storage_dir = Path(storage_dir).expanduser()
@@ -78,12 +76,12 @@ class ArtframeController:
 
     def _create_scheduler(self) -> Scheduler:
         """Create and configure scheduler."""
-        scheduler_config = self.config_manager.config.get('artframe', {}).get('scheduler', {})
+        scheduler_config = self.config_manager.config.get("artframe", {}).get("scheduler", {})
 
         # For now, use a simple daily update time
         # TODO: Replace with playlist-based scheduling
-        update_time = scheduler_config.get('update_time', '06:00')
-        timezone = scheduler_config.get('timezone', 'UTC')
+        update_time = scheduler_config.get("update_time", "06:00")
+        timezone = scheduler_config.get("timezone", "UTC")
 
         return Scheduler(update_time, timezone)
 
@@ -92,10 +90,10 @@ class ArtframeController:
         display_config = self.config_manager.get_display_config()
 
         return {
-            'width': display_config.get('width', 600),
-            'height': display_config.get('height', 448),
-            'rotation': display_config.get('rotation', 0),
-            'color_mode': 'grayscale'  # E-ink displays are typically grayscale
+            "width": display_config.get("width", 600),
+            "height": display_config.get("height", 448),
+            "rotation": display_config.get("rotation", 0),
+            "color_mode": "grayscale",  # E-ink displays are typically grayscale
         }
 
     def initialize(self, skip_connection_test: bool = False) -> None:
@@ -153,10 +151,7 @@ class ArtframeController:
         try:
             # Run the playlist executor loop
             # This will continuously execute playlist items
-            self.playlist_executor.run_loop(
-                self.display_controller,
-                check_interval=5
-            )
+            self.playlist_executor.run_loop(self.display_controller, check_interval=5)
 
         except KeyboardInterrupt:
             self.logger.log_interrupt_received()
@@ -191,14 +186,16 @@ class ArtframeController:
                 "total_photos": storage_stats.total_photos,
                 "total_styled_images": storage_stats.total_styled_images,
                 "total_size_mb": round(storage_stats.total_size_mb, 2),
-                "storage_directory": storage_stats.storage_directory
+                "storage_directory": storage_stats.storage_directory,
             },
             "display_state": {
                 "status": display_state.status,
                 "current_image_id": display_state.current_image_id,
-                "last_refresh": display_state.last_refresh.isoformat() if display_state.last_refresh else None,
-                "error_count": display_state.error_count
-            }
+                "last_refresh": (
+                    display_state.last_refresh.isoformat() if display_state.last_refresh else None
+                ),
+                "error_count": display_state.error_count,
+            },
         }
 
     def test_connections(self) -> Dict[str, bool]:
@@ -210,5 +207,5 @@ class ArtframeController:
         """
         return {
             "display": True,  # If we got here, display controller initialized
-            "storage": self.storage_manager.storage_dir.exists()
+            "storage": self.storage_manager.storage_dir.exists(),
         }

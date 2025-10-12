@@ -29,9 +29,7 @@ def main():
         help="Log level (default: INFO)",
     )
 
-    parser.add_argument(
-        "--log-file", type=Path, help="Log file path (default: stdout only)"
-    )
+    parser.add_argument("--log-file", type=Path, help="Log file path (default: stdout only)")
 
     parser.add_argument(
         "--port",

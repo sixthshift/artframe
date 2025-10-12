@@ -32,7 +32,7 @@ def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, An
         effective_height = height
 
     # Determine orientation
-    orientation = 'landscape' if effective_width > effective_height else 'portrait'
+    orientation = "landscape" if effective_width > effective_height else "portrait"
 
     # Calculate aspect ratio
     aspect_decimal = effective_width / effective_height
@@ -50,7 +50,7 @@ def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, An
         0.75: "3:4",  # Portrait versions
         0.666: "2:3",
         0.625: "10:16",
-        0.562: "9:16"
+        0.562: "9:16",
     }
 
     # Find closest common ratio
@@ -60,11 +60,11 @@ def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, An
             break
 
     return {
-        'effective_width': effective_width,
-        'effective_height': effective_height,
-        'orientation': orientation,
-        'aspect_ratio': aspect_ratio,
-        'aspect_decimal': round(aspect_decimal, 3)
+        "effective_width": effective_width,
+        "effective_height": effective_height,
+        "orientation": orientation,
+        "aspect_ratio": aspect_ratio,
+        "aspect_decimal": round(aspect_decimal, 3),
     }
 
 
@@ -79,26 +79,27 @@ def format_style_prompt(prompt: str, display_config: Dict[str, Any]) -> str:
     Returns:
         Formatted prompt with display information
     """
-    width = display_config.get('width', 600)
-    height = display_config.get('height', 448)
-    rotation = display_config.get('rotation', 0)
+    width = display_config.get("width", 600)
+    height = display_config.get("height", 448)
+    rotation = display_config.get("rotation", 0)
 
     # Get display info
     info = get_display_info(width, height, rotation)
 
     # Replace placeholders
     formatted = prompt.format(
-        width=info['effective_width'],
-        height=info['effective_height'],
-        orientation=info['orientation'],
-        aspect_ratio=info['aspect_ratio']
+        width=info["effective_width"],
+        height=info["effective_height"],
+        orientation=info["orientation"],
+        aspect_ratio=info["aspect_ratio"],
     )
 
     return formatted
 
 
-def get_crop_params(source_width: int, source_height: int,
-                    target_width: int, target_height: int) -> Tuple[int, int, int, int]:
+def get_crop_params(
+    source_width: int, source_height: int, target_width: int, target_height: int
+) -> Tuple[int, int, int, int]:
     """
     Calculate crop parameters to fit source image to target display.
 

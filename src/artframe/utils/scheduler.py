@@ -25,7 +25,7 @@ class Scheduler:
     def _parse_time(self, time_str: str) -> time:
         """Parse time string into time object."""
         try:
-            hour, minute = map(int, time_str.split(':'))
+            hour, minute = map(int, time_str.split(":"))
             if not (0 <= hour <= 23 and 0 <= minute <= 59):
                 raise ValueError("Invalid time values")
             return time(hour, minute)
@@ -47,14 +47,12 @@ class Scheduler:
 
         # Check if we need daily e-ink refresh (even if paused)
         needs_daily_refresh = (
-            self.last_refresh_date is None or
-            self.last_refresh_date.date() < today
+            self.last_refresh_date is None or self.last_refresh_date.date() < today
         )
 
         # At update time, always refresh (e-ink safety)
         is_scheduled_time = (
-            now_time.hour == self.update_time.hour and
-            now_time.minute == self.update_time.minute
+            now_time.hour == self.update_time.hour and now_time.minute == self.update_time.minute
         )
 
         if is_scheduled_time and needs_daily_refresh:
@@ -90,10 +88,10 @@ class Scheduler:
             Dictionary with scheduler state
         """
         return {
-            'paused': self.paused,
-            'update_time': self.update_time.strftime('%H:%M'),
-            'next_update': self.get_next_update_time().isoformat(),
-            'last_refresh': self.last_refresh_date.isoformat() if self.last_refresh_date else None
+            "paused": self.paused,
+            "update_time": self.update_time.strftime("%H:%M"),
+            "next_update": self.get_next_update_time().isoformat(),
+            "last_refresh": self.last_refresh_date.isoformat() if self.last_refresh_date else None,
         }
 
     def seconds_until_next_update(self) -> int:
@@ -111,6 +109,7 @@ class Scheduler:
         # If update time has passed today, schedule for tomorrow
         if next_update <= now:
             from datetime import timedelta
+
             next_update += timedelta(days=1)
 
         delta = next_update - now
@@ -128,6 +127,7 @@ class Scheduler:
 
         if next_update <= now:
             from datetime import timedelta
+
             next_update += timedelta(days=1)
 
         return next_update

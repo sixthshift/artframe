@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Global plugin registry
 PLUGIN_CLASSES: Dict[str, BasePlugin] = {}
-PLUGIN_METADATA: Dict[str, 'PluginMetadata'] = {}
+PLUGIN_METADATA: Dict[str, "PluginMetadata"] = {}
 
 
 @dataclass
@@ -30,11 +30,12 @@ class PluginMetadata:
 
     Minimal metadata following InkyPi's approach.
     """
-    plugin_id: str          # Unique plugin identifier (e.g., "clock", "immich_photos")
-    display_name: str       # Human-readable name (e.g., "Clock", "Immich Photos")
-    class_name: str         # Python class name (e.g., "Clock", "ImmichPhotos")
-    description: str = ""   # Optional description
-    author: str = ""        # Optional author
+
+    plugin_id: str  # Unique plugin identifier (e.g., "clock", "immich_photos")
+    display_name: str  # Human-readable name (e.g., "Clock", "Immich Photos")
+    class_name: str  # Python class name (e.g., "Clock", "ImmichPhotos")
+    description: str = ""  # Optional description
+    author: str = ""  # Optional author
     version: str = "1.0.0"  # Optional version
     icon: Optional[str] = None  # Optional icon filename
 
@@ -67,11 +68,11 @@ def discover_plugins(plugins_dir: Path) -> Dict[str, Path]:
             continue
 
         # Skip special directories
-        if item.name.startswith('_') or item.name.startswith('.'):
+        if item.name.startswith("_") or item.name.startswith("."):
             continue
 
         # Check for plugin-info.json
-        plugin_info_path = item / 'plugin-info.json'
+        plugin_info_path = item / "plugin-info.json"
         if plugin_info_path.exists():
             discovered[item.name] = item
             logger.debug(f"Discovered plugin: {item.name} at {item}")
@@ -94,26 +95,26 @@ def load_plugin_metadata(plugin_dir: Path) -> Optional[PluginMetadata]:
         metadata = load_plugin_metadata(Path('plugins/clock'))
         print(metadata.display_name)  # "Clock"
     """
-    plugin_info_path = plugin_dir / 'plugin-info.json'
+    plugin_info_path = plugin_dir / "plugin-info.json"
 
     try:
-        with open(plugin_info_path, 'r') as f:
+        with open(plugin_info_path, "r") as f:
             data = json.load(f)
 
         # Required fields
-        plugin_id = data.get('id', plugin_dir.name)
-        display_name = data.get('display_name', plugin_id.replace('_', ' ').title())
-        class_name = data.get('class')
+        plugin_id = data.get("id", plugin_dir.name)
+        display_name = data.get("display_name", plugin_id.replace("_", " ").title())
+        class_name = data.get("class")
 
         if not class_name:
             logger.error(f"Plugin {plugin_id}: 'class' field required in plugin-info.json")
             return None
 
         # Optional fields
-        description = data.get('description', '')
-        author = data.get('author', '')
-        version = data.get('version', '1.0.0')
-        icon = data.get('icon', 'icon.png')
+        description = data.get("description", "")
+        author = data.get("author", "")
+        version = data.get("version", "1.0.0")
+        icon = data.get("icon", "icon.png")
 
         return PluginMetadata(
             plugin_id=plugin_id,
@@ -122,7 +123,7 @@ def load_plugin_metadata(plugin_dir: Path) -> Optional[PluginMetadata]:
             description=description,
             author=author,
             version=version,
-            icon=icon
+            icon=icon,
         )
 
     except FileNotFoundError:
@@ -163,8 +164,7 @@ def load_plugin_class(plugin_dir: Path, class_name: str) -> Optional[Type[BasePl
     try:
         # Load module dynamically
         spec = importlib.util.spec_from_file_location(
-            f"artframe.plugins.{plugin_id}",
-            plugin_module_file
+            f"artframe.plugins.{plugin_id}", plugin_module_file
         )
 
         if spec is None or spec.loader is None:

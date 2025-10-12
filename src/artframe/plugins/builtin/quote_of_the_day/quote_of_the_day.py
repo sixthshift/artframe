@@ -18,51 +18,108 @@ QUOTES_DATABASE = {
     "inspirational": [
         ("The only way to do great work is to love what you do.", "Steve Jobs"),
         ("Innovation distinguishes between a leader and a follower.", "Steve Jobs"),
-        ("The future belongs to those who believe in the beauty of their dreams.", "Eleanor Roosevelt"),
+        (
+            "The future belongs to those who believe in the beauty of their dreams.",
+            "Eleanor Roosevelt",
+        ),
         ("It does not matter how slowly you go as long as you do not stop.", "Confucius"),
         ("Everything you've ever wanted is on the other side of fear.", "George Addair"),
         ("Believe you can and you're halfway there.", "Theodore Roosevelt"),
         ("The only impossible journey is the one you never begin.", "Tony Robbins"),
         ("Life is what happens when you're busy making other plans.", "John Lennon"),
-        ("The best time to plant a tree was 20 years ago. The second best time is now.", "Chinese Proverb"),
+        (
+            "The best time to plant a tree was 20 years ago. The second best time is now.",
+            "Chinese Proverb",
+        ),
         ("Don't watch the clock; do what it does. Keep going.", "Sam Levenson"),
     ],
     "wisdom": [
         ("The only true wisdom is in knowing you know nothing.", "Socrates"),
         ("The unexamined life is not worth living.", "Socrates"),
         ("I think, therefore I am.", "René Descartes"),
-        ("To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.", "Ralph Waldo Emerson"),
+        (
+            "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.",
+            "Ralph Waldo Emerson",
+        ),
         ("The only way out is through.", "Robert Frost"),
-        ("We are what we repeatedly do. Excellence, then, is not an act, but a habit.", "Aristotle"),
+        (
+            "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+            "Aristotle",
+        ),
         ("The mind is everything. What you think you become.", "Buddha"),
-        ("Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.", "Albert Einstein"),
+        (
+            "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.",
+            "Albert Einstein",
+        ),
         ("Be kind, for everyone you meet is fighting a hard battle.", "Plato"),
-        ("In the midst of winter, I found there was, within me, an invincible summer.", "Albert Camus"),
+        (
+            "In the midst of winter, I found there was, within me, an invincible summer.",
+            "Albert Camus",
+        ),
     ],
     "funny": [
         ("I'm not superstitious, but I am a little stitious.", "Michael Scott"),
         ("The road to success is dotted with many tempting parking spaces.", "Will Rogers"),
-        ("I find television very educating. Every time somebody turns on the set, I go into the other room and read a book.", "Groucho Marx"),
-        ("By working faithfully eight hours a day you may eventually get to be boss and work twelve hours a day.", "Robert Frost"),
-        ("The difference between genius and stupidity is that genius has its limits.", "Albert Einstein"),
-        ("If you think you are too small to make a difference, try sleeping with a mosquito.", "Dalai Lama"),
-        ("The trouble with having an open mind, of course, is that people will insist on coming along and trying to put things in it.", "Terry Pratchett"),
-        ("Age is an issue of mind over matter. If you don't mind, it doesn't matter.", "Mark Twain"),
+        (
+            "I find television very educating. Every time somebody turns on the set, I go into the other room and read a book.",
+            "Groucho Marx",
+        ),
+        (
+            "By working faithfully eight hours a day you may eventually get to be boss and work twelve hours a day.",
+            "Robert Frost",
+        ),
+        (
+            "The difference between genius and stupidity is that genius has its limits.",
+            "Albert Einstein",
+        ),
+        (
+            "If you think you are too small to make a difference, try sleeping with a mosquito.",
+            "Dalai Lama",
+        ),
+        (
+            "The trouble with having an open mind, of course, is that people will insist on coming along and trying to put things in it.",
+            "Terry Pratchett",
+        ),
+        (
+            "Age is an issue of mind over matter. If you don't mind, it doesn't matter.",
+            "Mark Twain",
+        ),
         ("Life is hard. After all, it kills you.", "Katharine Hepburn"),
-        ("Always remember that you are absolutely unique. Just like everyone else.", "Margaret Mead"),
+        (
+            "Always remember that you are absolutely unique. Just like everyone else.",
+            "Margaret Mead",
+        ),
     ],
     "technology": [
-        ("Any sufficiently advanced technology is indistinguishable from magic.", "Arthur C. Clarke"),
-        ("The advance of technology is based on making it fit in so that you don't really even notice it, so it's part of everyday life.", "Bill Gates"),
+        (
+            "Any sufficiently advanced technology is indistinguishable from magic.",
+            "Arthur C. Clarke",
+        ),
+        (
+            "The advance of technology is based on making it fit in so that you don't really even notice it, so it's part of everyday life.",
+            "Bill Gates",
+        ),
         ("Technology is best when it brings people together.", "Matt Mullenweg"),
         ("The great myth of our times is that technology is communication.", "Libby Larsen"),
-        ("It has become appallingly obvious that our technology has exceeded our humanity.", "Albert Einstein"),
+        (
+            "It has become appallingly obvious that our technology has exceeded our humanity.",
+            "Albert Einstein",
+        ),
         ("The real problem is not whether machines think but whether men do.", "B.F. Skinner"),
-        ("We are stuck with technology when what we really want is just stuff that works.", "Douglas Adams"),
+        (
+            "We are stuck with technology when what we really want is just stuff that works.",
+            "Douglas Adams",
+        ),
         ("The computer was born to solve problems that did not exist before.", "Bill Gates"),
-        ("First we thought the PC was a calculator. Then we found out how to turn numbers into letters with ASCII — and we thought it was a typewriter.", "Steve Jobs"),
-        ("The Internet is becoming the town square for the global village of tomorrow.", "Bill Gates"),
-    ]
+        (
+            "First we thought the PC was a calculator. Then we found out how to turn numbers into letters with ASCII — and we thought it was a typewriter.",
+            "Steve Jobs",
+        ),
+        (
+            "The Internet is becoming the town square for the global village of tomorrow.",
+            "Bill Gates",
+        ),
+    ],
 }
 
 
@@ -89,18 +146,23 @@ class QuoteOfTheDay(BasePlugin):
             Tuple of (is_valid, error_message)
         """
         # Validate category
-        category = settings.get('category', 'inspirational')
-        if category not in ['inspirational', 'wisdom', 'funny', 'technology', 'random']:
-            return False, "Category must be 'inspirational', 'wisdom', 'funny', 'technology', or 'random'"
+        category = settings.get("category", "inspirational")
+        if category not in ["inspirational", "wisdom", "funny", "technology", "random"]:
+            return (
+                False,
+                "Category must be 'inspirational', 'wisdom', 'funny', 'technology', or 'random'",
+            )
 
         # Validate font size
-        font_size = settings.get('font_size', 'medium')
-        if font_size not in ['small', 'medium', 'large']:
+        font_size = settings.get("font_size", "medium")
+        if font_size not in ["small", "medium", "large"]:
             return False, "Font size must be 'small', 'medium', or 'large'"
 
         return True, ""
 
-    def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
+    def generate_image(
+        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+    ) -> Image.Image:
         """
         Generate quote display image.
 
@@ -115,27 +177,27 @@ class QuoteOfTheDay(BasePlugin):
             RuntimeError: If image generation fails
         """
         try:
-            width = device_config['width']
-            height = device_config['height']
+            width = device_config["width"]
+            height = device_config["height"]
 
             # Get settings with defaults
-            category = settings.get('category', 'inspirational')
-            font_size = settings.get('font_size', 'medium')
-            background_color = settings.get('background_color', '#FFFFFF')
-            text_color = settings.get('text_color', '#000000')
-            show_author = settings.get('show_author', True)
-            daily_quote = settings.get('daily_quote', True)
+            category = settings.get("category", "inspirational")
+            font_size = settings.get("font_size", "medium")
+            background_color = settings.get("background_color", "#FFFFFF")
+            text_color = settings.get("text_color", "#000000")
+            show_author = settings.get("show_author", True)
+            daily_quote = settings.get("daily_quote", True)
 
             # Create image
-            image = Image.new('RGB', (width, height), background_color)
+            image = Image.new("RGB", (width, height), background_color)
             draw = ImageDraw.Draw(image)
 
             # Select quote
             quote_text, author = self._select_quote(category, daily_quote)
 
             # Get fonts
-            quote_font = self._get_font(font_size, 'quote')
-            author_font = self._get_font(font_size, 'author')
+            quote_font = self._get_font(font_size, "quote")
+            author_font = self._get_font(font_size, "author")
 
             # Wrap text to fit width
             margin = 40
@@ -189,7 +251,7 @@ class QuoteOfTheDay(BasePlugin):
             Tuple of (quote_text, author)
         """
         # If random category, pick a random category first
-        if category == 'random':
+        if category == "random":
             category = random.choice(list(QUOTES_DATABASE.keys()))
 
         quotes = QUOTES_DATABASE[category]
@@ -206,7 +268,9 @@ class QuoteOfTheDay(BasePlugin):
 
         return quote
 
-    def _wrap_text(self, text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: ImageDraw.Draw) -> List[str]:
+    def _wrap_text(
+        self, text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: ImageDraw.Draw
+    ) -> List[str]:
         """
         Wrap text to fit within max_width.
 
@@ -224,7 +288,7 @@ class QuoteOfTheDay(BasePlugin):
         current_line = []
 
         for word in words:
-            test_line = ' '.join(current_line + [word])
+            test_line = " ".join(current_line + [word])
             bbox = draw.textbbox((0, 0), test_line, font=font)
             width = bbox[2] - bbox[0]
 
@@ -232,11 +296,11 @@ class QuoteOfTheDay(BasePlugin):
                 current_line.append(word)
             else:
                 if current_line:
-                    lines.append(' '.join(current_line))
+                    lines.append(" ".join(current_line))
                 current_line = [word]
 
         if current_line:
-            lines.append(' '.join(current_line))
+            lines.append(" ".join(current_line))
 
         return lines
 
@@ -260,20 +324,20 @@ class QuoteOfTheDay(BasePlugin):
         """
         # Font size mappings
         size_map = {
-            'small': {'quote': 20, 'author': 16},
-            'medium': {'quote': 28, 'author': 20},
-            'large': {'quote': 36, 'author': 24}
+            "small": {"quote": 20, "author": 16},
+            "medium": {"quote": 28, "author": 20},
+            "large": {"quote": 36, "author": 24},
         }
 
-        font_size = size_map.get(size, size_map['medium'])[text_type]
+        font_size = size_map.get(size, size_map["medium"])[text_type]
 
         # Try to load a nice font, fall back to default if not available
         try:
             # Try common system fonts
             for font_name in [
-                '/System/Library/Fonts/Helvetica.ttc',  # macOS
-                '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf',  # Linux
-                'C:\\Windows\\Fonts\\georgia.ttf',  # Windows
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",  # Linux
+                "C:\\Windows\\Fonts\\georgia.ttf",  # Windows
             ]:
                 try:
                     return ImageFont.truetype(font_name, font_size)
@@ -289,10 +353,10 @@ class QuoteOfTheDay(BasePlugin):
 
     def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
         """Create error image with message."""
-        width = device_config['width']
-        height = device_config['height']
+        width = device_config["width"]
+        height = device_config["height"]
 
-        image = Image.new('RGB', (width, height), 'white')
+        image = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(image)
 
         try:
@@ -301,7 +365,7 @@ class QuoteOfTheDay(BasePlugin):
             font = None
 
         text = f"Quote Error:\n{error_message}"
-        draw.text((20, height // 2), text, fill='black', font=font)
+        draw.text((20, height // 2), text, fill="black", font=font)
 
         return image
 
@@ -312,16 +376,16 @@ class QuoteOfTheDay(BasePlugin):
         If daily_quote is True, cache per day.
         Otherwise, generate unique key each time (no caching).
         """
-        daily_quote = settings.get('daily_quote', True)
-        category = settings.get('category', 'inspirational')
+        daily_quote = settings.get("daily_quote", True)
+        category = settings.get("category", "inspirational")
 
         if daily_quote:
             # Cache per day
-            today = datetime.now().strftime('%Y%m%d')
+            today = datetime.now().strftime("%Y%m%d")
             return f"quote_{category}_{today}"
         else:
             # Don't cache (new quote each time)
-            now = datetime.now().strftime('%Y%m%d_%H%M%S')
+            now = datetime.now().strftime("%Y%m%d_%H%M%S")
             return f"quote_{category}_{now}"
 
     def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
@@ -331,5 +395,5 @@ class QuoteOfTheDay(BasePlugin):
         If daily_quote is True, cache for 24 hours.
         Otherwise, cache for 0 seconds (regenerate each time).
         """
-        daily_quote = settings.get('daily_quote', True)
+        daily_quote = settings.get("daily_quote", True)
         return 86400 if daily_quote else 0  # 24 hours or 0

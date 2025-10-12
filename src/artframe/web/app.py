@@ -34,28 +34,27 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     from ..playlists import PlaylistManager
 
     # Load plugins from builtin directory
-    plugins_dir = Path(__file__).parent.parent / 'plugins' / 'builtin'
+    plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"
     load_plugins(plugins_dir)
 
     # Create instance manager
-    storage_dir = Path.home() / '.artframe' / 'data'
+    storage_dir = Path.home() / ".artframe" / "data"
     app.instance_manager = InstanceManager(storage_dir)
 
     # Create playlist manager
     app.playlist_manager = PlaylistManager(storage_dir)
 
     from . import routes
+
     app.register_blueprint(routes.bp)
 
     @app.before_request
     def start_scheduler_once():
         """Start scheduler in background thread on first request."""
-        if not hasattr(app, 'scheduler_started'):
+        if not hasattr(app, "scheduler_started"):
             app.scheduler_started = True
             scheduler_thread = threading.Thread(
-                target=controller.run_scheduled_loop,
-                daemon=True,
-                name="ArtframeScheduler"
+                target=controller.run_scheduled_loop, daemon=True, name="ArtframeScheduler"
             )
             scheduler_thread.start()
             app.scheduler_thread = scheduler_thread

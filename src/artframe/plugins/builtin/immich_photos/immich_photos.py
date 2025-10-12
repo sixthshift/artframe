@@ -42,29 +42,29 @@ class ImmichPhotos(BasePlugin):
             Tuple of (is_valid, error_message)
         """
         # Validate Immich settings
-        if not settings.get('immich_url'):
+        if not settings.get("immich_url"):
             return False, "Immich server URL is required"
 
-        if not settings.get('immich_api_key'):
+        if not settings.get("immich_api_key"):
             return False, "Immich API key is required"
 
-        if not settings['immich_url'].startswith(('http://', 'https://')):
+        if not settings["immich_url"].startswith(("http://", "https://")):
             return False, "Immich URL must start with http:// or https://"
 
         # Validate selection mode
-        selection = settings.get('selection_mode', 'random')
-        if selection not in ['random', 'newest', 'oldest']:
+        selection = settings.get("selection_mode", "random")
+        if selection not in ["random", "newest", "oldest"]:
             return False, f"Invalid selection mode: {selection}"
 
         # Validate AI settings if enabled
-        if settings.get('use_ai', False):
-            if not settings.get('ai_service_url'):
+        if settings.get("use_ai", False):
+            if not settings.get("ai_service_url"):
                 return False, "AI service URL is required when AI is enabled"
 
-            if not settings.get('ai_api_key'):
+            if not settings.get("ai_api_key"):
                 return False, "AI API key is required when AI is enabled"
 
-            if not settings.get('ai_style'):
+            if not settings.get("ai_style"):
                 return False, "AI style is required when AI is enabled"
 
         return True, ""
@@ -72,10 +72,9 @@ class ImmichPhotos(BasePlugin):
     def on_enable(self, settings: Dict[str, Any]) -> None:
         """Initialize HTTP session when plugin is enabled."""
         self.session = requests.Session()
-        self.session.headers.update({
-            'X-API-Key': settings['immich_api_key'],
-            'Accept': 'application/json'
-        })
+        self.session.headers.update(
+            {"X-API-Key": settings["immich_api_key"], "Accept": "application/json"}
+        )
         self.logger.info("Immich Photos plugin enabled")
 
     def on_disable(self, settings: Dict[str, Any]) -> None:
@@ -85,7 +84,9 @@ class ImmichPhotos(BasePlugin):
             self.session = None
         self.logger.info("Immich Photos plugin disabled")
 
-    def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
+    def generate_image(
+        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+    ) -> Image.Image:
         """
         Generate image from Immich photo with optional AI styling.
 
@@ -114,7 +115,7 @@ class ImmichPhotos(BasePlugin):
             self.logger.info(f"Downloaded photo: {image.size}")
 
             # Apply AI styling if enabled
-            if settings.get('use_ai', False):
+            if settings.get("use_ai", False):
                 self.logger.info(f"Applying AI style: {settings['ai_style']}")
                 image = self._apply_ai_style(settings, image, device_config)
                 self.logger.info("AI styling completed")
@@ -144,9 +145,9 @@ class ImmichPhotos(BasePlugin):
         Raises:
             RuntimeError: If fetch fails
         """
-        immich_url = settings['immich_url'].rstrip('/')
-        album_id = settings.get('album_id')
-        selection_mode = settings.get('selection_mode', 'random')
+        immich_url = settings["immich_url"].rstrip("/")
+        album_id = settings.get("album_id")
+        selection_mode = settings.get("selection_mode", "random")
 
         try:
             if album_id:
@@ -155,7 +156,7 @@ class ImmichPhotos(BasePlugin):
                 response.raise_for_status()
 
                 album_data = response.json()
-                assets = album_data.get('assets', [])
+                assets = album_data.get("assets", [])
 
                 if not assets:
                     raise RuntimeError(f"No photos found in album {album_id}")
@@ -164,7 +165,7 @@ class ImmichPhotos(BasePlugin):
 
             else:
                 # Fetch from all assets
-                if selection_mode == 'random':
+                if selection_mode == "random":
                     # Try random endpoint first
                     try:
                         response = self.session.get(f"{immich_url}/api/asset/random")
@@ -181,13 +182,13 @@ class ImmichPhotos(BasePlugin):
 
                     except requests.RequestException:
                         # Fallback to regular fetch
-                        response = self.session.get(f"{immich_url}/api/asset", params={'take': 100})
+                        response = self.session.get(f"{immich_url}/api/asset", params={"take": 100})
                         response.raise_for_status()
                         assets = response.json()
-                        photo_data = self._select_photo(assets, 'random')
+                        photo_data = self._select_photo(assets, "random")
                 else:
                     # Fetch assets with pagination
-                    response = self.session.get(f"{immich_url}/api/asset", params={'take': 100})
+                    response = self.session.get(f"{immich_url}/api/asset", params={"take": 100})
                     response.raise_for_status()
                     assets = response.json()
                     photo_data = self._select_photo(assets, selection_mode)
@@ -202,12 +203,12 @@ class ImmichPhotos(BasePlugin):
         if not assets:
             raise RuntimeError("No photos available")
 
-        if mode == 'random':
+        if mode == "random":
             return random.choice(assets)
-        elif mode == 'newest':
-            return max(assets, key=lambda a: a.get('fileCreatedAt', ''))
-        elif mode == 'oldest':
-            return min(assets, key=lambda a: a.get('fileCreatedAt', ''))
+        elif mode == "newest":
+            return max(assets, key=lambda a: a.get("fileCreatedAt", ""))
+        elif mode == "oldest":
+            return min(assets, key=lambda a: a.get("fileCreatedAt", ""))
         else:
             return assets[0]
 
@@ -225,8 +226,8 @@ class ImmichPhotos(BasePlugin):
         Raises:
             RuntimeError: If download fails
         """
-        immich_url = settings['immich_url'].rstrip('/')
-        photo_id = photo_data['id']
+        immich_url = settings["immich_url"].rstrip("/")
+        photo_id = photo_data["id"]
 
         try:
             image_url = f"{immich_url}/api/asset/file/{photo_id}"
@@ -242,7 +243,9 @@ class ImmichPhotos(BasePlugin):
         except Exception as e:
             raise RuntimeError(f"Failed to load image: {e}")
 
-    def _apply_ai_style(self, settings: Dict[str, Any], image: Image.Image, device_config: Dict[str, Any]) -> Image.Image:
+    def _apply_ai_style(
+        self, settings: Dict[str, Any], image: Image.Image, device_config: Dict[str, Any]
+    ) -> Image.Image:
         """
         Apply AI style transformation to image.
 
@@ -258,42 +261,34 @@ class ImmichPhotos(BasePlugin):
             RuntimeError: If styling fails (returns original image)
         """
         try:
-            api_url = settings['ai_service_url'].rstrip('/')
-            api_key = settings['ai_api_key']
-            style = settings['ai_style']
+            api_url = settings["ai_service_url"].rstrip("/")
+            api_key = settings["ai_api_key"]
+            style = settings["ai_style"]
 
             # Create AI session
             ai_session = requests.Session()
-            ai_session.headers.update({
-                'Authorization': f'Bearer {api_key}',
-                'Accept': 'application/json'
-            })
+            ai_session.headers.update(
+                {"Authorization": f"Bearer {api_key}", "Accept": "application/json"}
+            )
 
             # Save image to temporary file for upload
-            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
-                image.save(temp_file, format='JPEG', quality=95)
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as temp_file:
+                image.save(temp_file, format="JPEG", quality=95)
                 temp_path = Path(temp_file.name)
 
             try:
                 # Submit transformation job
-                with open(temp_path, 'rb') as f:
-                    files = {'image': ('photo.jpg', f, 'image/jpeg')}
-                    data = {
-                        'style': style,
-                        'quality': 'high',
-                        'format': 'jpeg'
-                    }
+                with open(temp_path, "rb") as f:
+                    files = {"image": ("photo.jpg", f, "image/jpeg")}
+                    data = {"style": style, "quality": "high", "format": "jpeg"}
 
                     response = ai_session.post(
-                        f"{api_url}/v1/transform",
-                        files=files,
-                        data=data,
-                        timeout=30
+                        f"{api_url}/v1/transform", files=files, data=data, timeout=30
                     )
 
                 response.raise_for_status()
                 result = response.json()
-                job_id = result.get('job_id')
+                job_id = result.get("job_id")
 
                 if not job_id:
                     raise RuntimeError("No job_id returned from AI service")
@@ -318,7 +313,9 @@ class ImmichPhotos(BasePlugin):
             self.logger.warning(f"AI styling failed, using original photo: {e}")
             return image
 
-    def _poll_ai_job(self, session: requests.Session, api_url: str, job_id: str, timeout: int = 120) -> str:
+    def _poll_ai_job(
+        self, session: requests.Session, api_url: str, job_id: str, timeout: int = 120
+    ) -> str:
         """Poll AI service until job completes."""
         start_time = time.time()
         poll_interval = 2
@@ -329,19 +326,19 @@ class ImmichPhotos(BasePlugin):
                 response.raise_for_status()
 
                 job_status = response.json()
-                status = job_status.get('status')
+                status = job_status.get("status")
 
-                if status == 'completed':
-                    result_url = job_status.get('result_url')
+                if status == "completed":
+                    result_url = job_status.get("result_url")
                     if not result_url:
                         raise RuntimeError("Job completed but no result_url")
                     return result_url
 
-                elif status == 'failed':
-                    error = job_status.get('error', 'Unknown error')
+                elif status == "failed":
+                    error = job_status.get("error", "Unknown error")
                     raise RuntimeError(f"AI job failed: {error}")
 
-                elif status in ['pending', 'processing']:
+                elif status in ["pending", "processing"]:
                     time.sleep(poll_interval)
                     poll_interval = min(poll_interval * 1.5, 10)
 
@@ -364,8 +361,8 @@ class ImmichPhotos(BasePlugin):
         Returns:
             PIL.Image: Resized image
         """
-        display_width = device_config['width']
-        display_height = device_config['height']
+        display_width = device_config["width"]
+        display_height = device_config["height"]
 
         # Calculate aspect ratios
         image_aspect = image.width / image.height
@@ -385,7 +382,7 @@ class ImmichPhotos(BasePlugin):
         resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
         # Create canvas and center image
-        canvas = Image.new('RGB', (display_width, display_height), 'white')
+        canvas = Image.new("RGB", (display_width, display_height), "white")
         x = (display_width - new_width) // 2
         y = (display_height - new_height) // 2
         canvas.paste(resized, (x, y))
@@ -396,10 +393,10 @@ class ImmichPhotos(BasePlugin):
         """Create error image with message."""
         from PIL import ImageDraw, ImageFont
 
-        width = device_config['width']
-        height = device_config['height']
+        width = device_config["width"]
+        height = device_config["height"]
 
-        image = Image.new('RGB', (width, height), 'white')
+        image = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(image)
 
         # Draw error message
@@ -409,7 +406,7 @@ class ImmichPhotos(BasePlugin):
             font = None
 
         text = f"Error loading photo:\n{error_message}"
-        draw.text((20, height // 2), text, fill='black', font=font)
+        draw.text((20, height // 2), text, fill="black", font=font)
 
         return image
 
@@ -419,9 +416,9 @@ class ImmichPhotos(BasePlugin):
 
         Cache per day so we show same photo all day.
         """
-        date = datetime.now().strftime('%Y-%m-%d')
-        use_ai = settings.get('use_ai', False)
-        style = settings.get('ai_style', 'none') if use_ai else 'none'
+        date = datetime.now().strftime("%Y-%m-%d")
+        use_ai = settings.get("use_ai", False)
+        style = settings.get("ai_style", "none") if use_ai else "none"
         return f"immich_{date}_{style}"
 
     def get_cache_ttl(self, settings: Dict[str, Any]) -> int:

@@ -11,6 +11,7 @@ from typing import Dict, Any, Tuple, Optional, List
 @dataclass
 class Photo:
     """Represents a source photo with metadata."""
+
     id: str
     source_url: str
     retrieved_at: datetime
@@ -21,6 +22,7 @@ class Photo:
 @dataclass
 class StyledImage:
     """Represents a styled/transformed image."""
+
     original_photo_id: str
     style_name: str
     styled_path: Path
@@ -31,6 +33,7 @@ class StyledImage:
 @dataclass
 class DisplayState:
     """Represents the current state of the display."""
+
     current_image_id: Optional[str]
     last_refresh: Optional[datetime]
     next_scheduled: Optional[datetime]
@@ -41,6 +44,7 @@ class DisplayState:
 @dataclass
 class StorageStats:
     """Statistics about local storage."""
+
     total_photos: int
     total_styled_images: int
     total_size_mb: float
@@ -50,6 +54,7 @@ class StorageStats:
 @dataclass
 class PluginInstance:
     """Represents an instance of a plugin with specific settings."""
+
     id: str
     plugin_id: str
     name: str
@@ -62,6 +67,7 @@ class PluginInstance:
 @dataclass
 class PlaylistItem:
     """Represents a single item in a playlist."""
+
     instance_id: str
     duration_seconds: int
     order: int
@@ -70,6 +76,7 @@ class PlaylistItem:
 @dataclass
 class Playlist:
     """Represents a playlist of plugin instances."""
+
     id: str
     name: str
     description: str

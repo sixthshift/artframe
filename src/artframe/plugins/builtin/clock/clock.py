@@ -34,23 +34,25 @@ class Clock(BasePlugin):
             Tuple of (is_valid, error_message)
         """
         # Validate time format
-        time_format = settings.get('time_format', '24h')
-        if time_format not in ['12h', '24h']:
+        time_format = settings.get("time_format", "24h")
+        if time_format not in ["12h", "24h"]:
             return False, "Time format must be '12h' or '24h'"
 
         # Validate date format
-        date_format = settings.get('date_format', 'full')
-        if date_format not in ['full', 'short', 'none']:
+        date_format = settings.get("date_format", "full")
+        if date_format not in ["full", "short", "none"]:
             return False, "Date format must be 'full', 'short', or 'none'"
 
         # Validate font size
-        font_size = settings.get('font_size', 'large')
-        if font_size not in ['small', 'medium', 'large', 'xlarge']:
+        font_size = settings.get("font_size", "large")
+        if font_size not in ["small", "medium", "large", "xlarge"]:
             return False, "Font size must be 'small', 'medium', 'large', or 'xlarge'"
 
         return True, ""
 
-    def generate_image(self, settings: Dict[str, Any], device_config: Dict[str, Any]) -> Image.Image:
+    def generate_image(
+        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+    ) -> Image.Image:
         """
         Generate clock display image.
 
@@ -65,47 +67,47 @@ class Clock(BasePlugin):
             RuntimeError: If image generation fails
         """
         try:
-            width = device_config['width']
-            height = device_config['height']
+            width = device_config["width"]
+            height = device_config["height"]
 
             # Get settings with defaults
-            time_format = settings.get('time_format', '24h')
-            show_seconds = settings.get('show_seconds', True)
-            date_format = settings.get('date_format', 'full')
-            font_size = settings.get('font_size', 'large')
-            background_color = settings.get('background_color', '#FFFFFF')
-            text_color = settings.get('text_color', '#000000')
+            time_format = settings.get("time_format", "24h")
+            show_seconds = settings.get("show_seconds", True)
+            date_format = settings.get("date_format", "full")
+            font_size = settings.get("font_size", "large")
+            background_color = settings.get("background_color", "#FFFFFF")
+            text_color = settings.get("text_color", "#000000")
 
             # Create image
-            image = Image.new('RGB', (width, height), background_color)
+            image = Image.new("RGB", (width, height), background_color)
             draw = ImageDraw.Draw(image)
 
             # Get current time
             now = datetime.now()
 
             # Format time string
-            if time_format == '12h':
+            if time_format == "12h":
                 if show_seconds:
-                    time_str = now.strftime('%I:%M:%S %p')
+                    time_str = now.strftime("%I:%M:%S %p")
                 else:
-                    time_str = now.strftime('%I:%M %p')
+                    time_str = now.strftime("%I:%M %p")
             else:  # 24h
                 if show_seconds:
-                    time_str = now.strftime('%H:%M:%S')
+                    time_str = now.strftime("%H:%M:%S")
                 else:
-                    time_str = now.strftime('%H:%M')
+                    time_str = now.strftime("%H:%M")
 
             # Format date string
-            if date_format == 'full':
-                date_str = now.strftime('%A, %B %d, %Y')
-            elif date_format == 'short':
-                date_str = now.strftime('%m/%d/%Y')
+            if date_format == "full":
+                date_str = now.strftime("%A, %B %d, %Y")
+            elif date_format == "short":
+                date_str = now.strftime("%m/%d/%Y")
             else:  # none
                 date_str = None
 
             # Get fonts
-            time_font = self._get_font(font_size, 'time')
-            date_font = self._get_font(font_size, 'date')
+            time_font = self._get_font(font_size, "time")
+            date_font = self._get_font(font_size, "date")
 
             # Calculate positions (centered)
             time_bbox = draw.textbbox((0, 0), time_str, font=time_font)
@@ -156,21 +158,21 @@ class Clock(BasePlugin):
         """
         # Font size mappings
         size_map = {
-            'small': {'time': 48, 'date': 24},
-            'medium': {'time': 72, 'date': 32},
-            'large': {'time': 96, 'date': 40},
-            'xlarge': {'time': 144, 'date': 48}
+            "small": {"time": 48, "date": 24},
+            "medium": {"time": 72, "date": 32},
+            "large": {"time": 96, "date": 40},
+            "xlarge": {"time": 144, "date": 48},
         }
 
-        font_size = size_map.get(size, size_map['large'])[text_type]
+        font_size = size_map.get(size, size_map["large"])[text_type]
 
         # Try to load a nice font, fall back to default if not available
         try:
             # Try common system fonts
             for font_name in [
-                '/System/Library/Fonts/Helvetica.ttc',  # macOS
-                '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',  # Linux
-                'C:\\Windows\\Fonts\\arial.ttf',  # Windows
+                "/System/Library/Fonts/Helvetica.ttc",  # macOS
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Linux
+                "C:\\Windows\\Fonts\\arial.ttf",  # Windows
             ]:
                 try:
                     return ImageFont.truetype(font_name, font_size)
@@ -186,10 +188,10 @@ class Clock(BasePlugin):
 
     def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
         """Create error image with message."""
-        width = device_config['width']
-        height = device_config['height']
+        width = device_config["width"]
+        height = device_config["height"]
 
-        image = Image.new('RGB', (width, height), 'white')
+        image = Image.new("RGB", (width, height), "white")
         draw = ImageDraw.Draw(image)
 
         try:
@@ -198,7 +200,7 @@ class Clock(BasePlugin):
             font = None
 
         text = f"Clock Error:\n{error_message}"
-        draw.text((20, height // 2), text, fill='black', font=font)
+        draw.text((20, height // 2), text, fill="black", font=font)
 
         return image
 
@@ -209,7 +211,7 @@ class Clock(BasePlugin):
         Cache per minute so the clock updates every minute.
         """
         now = datetime.now()
-        show_seconds = settings.get('show_seconds', True)
+        show_seconds = settings.get("show_seconds", True)
 
         if show_seconds:
             # Cache per second
@@ -225,5 +227,5 @@ class Clock(BasePlugin):
         If showing seconds, cache for 1 second.
         Otherwise, cache for 60 seconds (1 minute).
         """
-        show_seconds = settings.get('show_seconds', True)
+        show_seconds = settings.get("show_seconds", True)
         return 1 if show_seconds else 60

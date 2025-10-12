@@ -17,10 +17,10 @@ class MockDriver(DriverInterface):
         """Initialize mock driver."""
         super().__init__(config)
 
-        self.width = self.config.get('width', 600)
-        self.height = self.config.get('height', 448)
-        self.save_images = self.config.get('save_images', True)
-        self.output_dir = Path(self.config.get('output_dir', '/tmp/artframe_mock'))
+        self.width = self.config.get("width", 600)
+        self.height = self.config.get("height", 448)
+        self.save_images = self.config.get("save_images", True)
+        self.output_dir = Path(self.config.get("output_dir", "/tmp/artframe_mock"))
 
         if self.save_images:
             self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -30,8 +30,8 @@ class MockDriver(DriverInterface):
 
     def validate_config(self) -> None:
         """Validate mock driver configuration."""
-        width = self.config.get('width', 600)
-        height = self.config.get('height', 448)
+        width = self.config.get("width", 600)
+        height = self.config.get("height", 448)
 
         if not isinstance(width, int) or width <= 0:
             raise ValueError("Width must be a positive integer")
@@ -73,7 +73,7 @@ class MockDriver(DriverInterface):
 
     def clear_display(self) -> None:
         """Clear mock display."""
-        white_image = Image.new('L', (self.width, self.height), 255)
+        white_image = Image.new("L", (self.width, self.height), 255)
         self.display_image(white_image)
         print("Mock display: Cleared to white")
 

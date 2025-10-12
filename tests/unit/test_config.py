@@ -21,7 +21,7 @@ class TestConfigValidator:
     def test_missing_artframe_section(self):
         """Test validation fails when artframe section is missing."""
         validator = ConfigValidator()
-        config = {'other': 'value'}
+        config = {"other": "value"}
 
         with pytest.raises(ValueError, match="Configuration must have 'artframe' root key"):
             validator.validate(config)
@@ -29,7 +29,7 @@ class TestConfigValidator:
     def test_missing_required_sections(self):
         """Test validation fails when required sections are missing."""
         validator = ConfigValidator()
-        config = {'artframe': {'source': {}}}  # Missing style, display, cache
+        config = {"artframe": {"source": {}}}  # Missing style, display, cache
 
         with pytest.raises(ValueError, match="Required section 'artframe.style' missing"):
             validator.validate(config)
@@ -38,11 +38,14 @@ class TestConfigValidator:
         """Test validation fails with invalid source provider."""
         validator = ConfigValidator()
         config = {
-            'artframe': {
-                'source': {'provider': 'invalid', 'config': {}},
-                'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'styles': ['test']}},
-                'display': {'driver': 'mock', 'config': {}},
-                'storage': {'directory': '/tmp'}
+            "artframe": {
+                "source": {"provider": "invalid", "config": {}},
+                "style": {
+                    "provider": "nanobanana",
+                    "config": {"api_url": "http://test", "styles": ["test"]},
+                },
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"directory": "/tmp"},
             }
         }
 
@@ -53,14 +56,14 @@ class TestConfigValidator:
         """Test validation fails with invalid Immich configuration."""
         validator = ConfigValidator()
         config = {
-            'artframe': {
-                'source': {
-                    'provider': 'immich',
-                    'config': {}  # Missing required keys
+            "artframe": {
+                "source": {"provider": "immich", "config": {}},  # Missing required keys
+                "style": {
+                    "provider": "nanobanana",
+                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
                 },
-                'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
-                'display': {'driver': 'mock', 'config': {}},
-                'storage': {'directory': '/tmp'}
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"directory": "/tmp"},
             }
         }
 
@@ -71,17 +74,17 @@ class TestConfigValidator:
         """Test validation fails with invalid URL format."""
         validator = ConfigValidator()
         config = {
-            'artframe': {
-                'source': {
-                    'provider': 'immich',
-                    'config': {
-                        'server_url': 'invalid-url',  # Invalid URL
-                        'api_key': 'test'
-                    }
+            "artframe": {
+                "source": {
+                    "provider": "immich",
+                    "config": {"server_url": "invalid-url", "api_key": "test"},  # Invalid URL
                 },
-                'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
-                'display': {'driver': 'mock', 'config': {}},
-                'storage': {'directory': '/tmp'}
+                "style": {
+                    "provider": "nanobanana",
+                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
+                },
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"directory": "/tmp"},
             }
         }
 
@@ -96,8 +99,8 @@ class TestConfigManager:
         """Test loading valid configuration file."""
         config_manager = ConfigManager(test_config_file)
 
-        assert config_manager.get('artframe.source.provider') == 'immich'
-        assert config_manager.get('artframe.display.driver') == 'mock'
+        assert config_manager.get("artframe.source.provider") == "immich"
+        assert config_manager.get("artframe.display.driver") == "mock"
 
     def test_config_file_not_found(self, temp_dir):
         """Test error when configuration file doesn't exist."""
@@ -109,63 +112,63 @@ class TestConfigManager:
     def test_environment_variable_expansion(self, temp_dir):
         """Test environment variable expansion in configuration."""
         config_data = {
-            'artframe': {
-                'source': {
-                    'provider': 'immich',
-                    'config': {
-                        'server_url': 'http://localhost',
-                        'api_key': '${TEST_API_KEY}'
-                    }
+            "artframe": {
+                "source": {
+                    "provider": "immich",
+                    "config": {"server_url": "http://localhost", "api_key": "${TEST_API_KEY}"},
                 },
-                'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
-                'display': {'driver': 'mock', 'config': {}},
-                'storage': {'directory': '/tmp'}
+                "style": {
+                    "provider": "nanobanana",
+                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
+                },
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"directory": "/tmp"},
             }
         }
 
         config_file = temp_dir / "test_config.yaml"
-        with open(config_file, 'w') as f:
+        with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        with patch.dict('os.environ', {'TEST_API_KEY': 'expanded_key'}):
+        with patch.dict("os.environ", {"TEST_API_KEY": "expanded_key"}):
             config_manager = ConfigManager(config_file)
-            assert config_manager.get('artframe.source.config.api_key') == 'expanded_key'
+            assert config_manager.get("artframe.source.config.api_key") == "expanded_key"
 
     def test_get_with_default(self, test_config_file):
         """Test get method with default value."""
         config_manager = ConfigManager(test_config_file)
 
         # Existing key
-        assert config_manager.get('artframe.source.provider') == 'immich'
+        assert config_manager.get("artframe.source.provider") == "immich"
 
         # Non-existing key with default
-        assert config_manager.get('artframe.non.existent', 'default') == 'default'
+        assert config_manager.get("artframe.non.existent", "default") == "default"
 
         # Non-existing key without default
-        assert config_manager.get('artframe.non.existent') is None
+        assert config_manager.get("artframe.non.existent") is None
 
     def test_get_source_config(self, test_config_file):
         """Test getting source configuration."""
         config_manager = ConfigManager(test_config_file)
         source_config = config_manager.get_source_config()
 
-        assert source_config['provider'] == 'immich'
-        assert 'config' in source_config
+        assert source_config["provider"] == "immich"
+        assert "config" in source_config
 
     def test_get_style_config(self, test_config_file):
         """Test getting style configuration."""
         config_manager = ConfigManager(test_config_file)
         style_config = config_manager.get_style_config()
 
-        assert style_config['provider'] == 'nanobanana'
-        assert 'config' in style_config
+        assert style_config["provider"] == "nanobanana"
+        assert "config" in style_config
 
     def test_config_validation_on_load(self, temp_dir):
         """Test that configuration is validated on load."""
-        invalid_config = {'invalid': 'config'}
+        invalid_config = {"invalid": "config"}
 
         config_file = temp_dir / "invalid_config.yaml"
-        with open(config_file, 'w') as f:
+        with open(config_file, "w") as f:
             yaml.dump(invalid_config, f)
 
         with pytest.raises(ValueError):
@@ -183,20 +186,20 @@ class TestConfigManager:
         config_manager.add_observer(observer)
 
         # Simulate config reload with changes
-        with patch.object(config_manager, '_load_config') as mock_load:
+        with patch.object(config_manager, "_load_config") as mock_load:
             # Mock a configuration change
             new_config = config_manager._config.copy()
-            new_config['artframe']['source']['provider'] = 'new_provider'
+            new_config["artframe"]["source"]["provider"] = "new_provider"
 
             mock_load.return_value = None
             config_manager._config = new_config
 
             # Manually trigger change notification for testing
             config_manager._notify_changes(
-                {'artframe': {'source': {'provider': 'immich'}}},
-                {'artframe': {'source': {'provider': 'new_provider'}}}
+                {"artframe": {"source": {"provider": "immich"}}},
+                {"artframe": {"source": {"provider": "new_provider"}}},
             )
 
         # Check that observer was called
         assert len(observed_changes) > 0
-        assert ('artframe.source.provider', 'new_provider') in observed_changes
+        assert ("artframe.source.provider", "new_provider") in observed_changes

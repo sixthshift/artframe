@@ -49,29 +49,29 @@ class PlaylistManager:
             return
 
         try:
-            with open(self.playlists_file, 'r') as f:
+            with open(self.playlists_file, "r") as f:
                 data = json.load(f)
 
-            self._active_playlist_id = data.get('active_playlist_id')
+            self._active_playlist_id = data.get("active_playlist_id")
 
-            for playlist_data in data.get('playlists', []):
+            for playlist_data in data.get("playlists", []):
                 items = [
                     PlaylistItem(
-                        instance_id=item['instance_id'],
-                        duration_seconds=item['duration_seconds'],
-                        order=item['order']
+                        instance_id=item["instance_id"],
+                        duration_seconds=item["duration_seconds"],
+                        order=item["order"],
                     )
-                    for item in playlist_data['items']
+                    for item in playlist_data["items"]
                 ]
 
                 playlist = Playlist(
-                    id=playlist_data['id'],
-                    name=playlist_data['name'],
-                    description=playlist_data['description'],
-                    enabled=playlist_data['enabled'],
+                    id=playlist_data["id"],
+                    name=playlist_data["name"],
+                    description=playlist_data["description"],
+                    enabled=playlist_data["enabled"],
                     items=items,
-                    created_at=datetime.fromisoformat(playlist_data['created_at']),
-                    updated_at=datetime.fromisoformat(playlist_data['updated_at'])
+                    created_at=datetime.fromisoformat(playlist_data["created_at"]),
+                    updated_at=datetime.fromisoformat(playlist_data["updated_at"]),
                 )
                 self._playlists[playlist.id] = playlist
 
@@ -84,30 +84,30 @@ class PlaylistManager:
         """Save playlists to storage."""
         try:
             data = {
-                'playlists': [
+                "playlists": [
                     {
-                        'id': playlist.id,
-                        'name': playlist.name,
-                        'description': playlist.description,
-                        'enabled': playlist.enabled,
-                        'items': [
+                        "id": playlist.id,
+                        "name": playlist.name,
+                        "description": playlist.description,
+                        "enabled": playlist.enabled,
+                        "items": [
                             {
-                                'instance_id': item.instance_id,
-                                'duration_seconds': item.duration_seconds,
-                                'order': item.order
+                                "instance_id": item.instance_id,
+                                "duration_seconds": item.duration_seconds,
+                                "order": item.order,
                             }
                             for item in playlist.items
                         ],
-                        'created_at': playlist.created_at.isoformat(),
-                        'updated_at': playlist.updated_at.isoformat()
+                        "created_at": playlist.created_at.isoformat(),
+                        "updated_at": playlist.updated_at.isoformat(),
                     }
                     for playlist in self._playlists.values()
                 ],
-                'active_playlist_id': self._active_playlist_id,
-                'last_updated': datetime.now().isoformat()
+                "active_playlist_id": self._active_playlist_id,
+                "last_updated": datetime.now().isoformat(),
             }
 
-            with open(self.playlists_file, 'w') as f:
+            with open(self.playlists_file, "w") as f:
                 json.dump(data, f, indent=2)
 
             logger.debug("Saved playlists")
@@ -116,10 +116,7 @@ class PlaylistManager:
             logger.error(f"Failed to save playlists: {e}", exc_info=True)
 
     def create_playlist(
-        self,
-        name: str,
-        description: str = "",
-        items: Optional[List[PlaylistItem]] = None
+        self, name: str, description: str = "", items: Optional[List[PlaylistItem]] = None
     ) -> Playlist:
         """
         Create a new playlist.
@@ -139,7 +136,7 @@ class PlaylistManager:
             enabled=True,
             items=items or [],
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         self._playlists[playlist.id] = playlist
@@ -175,7 +172,7 @@ class PlaylistManager:
         name: Optional[str] = None,
         description: Optional[str] = None,
         items: Optional[List[PlaylistItem]] = None,
-        enabled: Optional[bool] = None
+        enabled: Optional[bool] = None,
     ) -> bool:
         """
         Update an existing playlist.
@@ -285,11 +282,7 @@ class PlaylistManager:
         return self._active_playlist_id
 
     def add_item(
-        self,
-        playlist_id: str,
-        instance_id: str,
-        duration_seconds: int,
-        order: Optional[int] = None
+        self, playlist_id: str, instance_id: str, duration_seconds: int, order: Optional[int] = None
     ) -> bool:
         """
         Add an item to a playlist.
@@ -311,11 +304,7 @@ class PlaylistManager:
         if order is None:
             order = len(playlist.items)
 
-        item = PlaylistItem(
-            instance_id=instance_id,
-            duration_seconds=duration_seconds,
-            order=order
-        )
+        item = PlaylistItem(instance_id=instance_id, duration_seconds=duration_seconds, order=order)
 
         playlist.items.append(item)
         playlist.items.sort(key=lambda x: x.order)
@@ -326,11 +315,7 @@ class PlaylistManager:
         logger.info(f"Added item to playlist {playlist_id}")
         return True
 
-    def remove_item(
-        self,
-        playlist_id: str,
-        instance_id: str
-    ) -> bool:
+    def remove_item(self, playlist_id: str, instance_id: str) -> bool:
         """
         Remove an item from a playlist.
 

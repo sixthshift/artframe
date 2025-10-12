@@ -49,18 +49,18 @@ class InstanceManager:
             return
 
         try:
-            with open(self.instances_file, 'r') as f:
+            with open(self.instances_file, "r") as f:
                 data = json.load(f)
 
-            for instance_data in data.get('instances', []):
+            for instance_data in data.get("instances", []):
                 instance = PluginInstance(
-                    id=instance_data['id'],
-                    plugin_id=instance_data['plugin_id'],
-                    name=instance_data['name'],
-                    settings=instance_data['settings'],
-                    enabled=instance_data['enabled'],
-                    created_at=datetime.fromisoformat(instance_data['created_at']),
-                    updated_at=datetime.fromisoformat(instance_data['updated_at'])
+                    id=instance_data["id"],
+                    plugin_id=instance_data["plugin_id"],
+                    name=instance_data["name"],
+                    settings=instance_data["settings"],
+                    enabled=instance_data["enabled"],
+                    created_at=datetime.fromisoformat(instance_data["created_at"]),
+                    updated_at=datetime.fromisoformat(instance_data["updated_at"]),
                 )
                 self._instances[instance.id] = instance
 
@@ -73,22 +73,22 @@ class InstanceManager:
         """Save instances to storage."""
         try:
             data = {
-                'instances': [
+                "instances": [
                     {
-                        'id': inst.id,
-                        'plugin_id': inst.plugin_id,
-                        'name': inst.name,
-                        'settings': inst.settings,
-                        'enabled': inst.enabled,
-                        'created_at': inst.created_at.isoformat(),
-                        'updated_at': inst.updated_at.isoformat()
+                        "id": inst.id,
+                        "plugin_id": inst.plugin_id,
+                        "name": inst.name,
+                        "settings": inst.settings,
+                        "enabled": inst.enabled,
+                        "created_at": inst.created_at.isoformat(),
+                        "updated_at": inst.updated_at.isoformat(),
                     }
                     for inst in self._instances.values()
                 ],
-                'last_updated': datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
             }
 
-            with open(self.instances_file, 'w') as f:
+            with open(self.instances_file, "w") as f:
                 json.dump(data, f, indent=2)
 
             logger.debug("Saved plugin instances")
@@ -97,10 +97,7 @@ class InstanceManager:
             logger.error(f"Failed to save instances: {e}", exc_info=True)
 
     def create_instance(
-        self,
-        plugin_id: str,
-        name: str,
-        settings: Dict[str, Any]
+        self, plugin_id: str, name: str, settings: Dict[str, Any]
     ) -> Optional[PluginInstance]:
         """
         Create a new plugin instance.
@@ -133,7 +130,7 @@ class InstanceManager:
             settings=settings,
             enabled=True,
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         self._instances[instance.id] = instance
@@ -181,7 +178,7 @@ class InstanceManager:
         self,
         instance_id: str,
         name: Optional[str] = None,
-        settings: Optional[Dict[str, Any]] = None
+        settings: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Update an existing instance.
@@ -323,7 +320,9 @@ class InstanceManager:
         logger.info(f"Disabled instance {instance.name} ({instance_id})")
         return True
 
-    def test_instance(self, instance_id: str, device_config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+    def test_instance(
+        self, instance_id: str, device_config: Dict[str, Any]
+    ) -> tuple[bool, Optional[str]]:
         """
         Test an instance by running its generate_image method.
 

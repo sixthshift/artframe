@@ -77,12 +77,13 @@ class DriverInterface(ABC):
         image = image.resize(display_size, Image.Resampling.LANCZOS)
 
         # Convert to grayscale if not already
-        if image.mode != 'L':
-            image = image.convert('L')
+        if image.mode != "L":
+            image = image.convert("L")
 
         return image
 
 
 class DisplayError(Exception):
     """Exception raised by display drivers."""
+
     pass

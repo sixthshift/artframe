@@ -15,12 +15,7 @@ class TestMockDriver:
 
     def test_initialization(self):
         """Test mock driver initialization."""
-        config = {
-            'width': 600,
-            'height': 448,
-            'save_images': True,
-            'output_dir': '/tmp/test_mock'
-        }
+        config = {"width": 600, "height": 448, "save_images": True, "output_dir": "/tmp/test_mock"}
 
         driver = MockDriver(config)
         assert driver.width == 600
@@ -29,43 +24,38 @@ class TestMockDriver:
 
     def test_validate_config_valid(self):
         """Test validation of valid configuration."""
-        config = {'width': 600, 'height': 448}
+        config = {"width": 600, "height": 448}
         driver = MockDriver(config)
         # Should not raise exception
 
     def test_validate_config_invalid_width(self):
         """Test validation fails with invalid width."""
-        config = {'width': 'invalid', 'height': 448}
+        config = {"width": "invalid", "height": 448}
         with pytest.raises(ValueError, match="Width must be a positive integer"):
             MockDriver(config)
 
     def test_validate_config_invalid_height(self):
         """Test validation fails with invalid height."""
-        config = {'width': 600, 'height': -1}
+        config = {"width": 600, "height": -1}
         with pytest.raises(ValueError, match="Height must be a positive integer"):
             MockDriver(config)
 
     def test_get_display_size(self):
         """Test getting display size."""
-        config = {'width': 800, 'height': 600}
+        config = {"width": 800, "height": 600}
         driver = MockDriver(config)
         size = driver.get_display_size()
         assert size == (800, 600)
 
     def test_display_image(self, temp_dir):
         """Test displaying an image."""
-        config = {
-            'width': 600,
-            'height': 448,
-            'save_images': True,
-            'output_dir': str(temp_dir)
-        }
+        config = {"width": 600, "height": 448, "save_images": True, "output_dir": str(temp_dir)}
 
         driver = MockDriver(config)
         driver.initialize()
 
         # Create test image
-        test_image = Image.new('RGB', (600, 448), color='red')
+        test_image = Image.new("RGB", (600, 448), color="red")
 
         # Display image
         driver.display_image(test_image)
@@ -79,7 +69,7 @@ class TestMockDriver:
 
     def test_clear_display(self):
         """Test clearing display."""
-        config = {'width': 600, 'height': 448, 'save_images': False}
+        config = {"width": 600, "height": 448, "save_images": False}
         driver = MockDriver(config)
 
         driver.clear_display()
@@ -87,7 +77,7 @@ class TestMockDriver:
 
     def test_sleep_wake(self):
         """Test sleep and wake operations."""
-        config = {'width': 600, 'height': 448}
+        config = {"width": 600, "height": 448}
         driver = MockDriver(config)
 
         # These should not raise exceptions
@@ -100,6 +90,7 @@ class TestDriverInterface:
 
     def test_optimize_image_for_display(self):
         """Test image optimization."""
+
         # Create concrete implementation for testing
         class TestDriver(DriverInterface):
             def validate_config(self):
@@ -126,13 +117,13 @@ class TestDriverInterface:
         driver = TestDriver({})
 
         # Create test image larger than display
-        test_image = Image.new('RGB', (1200, 896), color='blue')
+        test_image = Image.new("RGB", (1200, 896), color="blue")
 
         # Optimize image
         optimized = driver.optimize_image_for_display(test_image)
 
         assert optimized.size == (600, 448)
-        assert optimized.mode == 'L'  # Should be grayscale
+        assert optimized.mode == "L"  # Should be grayscale
 
 
 class TestDisplayController:
@@ -142,13 +133,9 @@ class TestDisplayController:
     def mock_display_config(self):
         """Mock display configuration."""
         return {
-            'driver': 'mock',
-            'config': {
-                'width': 600,
-                'height': 448,
-                'save_images': False
-            },
-            'show_metadata': True
+            "driver": "mock",
+            "config": {"width": 600, "height": 448, "save_images": False},
+            "show_metadata": True,
         }
 
     def test_initialization(self, mock_display_config):
@@ -212,7 +199,7 @@ class TestDisplayController:
         from PIL import Image
 
         # Create a dummy image file
-        img = Image.new('RGB', (100, 100), color='blue')
+        img = Image.new("RGB", (100, 100), color="blue")
         img_path = temp_dir / "test_styled.jpg"
         img.save(img_path)
 
@@ -221,7 +208,7 @@ class TestDisplayController:
             style_name="test_style",
             styled_path=img_path,
             created_at=datetime.now(),
-            metadata={'dimensions': (100, 100)}
+            metadata={"dimensions": (100, 100)},
         )
 
         # Should handle error gracefully
@@ -267,15 +254,12 @@ class TestDisplayController:
 
     def test_create_unknown_driver(self):
         """Test error when creating unknown driver."""
-        config = {
-            'driver': 'unknown_driver',
-            'config': {}
-        }
+        config = {"driver": "unknown_driver", "config": {}}
 
         with pytest.raises(ValueError, match="Unknown display driver"):
             DisplayController(config)
 
-    @patch('src.artframe.display.controller.ImageFont.truetype')
+    @patch("src.artframe.display.controller.ImageFont.truetype")
     def test_metadata_overlay(self, mock_font, mock_display_config, sample_styled_image):
         """Test adding metadata overlay to image."""
         # Mock font loading
@@ -289,11 +273,7 @@ class TestDisplayController:
 
     def test_metadata_overlay_disabled(self, sample_styled_image):
         """Test displaying without metadata overlay."""
-        config = {
-            'driver': 'mock',
-            'config': {'width': 600, 'height': 448},
-            'show_metadata': False
-        }
+        config = {"driver": "mock", "config": {"width": 600, "height": 448}, "show_metadata": False}
 
         controller = DisplayController(config)
         controller.initialize()

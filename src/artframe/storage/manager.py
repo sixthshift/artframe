@@ -34,22 +34,18 @@ class StorageManager:
         """Load the storage index from disk."""
         if self.index_file.exists():
             try:
-                with open(self.index_file, 'r') as f:
+                with open(self.index_file, "r") as f:
                     return json.load(f)
             except (json.JSONDecodeError, OSError) as e:
                 self.logger.warning(f"Failed to load index, starting fresh: {e}")
 
-        return {
-            "photos": {},
-            "styled_images": {},
-            "last_updated": datetime.now().isoformat()
-        }
+        return {"photos": {}, "styled_images": {}, "last_updated": datetime.now().isoformat()}
 
     def _save_index(self):
         """Save the storage index to disk."""
         self._index["last_updated"] = datetime.now().isoformat()
         try:
-            with open(self.index_file, 'w') as f:
+            with open(self.index_file, "w") as f:
                 json.dump(self._index, f, indent=2)
         except OSError as e:
             self.logger.error(f"Failed to save index: {e}")
@@ -70,7 +66,7 @@ class StorageManager:
                 "retrieved_at": photo.retrieved_at.isoformat(),
                 "local_path": str(dest_path),
                 "metadata": photo.metadata,
-                "stored_at": datetime.now().isoformat()
+                "stored_at": datetime.now().isoformat(),
             }
 
             self._save_index()
@@ -97,7 +93,7 @@ class StorageManager:
             source_url=photo_info["source_url"],
             retrieved_at=datetime.fromisoformat(photo_info["retrieved_at"]),
             original_path=local_path,
-            metadata=photo_info["metadata"]
+            metadata=photo_info["metadata"],
         )
 
     def get_all_photos(self) -> List[Photo]:
@@ -127,7 +123,7 @@ class StorageManager:
                 "created_at": styled_image.created_at.isoformat(),
                 "local_path": str(dest_path),
                 "metadata": styled_image.metadata,
-                "stored_at": datetime.now().isoformat()
+                "stored_at": datetime.now().isoformat(),
             }
 
             self._save_index()
@@ -156,7 +152,7 @@ class StorageManager:
             style_name=styled_info["style_name"],
             styled_path=local_path,
             created_at=datetime.fromisoformat(styled_info["created_at"]),
-            metadata=styled_info["metadata"]
+            metadata=styled_info["metadata"],
         )
 
     def photo_exists(self, photo_id: str) -> bool:
@@ -222,5 +218,5 @@ class StorageManager:
             total_photos=total_photos,
             total_styled_images=total_styled,
             total_size_mb=total_size_mb,
-            storage_directory=str(self.storage_dir)
+            storage_directory=str(self.storage_dir),
         )

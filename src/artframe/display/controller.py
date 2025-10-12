@@ -28,19 +28,21 @@ class DisplayController:
             last_refresh=None,
             next_scheduled=None,
             error_count=0,
-            status="idle"
+            status="idle",
         )
 
     def _create_driver(self) -> DriverInterface:
         """Create appropriate display driver based on configuration."""
-        driver_name = self.config.get('driver', 'mock')
-        driver_config = self.config.get('config', {})
+        driver_name = self.config.get("driver", "mock")
+        driver_config = self.config.get("config", {})
 
-        if driver_name == 'spectra6':
+        if driver_name == "spectra6":
             from .drivers import Spectra6Driver
+
             return Spectra6Driver(driver_config)
-        elif driver_name == 'mock':
+        elif driver_name == "mock":
             from .drivers import MockDriver
+
             return MockDriver(driver_config)
         else:
             raise ValueError(f"Unknown display driver: {driver_name}")
@@ -71,7 +73,7 @@ class DisplayController:
             image = Image.open(styled_image.styled_path)
 
             # Add metadata overlay if requested
-            if show_metadata and self.config.get('show_metadata', True):
+            if show_metadata and self.config.get("show_metadata", True):
                 image = self._add_metadata_overlay(image, styled_image)
 
             # Display image
@@ -145,7 +147,7 @@ class DisplayController:
         """
         try:
             display_size = self.driver.get_display_size()
-            image = Image.new('L', display_size, 255)  # White background
+            image = Image.new("L", display_size, 255)  # White background
             draw = ImageDraw.Draw(image)
 
             # Try to use a default font
@@ -230,7 +232,7 @@ class DisplayController:
                 x - padding,
                 y - padding,
                 x + text_width + padding,
-                y + text_height + padding
+                y + text_height + padding,
             ]
             draw.rectangle(bg_coords, fill=255, outline=0)
 
@@ -251,7 +253,9 @@ class DisplayController:
 
             # Try to use a larger font for title
             try:
-                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+                font = ImageFont.truetype(
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
+                )
             except (OSError, IOError):
                 font = ImageFont.load_default()
 
@@ -269,7 +273,7 @@ class DisplayController:
                 x - padding,
                 y - padding,
                 x + text_width + padding,
-                y + text_height + padding
+                y + text_height + padding,
             ]
             draw.rectangle(bg_coords, fill=255, outline=0)
 
@@ -284,4 +288,5 @@ class DisplayController:
 
 class DisplayError(Exception):
     """Exception raised by display operations."""
+
     pass

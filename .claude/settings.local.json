@@ -9,7 +9,10 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(python3:*)",
       "Bash(python -m pytest tests/unit/test_config.py tests/unit/test_display.py -v)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(grep:*)",
+      "Bash(xargs python3 -m black:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

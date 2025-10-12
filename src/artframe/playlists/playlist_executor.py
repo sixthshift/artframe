@@ -30,7 +30,7 @@ class PlaylistExecutor:
         self,
         playlist_manager: PlaylistManager,
         instance_manager: InstanceManager,
-        device_config: Dict[str, Any]
+        device_config: Dict[str, Any],
     ):
         """
         Initialize playlist executor.
@@ -129,7 +129,9 @@ class PlaylistExecutor:
         self.current_item_index = (self.current_item_index + 1) % len(playlist.items)
         self.current_item_start_time = None
 
-        logger.info(f"Advanced to playlist item {self.current_item_index + 1}/{len(playlist.items)}")
+        logger.info(
+            f"Advanced to playlist item {self.current_item_index + 1}/{len(playlist.items)}"
+        )
 
     def reset_playlist(self) -> None:
         """Reset playlist to the beginning."""
@@ -162,14 +164,14 @@ class PlaylistExecutor:
             remaining = max(0, current_item.duration_seconds - elapsed)
 
         return {
-            'playlist_name': playlist.name,
-            'instance_name': instance.name,
-            'plugin_id': instance.plugin_id,
-            'item_index': self.current_item_index,
-            'total_items': len(playlist.items),
-            'duration_seconds': current_item.duration_seconds,
-            'elapsed_seconds': elapsed,
-            'remaining_seconds': remaining
+            "playlist_name": playlist.name,
+            "instance_name": instance.name,
+            "plugin_id": instance.plugin_id,
+            "item_index": self.current_item_index,
+            "total_items": len(playlist.items),
+            "duration_seconds": current_item.duration_seconds,
+            "elapsed_seconds": elapsed,
+            "remaining_seconds": remaining,
         }
 
     def run_loop(self, display_controller, check_interval: int = 5) -> None:
