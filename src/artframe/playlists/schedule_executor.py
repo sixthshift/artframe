@@ -5,16 +5,14 @@ Evaluates the current time and displays the appropriate plugin instance
 based on schedule entries.
 """
 
-import time
 import logging
+import time
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from ..models import ScheduleEntry
 from ..plugins import get_plugin
 from ..plugins.instance_manager import InstanceManager
 from .schedule_manager import ScheduleManager
-
 
 logger = logging.getLogger(__name__)
 

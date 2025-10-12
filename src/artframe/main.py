@@ -7,8 +7,8 @@ import logging
 import sys
 from pathlib import Path
 
-from .controller import ArtframeController
 from .config import ConfigManager
+from .controller import ArtframeController
 from .logging import setup_logging
 
 
@@ -65,10 +65,10 @@ def main():
         from .web import create_app
 
         app = create_app(controller)
-        print(f"🖼️  Artframe Starting...")
+        print("🖼️  Artframe Starting...")
         print(f"📡 Web Dashboard: http://{args.host}:{args.port}")
-        print(f"⏰ Scheduler: Active")
-        print(f"\nPress Ctrl+C to stop")
+        print("⏰ Scheduler: Active")
+        print("\nPress Ctrl+C to stop")
         app.run(host=args.host, port=args.port, debug=False, threaded=True)
 
     except KeyboardInterrupt:

@@ -3,7 +3,7 @@ Scheduling utilities for Artframe.
 """
 
 from datetime import datetime, time
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 
 class Scheduler:

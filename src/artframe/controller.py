@@ -2,21 +2,19 @@
 Main controller for Artframe system.
 """
 
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from .config import ConfigManager
-from .storage import StorageManager
 from .display import DisplayController
-from .utils import Scheduler
-from .models import StorageStats
 from .logging import Logger
-from .playlists import PlaylistManager, PlaylistExecutor
-from .playlists.schedule_manager import ScheduleManager
+from .playlists import PlaylistExecutor, PlaylistManager
 from .playlists.schedule_executor import ScheduleExecutor
+from .playlists.schedule_manager import ScheduleManager
 from .plugins import InstanceManager
+from .storage import StorageManager
+from .utils import Scheduler
 
 
 class ArtframeController:

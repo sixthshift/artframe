@@ -4,10 +4,10 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
-from ..models import Photo, StyledImage, StorageStats
 from ..logging.logger import Logger
+from ..models import Photo, StorageStats, StyledImage
 
 
 class StorageManager:

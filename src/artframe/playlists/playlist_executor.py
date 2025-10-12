@@ -4,17 +4,15 @@ Playlist executor for running playlists and displaying content.
 Executes plugin instances from playlists and manages display timing.
 """
 
-import time
 import logging
+import time
 from datetime import datetime
-from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from ..models import Playlist, PlaylistItem
+from ..models import Playlist
 from ..plugins import get_plugin
 from ..plugins.instance_manager import InstanceManager
 from .playlist_manager import PlaylistManager
-
 
 logger = logging.getLogger(__name__)
 

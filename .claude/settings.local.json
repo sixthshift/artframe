@@ -14,7 +14,8 @@
       "Bash(xargs python3 -m black:*)",
       "Bash(git add:*)",
       "WebFetch(domain:immich.app)",
-      "WebFetch(domain:docs.immich.app)"
+      "WebFetch(domain:docs.immich.app)",
+      "Bash(flake8:*)"
     ],
     "deny": [],
     "ask": []

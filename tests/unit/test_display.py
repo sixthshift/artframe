@@ -2,12 +2,13 @@
 Unit tests for display management.
 """
 
+from unittest.mock import Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from PIL import Image
 
 from src.artframe.display.controller import DisplayController
-from src.artframe.display.drivers import MockDriver, DriverInterface
+from src.artframe.display.drivers import DriverInterface, MockDriver
 
 
 class TestMockDriver:
@@ -25,7 +26,7 @@ class TestMockDriver:
     def test_validate_config_valid(self):
         """Test validation of valid configuration."""
         config = {"width": 600, "height": 448}
-        driver = MockDriver(config)
+        MockDriver(config)
         # Should not raise exception
 
     def test_validate_config_invalid_width(self):
@@ -193,10 +194,11 @@ class TestDisplayController:
         controller.driver.display_image = Mock(side_effect=Exception("Test error"))
 
         # Create dummy styled image
-        from pathlib import Path
         from datetime import datetime
-        from src.artframe.models import StyledImage
+
         from PIL import Image
+
+        from src.artframe.models import StyledImage
 
         # Create a dummy image file
         img = Image.new("RGB", (100, 100), color="blue")

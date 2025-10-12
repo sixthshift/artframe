@@ -5,15 +5,15 @@ Syncs photos from an Immich album to local storage and displays them.
 Keeps local copy in sync with server (adds new photos, removes deleted ones).
 """
 
-import json
-import requests
-import random
 import hashlib
+import json
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
 from PIL import Image
-from io import BytesIO
 
 from artframe.plugins.base_plugin import BasePlugin
 
@@ -110,7 +110,9 @@ class Immich(BasePlugin):
             try:
                 with open(self._metadata_file, "r") as f:
                     self._metadata = json.load(f)
-                self.logger.debug(f"Loaded metadata: {len(self._metadata.get('synced_assets', {}))} assets")
+                self.logger.debug(
+                    f"Loaded metadata: {len(self._metadata.get('synced_assets', {}))} assets"
+                )
             except Exception as e:
                 self.logger.error(f"Failed to load metadata: {e}")
                 self._metadata = self._create_empty_metadata()
@@ -128,12 +130,7 @@ class Immich(BasePlugin):
 
     def _create_empty_metadata(self) -> Dict[str, Any]:
         """Create empty metadata structure."""
-        return {
-            "last_sync": None,
-            "album_id": None,
-            "synced_assets": {},
-            "sync_count": 0
-        }
+        return {"last_sync": None, "album_id": None, "synced_assets": {}, "sync_count": 0}
 
     def generate_image(
         self, settings: Dict[str, Any], device_config: Dict[str, Any]
@@ -214,7 +211,9 @@ class Immich(BasePlugin):
         time_since_sync = datetime.now() - last_sync_time
 
         if time_since_sync > timedelta(hours=sync_interval):
-            self.logger.info(f"Sync interval exceeded ({time_since_sync.total_seconds() / 3600:.1f}h)")
+            self.logger.info(
+                f"Sync interval exceeded ({time_since_sync.total_seconds() / 3600:.1f}h)"
+            )
             return True
 
         return False
@@ -248,8 +247,7 @@ class Immich(BasePlugin):
 
         # Find assets to download (new assets)
         assets_to_download = [
-            asset for asset in server_assets
-            if asset["id"] not in synced_asset_ids
+            asset for asset in server_assets if asset["id"] not in synced_asset_ids
         ]
 
         # Find assets to delete (removed from server)
@@ -261,7 +259,9 @@ class Immich(BasePlugin):
             for i, asset in enumerate(assets_to_download, 1):
                 try:
                     self._download_asset(immich_url, asset)
-                    self.logger.debug(f"Downloaded {i}/{len(assets_to_download)}: {asset.get('originalFileName')}")
+                    self.logger.debug(
+                        f"Downloaded {i}/{len(assets_to_download)}: {asset.get('originalFileName')}"
+                    )
                 except Exception as e:
                     self.logger.error(f"Failed to download {asset['id']}: {e}")
 
@@ -282,7 +282,9 @@ class Immich(BasePlugin):
             f"+{len(assets_to_download)} new, -{len(assets_to_delete)} removed"
         )
 
-    def _fetch_server_assets(self, immich_url: str, album_id: Optional[str]) -> List[Dict[str, Any]]:
+    def _fetch_server_assets(
+        self, immich_url: str, album_id: Optional[str]
+    ) -> List[Dict[str, Any]]:
         """
         Fetch assets from Immich server.
 
@@ -297,8 +299,7 @@ class Immich(BasePlugin):
             if album_id:
                 # Fetch from specific album
                 response = self.session.get(
-                    f"{immich_url}/api/albums/{album_id}",
-                    params={"withoutAssets": False}
+                    f"{immich_url}/api/albums/{album_id}", params={"withoutAssets": False}
                 )
                 response.raise_for_status()
 
@@ -313,11 +314,7 @@ class Immich(BasePlugin):
 
                 while True:
                     response = self.session.post(
-                        f"{immich_url}/api/search/metadata",
-                        json={
-                            "size": page_size,
-                            "page": page
-                        }
+                        f"{immich_url}/api/search/metadata", json={"size": page_size, "page": page}
                     )
                     response.raise_for_status()
 
@@ -337,10 +334,7 @@ class Immich(BasePlugin):
                     page += 1
 
             # Filter for images only (exclude videos)
-            photos = [
-                asset for asset in assets
-                if asset.get("type") == "IMAGE"
-            ]
+            photos = [asset for asset in assets if asset.get("type") == "IMAGE"]
 
             self.logger.info(f"Found {len(photos)} photos on server")
             return photos
@@ -374,10 +368,7 @@ class Immich(BasePlugin):
 
         # Download photo
         try:
-            response = self.session.get(
-                f"{immich_url}/api/assets/{asset_id}/original",
-                timeout=60
-            )
+            response = self.session.get(f"{immich_url}/api/assets/{asset_id}/original", timeout=60)
             response.raise_for_status()
 
             # Save to disk
@@ -393,7 +384,7 @@ class Immich(BasePlugin):
                 "local_path": str(local_path.relative_to(self._photos_dir)),
                 "file_created_at": asset.get("fileCreatedAt"),
                 "checksum": checksum,
-                "synced_at": datetime.now().isoformat()
+                "synced_at": datetime.now().isoformat(),
             }
 
         except Exception as e:
@@ -528,7 +519,7 @@ class Immich(BasePlugin):
 
         try:
             font = ImageFont.load_default()
-        except:
+        except Exception:
             font = None
 
         text = f"Immich Plugin Error:\n{error_message}"

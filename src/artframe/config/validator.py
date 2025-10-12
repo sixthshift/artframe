@@ -2,8 +2,7 @@
 Configuration validator for Artframe.
 """
 
-from typing import Dict, Any, List
-from pathlib import Path
+from typing import Any, Dict
 
 
 class ConfigValidator:

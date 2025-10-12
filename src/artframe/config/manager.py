@@ -4,9 +4,11 @@ Configuration manager for Artframe.
 
 import os
 import re
-import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Any, Callable, Dict, List, Optional
+
+import yaml
+
 from .validator import ConfigValidator
 
 

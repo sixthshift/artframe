@@ -2,15 +2,15 @@
 Pytest configuration and fixtures for Artframe tests.
 """
 
-import pytest
-import tempfile
 import shutil
-from pathlib import Path
-from unittest.mock import Mock, MagicMock
+import tempfile
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
 
 from src.artframe.models import Photo, StyledImage
-from src.artframe.config import ConfigManager
 
 
 @pytest.fixture

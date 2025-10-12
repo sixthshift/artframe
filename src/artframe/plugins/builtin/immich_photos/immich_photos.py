@@ -5,15 +5,16 @@ Fetches photos from Immich server with optional AI style transformation.
 Combines photo retrieval and styling in a single plugin.
 """
 
-import requests
 import random
-import time
 import tempfile
+import time
 from datetime import datetime
-from pathlib import Path
-from typing import Dict, Any
-from PIL import Image
 from io import BytesIO
+from pathlib import Path
+from typing import Any, Dict
+
+import requests
+from PIL import Image
 
 from artframe.plugins.base_plugin import BasePlugin
 
@@ -402,7 +403,7 @@ class ImmichPhotos(BasePlugin):
         # Draw error message
         try:
             font = ImageFont.load_default()
-        except:
+        except Exception:
             font = None
 
         text = f"Error loading photo:\n{error_message}"

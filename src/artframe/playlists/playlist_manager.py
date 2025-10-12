@@ -5,14 +5,13 @@ Manages creation, storage, and lifecycle of playlists.
 """
 
 import json
-import uuid
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
 from ..models import Playlist, PlaylistItem
-
 
 logger = logging.getLogger(__name__)
 

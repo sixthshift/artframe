@@ -4,16 +4,15 @@ Plugin registry for discovering, loading, and managing Artframe plugins.
 Inspired by InkyPi's plugin system with automatic discovery.
 """
 
-import json
-import logging
 import importlib
 import importlib.util
+import json
+import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Type
-from dataclasses import dataclass
 
 from .base_plugin import BasePlugin
-
 
 logger = logging.getLogger(__name__)
 
@@ -209,8 +208,6 @@ def load_plugins(plugins_dir: Path) -> int:
         loaded = load_plugins(Path('src/artframe/plugins/builtin'))
         print(f"Loaded {loaded} plugins")
     """
-    global PLUGIN_CLASSES, PLUGIN_METADATA
-
     # Clear existing registries
     PLUGIN_CLASSES.clear()
     PLUGIN_METADATA.clear()

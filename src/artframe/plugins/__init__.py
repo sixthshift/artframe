@@ -21,21 +21,21 @@ Example:
 """
 
 from .base_plugin import BasePlugin
+from .instance_manager import InstanceManager
 from .plugin_registry import (
-    PluginMetadata,
-    discover_plugins,
-    load_plugins,
-    load_plugin_metadata,
-    get_plugin,
-    get_plugin_metadata,
-    list_plugins,
-    list_plugin_metadata,
-    reload_plugins,
-    is_plugin_loaded,
     PLUGIN_CLASSES,
     PLUGIN_METADATA,
+    PluginMetadata,
+    discover_plugins,
+    get_plugin,
+    get_plugin_metadata,
+    is_plugin_loaded,
+    list_plugin_metadata,
+    list_plugins,
+    load_plugin_metadata,
+    load_plugins,
+    reload_plugins,
 )
-from .instance_manager import InstanceManager
 
 __all__ = [
     "BasePlugin",

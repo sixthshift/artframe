@@ -4,10 +4,8 @@ Web routes for Artframe dashboard.
 
 import os
 import signal
-import yaml
-from flask import Blueprint, render_template, jsonify, current_app, request
-from typing import Dict, Any
 
+from flask import Blueprint, current_app, jsonify, render_template, request
 
 bp = Blueprint("dashboard", __name__)
 
@@ -316,9 +314,10 @@ def api_source_stats():
 def api_system_info():
     """Get system information."""
     try:
-        import psutil
         import platform
         from datetime import timedelta
+
+        import psutil
 
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
@@ -331,7 +330,7 @@ def api_system_info():
         try:
             with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
                 temp = round(int(f.read()) / 1000, 1)
-        except:
+        except Exception:
             pass
 
         return jsonify(
@@ -355,11 +354,6 @@ def api_system_info():
 def api_system_logs():
     """Get system logs."""
     try:
-        import logging
-        from pathlib import Path
-
-        level_filter = request.args.get("level", "all")
-
         # TODO: Read from actual log file
         # For now, return placeholder
         return jsonify(
@@ -675,7 +669,6 @@ def api_instance_disable(instance_id):
 def api_instance_test(instance_id):
     """Test run a plugin instance."""
     try:
-        controller = current_app.controller
         instance_manager = current_app.instance_manager
 
         # Get device config from display controller

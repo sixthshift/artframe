@@ -3,7 +3,6 @@ Domain-specific logger for Artframe operations.
 """
 
 import logging
-from typing import Optional
 
 
 class Logger:

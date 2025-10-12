@@ -5,15 +5,14 @@ Manages creation, storage, and lifecycle of plugin instances.
 """
 
 import json
-import uuid
 import logging
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from ..models import PluginInstance
-from .plugin_registry import get_plugin, get_plugin_metadata
-
+from .plugin_registry import get_plugin
 
 logger = logging.getLogger(__name__)
 

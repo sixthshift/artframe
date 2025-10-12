@@ -2,13 +2,14 @@
 Display controller for managing e-ink display operations.
 """
 
-from typing import Dict, Any, Optional
-from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional
 
+from PIL import Image, ImageDraw, ImageFont
+
+from ..models import DisplayState, StyledImage
 from .drivers import DriverInterface
-from ..models import StyledImage, DisplayState
 
 
 class DisplayController:
@@ -169,7 +170,7 @@ class DisplayController:
 
             self.driver.display_image(image)
 
-        except Exception as e:
+        except Exception:
             # If we can't even display an error message, just clear the display
             try:
                 self.driver.clear_display()

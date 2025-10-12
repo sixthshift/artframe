@@ -8,7 +8,8 @@ Inspired by InkyPi's plugin system with Artframe enhancements.
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 from PIL import Image
 
 

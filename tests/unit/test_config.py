@@ -2,8 +2,9 @@
 Unit tests for configuration management.
 """
 
+from unittest.mock import patch
+
 import pytest
-from unittest.mock import patch, mock_open
 import yaml
 
 from src.artframe.config import ConfigManager, ConfigValidator

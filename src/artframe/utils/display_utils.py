@@ -2,8 +2,8 @@
 Display utilities for aspect ratio and orientation calculations.
 """
 
-from typing import Dict, Tuple, Any
 from fractions import Fraction
+from typing import Any, Dict, Tuple
 
 
 def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, Any]:

@@ -3,14 +3,15 @@ Spectra 6 e-ink display driver.
 """
 
 import time
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
+
 from PIL import Image, ImageEnhance
 
-from .base import DriverInterface, DisplayError
+from .base import DisplayError, DriverInterface
 
 try:
-    import spidev
     import RPi.GPIO as GPIO
+    import spidev
 
     HAS_GPIO = True
 except ImportError:

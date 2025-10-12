@@ -6,12 +6,11 @@ Displays inspirational and thought-provoking quotes.
 
 import random
 from datetime import datetime
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
+
 from PIL import Image, ImageDraw, ImageFont
-from textwrap import wrap
 
 from artframe.plugins.base_plugin import BasePlugin
-
 
 # Embedded quotes database
 QUOTES_DATABASE = {
@@ -308,7 +307,7 @@ class QuoteOfTheDay(BasePlugin):
         """Get the line height for a font."""
         try:
             return font.size + 10  # Font size + spacing
-        except:
+        except Exception:
             return 30  # Default fallback
 
     def _get_font(self, size: str, text_type: str) -> ImageFont.FreeTypeFont:
@@ -341,7 +340,7 @@ class QuoteOfTheDay(BasePlugin):
             ]:
                 try:
                     return ImageFont.truetype(font_name, font_size)
-                except:
+                except Exception:
                     continue
 
             # If no system fonts work, use default
@@ -361,7 +360,7 @@ class QuoteOfTheDay(BasePlugin):
 
         try:
             font = ImageFont.load_default()
-        except:
+        except Exception:
             font = None
 
         text = f"Quote Error:\n{error_message}"

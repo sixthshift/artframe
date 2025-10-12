@@ -5,7 +5,8 @@ Displays current time and date with customizable formats.
 """
 
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
+
 from PIL import Image, ImageDraw, ImageFont
 
 from artframe.plugins.base_plugin import BasePlugin
@@ -176,7 +177,7 @@ class Clock(BasePlugin):
             ]:
                 try:
                     return ImageFont.truetype(font_name, font_size)
-                except:
+                except Exception:
                     continue
 
             # If no system fonts work, use default
@@ -196,7 +197,7 @@ class Clock(BasePlugin):
 
         try:
             font = ImageFont.load_default()
-        except:
+        except Exception:
             font = None
 
         text = f"Clock Error:\n{error_message}"

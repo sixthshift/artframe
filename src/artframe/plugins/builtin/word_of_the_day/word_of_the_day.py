@@ -6,12 +6,11 @@ Displays vocabulary words with definitions, pronunciation, and examples.
 
 import random
 from datetime import datetime
-from typing import Dict, Any, Tuple, List
+from typing import Any, Dict, List, Tuple
+
 from PIL import Image, ImageDraw, ImageFont
-from textwrap import wrap
 
 from artframe.plugins.base_plugin import BasePlugin
-
 
 # Embedded vocabulary database
 # Format: (word, pronunciation, part_of_speech, definition, example)
@@ -437,7 +436,7 @@ class WordOfTheDay(BasePlugin):
         """Get the line height for a font."""
         try:
             return font.size + 8
-        except:
+        except Exception:
             return 25  # Default fallback
 
     def _get_font(self, size: str, text_type: str) -> ImageFont.FreeTypeFont:
@@ -469,7 +468,7 @@ class WordOfTheDay(BasePlugin):
             ]:
                 try:
                     return ImageFont.truetype(font_name, font_size)
-                except:
+                except Exception:
                     continue
 
             return ImageFont.load_default()
@@ -488,7 +487,7 @@ class WordOfTheDay(BasePlugin):
 
         try:
             font = ImageFont.load_default()
-        except:
+        except Exception:
             font = None
 
         text = f"Word Error:\n{error_message}"

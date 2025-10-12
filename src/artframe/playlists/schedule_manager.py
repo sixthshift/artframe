@@ -5,14 +5,13 @@ Manages schedule entries that define when specific plugin instances should displ
 """
 
 import json
-import uuid
 import logging
-from datetime import datetime, time
+import uuid
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 
-from ..models import ScheduleEntry, ScheduleConfig
-
+from ..models import ScheduleConfig, ScheduleEntry
 
 logger = logging.getLogger(__name__)
 

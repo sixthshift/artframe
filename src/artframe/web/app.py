@@ -4,8 +4,9 @@ Flask application setup for Artframe web dashboard.
 
 import threading
 from pathlib import Path
-from flask import Flask
 from typing import Optional
+
+from flask import Flask
 
 from ..controller import ArtframeController
 
@@ -29,11 +30,11 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     app.controller = controller
 
     # Initialize InstanceManager, PlaylistManager, and ScheduleManager
+    from ..playlists import PlaylistManager
+    from ..playlists.schedule_executor import ScheduleExecutor
+    from ..playlists.schedule_manager import ScheduleManager
     from ..plugins.instance_manager import InstanceManager
     from ..plugins.plugin_registry import load_plugins
-    from ..playlists import PlaylistManager
-    from ..playlists.schedule_manager import ScheduleManager
-    from ..playlists.schedule_executor import ScheduleExecutor
 
     # Load plugins from builtin directory
     plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"

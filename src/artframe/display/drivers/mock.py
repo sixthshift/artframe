@@ -3,11 +3,12 @@ Mock display driver for development and testing.
 """
 
 import time
-from typing import Dict, Any, Tuple
 from pathlib import Path
+from typing import Any, Dict, Tuple
+
 from PIL import Image
 
-from .base import DriverInterface, DisplayError
+from .base import DisplayError, DriverInterface
 
 
 class MockDriver(DriverInterface):

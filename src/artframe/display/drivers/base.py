@@ -3,8 +3,8 @@ Base interface for display drivers.
 """
 
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
+
 from PIL import Image
 
 
