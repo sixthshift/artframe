@@ -1,0 +1,9 @@
+{
+    "id": "word_of_the_day",
+    "display_name": "Word of the Day",
+    "class": "WordOfTheDay",
+    "description": "Learn a new vocabulary word each day with definitions and examples",
+    "author": "Artframe Team",
+    "version": "1.0.0",
+    "icon": "icon.png"
+}

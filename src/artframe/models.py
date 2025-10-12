@@ -5,7 +5,7 @@ Data models for the Artframe system.
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple, Optional, List
 
 
 @dataclass
@@ -55,5 +55,25 @@ class PluginInstance:
     name: str
     settings: Dict[str, Any]
     enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass
+class PlaylistItem:
+    """Represents a single item in a playlist."""
+    instance_id: str
+    duration_seconds: int
+    order: int
+
+
+@dataclass
+class Playlist:
+    """Represents a playlist of plugin instances."""
+    id: str
+    name: str
+    description: str
+    enabled: bool
+    items: List[PlaylistItem]
     created_at: datetime
     updated_at: datetime

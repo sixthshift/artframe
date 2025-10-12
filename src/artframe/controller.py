@@ -13,6 +13,8 @@ from .display import DisplayController
 from .utils import Scheduler
 from .models import StorageStats
 from .logging import Logger
+from .playlists import PlaylistManager, PlaylistExecutor
+from .plugins import InstanceManager
 
 
 class ArtframeController:
@@ -39,6 +41,19 @@ class ArtframeController:
         self.storage_manager = self._create_storage_manager()
         self.display_controller = self._create_display_controller()
         self.scheduler = self._create_scheduler()
+
+        # Initialize plugin and playlist management
+        storage_dir = Path.home() / '.artframe' / 'data'
+        self.instance_manager = InstanceManager(storage_dir)
+        self.playlist_manager = PlaylistManager(storage_dir)
+
+        # Create playlist executor
+        device_config = self._get_device_config()
+        self.playlist_executor = PlaylistExecutor(
+            self.playlist_manager,
+            self.instance_manager,
+            device_config
+        )
 
         # Track state
         self.running = False
@@ -71,6 +86,17 @@ class ArtframeController:
         timezone = scheduler_config.get('timezone', 'UTC')
 
         return Scheduler(update_time, timezone)
+
+    def _get_device_config(self) -> Dict[str, Any]:
+        """Get device configuration for image generation."""
+        display_config = self.config_manager.get_display_config()
+
+        return {
+            'width': display_config.get('width', 600),
+            'height': display_config.get('height', 448),
+            'rotation': display_config.get('rotation', 0),
+            'color_mode': 'grayscale'  # E-ink displays are typically grayscale
+        }
 
     def initialize(self, skip_connection_test: bool = False) -> None:
         """
@@ -116,28 +142,21 @@ class ArtframeController:
 
     def run_scheduled_loop(self) -> None:
         """
-        Run the main scheduled loop.
+        Run the main scheduled loop with playlist execution.
 
-        Note: This will be replaced with playlist-based scheduling.
+        This runs the playlist executor which continuously displays
+        content from the active playlist.
         """
         self.logger.log_scheduled_loop_start()
         self.running = True
 
         try:
-            while self.running:
-                # TODO: Replace with playlist execution
-                # For now, just check if it's update time
-                if self.scheduler.is_update_time():
-                    self.manual_refresh()
-
-                    # Mark as refreshed for e-ink health tracking
-                    self.scheduler.mark_refreshed()
-
-                    # Sleep for a bit to avoid multiple updates
-                    time.sleep(60)
-                else:
-                    # Sleep for a short while before checking again
-                    time.sleep(30)
+            # Run the playlist executor loop
+            # This will continuously execute playlist items
+            self.playlist_executor.run_loop(
+                self.display_controller,
+                check_interval=5
+            )
 
         except KeyboardInterrupt:
             self.logger.log_interrupt_received()
@@ -146,21 +165,28 @@ class ArtframeController:
         except Exception as e:
             self.logger.log_scheduled_loop_error(e)
             self.running = False
+        finally:
+            self.playlist_executor.stop()
 
     def stop(self) -> None:
         """Stop the scheduled loop."""
         self.logger.log_controller_stopping()
         self.running = False
+        self.playlist_executor.stop()
 
     def get_status(self) -> Dict[str, Any]:
         """Get current system status."""
         storage_stats = self.storage_manager.get_storage_stats()
         display_state = self.display_controller.get_state()
 
+        # Get playlist executor status
+        current_item_info = self.playlist_executor.get_current_item_info()
+
         return {
             "running": self.running,
             "last_update": self.last_update.isoformat() if self.last_update else None,
             "next_scheduled": self.scheduler.get_next_update_time().isoformat(),
+            "current_playlist_item": current_item_info,
             "storage_stats": {
                 "total_photos": storage_stats.total_photos,
                 "total_styled_images": storage_stats.total_styled_images,

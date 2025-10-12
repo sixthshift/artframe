@@ -15,12 +15,24 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Tab switching
-function switchTab(tabName) {
+function switchTab(tabName, event) {
     // Update tab buttons
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+
+    // If called from click event, set clicked button as active
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        // If called programmatically, find the right button
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach((btn, index) => {
+            if ((tabName === 'plugins' && index === 0) || (tabName === 'instances' && index === 1)) {
+                btn.classList.add('active');
+            }
+        });
+    }
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -355,7 +367,6 @@ document.getElementById('instance-form').addEventListener('submit', async functi
 
         // Switch to instances tab
         switchTab('instances');
-        document.querySelector('.tab-btn:nth-child(2)').click();
 
         showNotification(instanceId ? 'Instance updated successfully' : 'Instance created successfully', 'success');
 

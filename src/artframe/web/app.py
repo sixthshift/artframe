@@ -28,9 +28,10 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
     app.controller = controller
 
-    # Initialize InstanceManager
+    # Initialize InstanceManager and PlaylistManager
     from ..plugins.instance_manager import InstanceManager
     from ..plugins.plugin_registry import load_plugins
+    from ..playlists import PlaylistManager
 
     # Load plugins from builtin directory
     plugins_dir = Path(__file__).parent.parent / 'plugins' / 'builtin'
@@ -39,6 +40,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     # Create instance manager
     storage_dir = Path.home() / '.artframe' / 'data'
     app.instance_manager = InstanceManager(storage_dir)
+
+    # Create playlist manager
+    app.playlist_manager = PlaylistManager(storage_dir)
 
     from . import routes
     app.register_blueprint(routes.bp)

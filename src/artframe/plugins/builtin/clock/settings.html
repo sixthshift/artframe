@@ -1,0 +1,137 @@
+<!-- Settings template for Clock plugin -->
+<div class="plugin-settings">
+    <h3>Clock & Date Settings</h3>
+
+    <!-- Time Settings -->
+    <div class="settings-section">
+        <h4>Time Display</h4>
+
+        <div class="form-group">
+            <label for="time_format">Time Format</label>
+            <select id="time_format" name="time_format">
+                <option value="12h" {% if settings.time_format == '12h' %}selected{% endif %}>12-Hour (AM/PM)</option>
+                <option value="24h" {% if settings.time_format == '24h' or not settings.time_format %}selected{% endif %}>24-Hour</option>
+            </select>
+            <small>Choose between 12-hour and 24-hour time format</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox"
+                       id="show_seconds"
+                       name="show_seconds"
+                       {% if settings.show_seconds or settings.show_seconds == None %}checked{% endif %}>
+                Show Seconds
+            </label>
+            <small>Display seconds in the time</small>
+        </div>
+    </div>
+
+    <!-- Date Settings -->
+    <div class="settings-section">
+        <h4>Date Display</h4>
+
+        <div class="form-group">
+            <label for="date_format">Date Format</label>
+            <select id="date_format" name="date_format">
+                <option value="full" {% if settings.date_format == 'full' or not settings.date_format %}selected{% endif %}>Full (Monday, January 15, 2025)</option>
+                <option value="short" {% if settings.date_format == 'short' %}selected{% endif %}>Short (01/15/2025)</option>
+                <option value="none" {% if settings.date_format == 'none' %}selected{% endif %}>Don't Show Date</option>
+            </select>
+            <small>How to display the date below the time</small>
+        </div>
+    </div>
+
+    <!-- Appearance Settings -->
+    <div class="settings-section">
+        <h4>Appearance</h4>
+
+        <div class="form-group">
+            <label for="font_size">Font Size</label>
+            <select id="font_size" name="font_size">
+                <option value="small" {% if settings.font_size == 'small' %}selected{% endif %}>Small</option>
+                <option value="medium" {% if settings.font_size == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="large" {% if settings.font_size == 'large' or not settings.font_size %}selected{% endif %}>Large</option>
+                <option value="xlarge" {% if settings.font_size == 'xlarge' %}selected{% endif %}>Extra Large</option>
+            </select>
+            <small>Size of the clock display</small>
+        </div>
+
+        <div class="form-group">
+            <label for="text_color">Text Color</label>
+            <input type="text"
+                   id="text_color"
+                   name="text_color"
+                   value="{{ settings.text_color or '#000000' }}"
+                   placeholder="#000000">
+            <small>Color of the time and date text (hex color code)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="background_color">Background Color</label>
+            <input type="text"
+                   id="background_color"
+                   name="background_color"
+                   value="{{ settings.background_color or '#FFFFFF' }}"
+                   placeholder="#FFFFFF">
+            <small>Background color (hex color code)</small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .plugin-settings {
+        max-width: 600px;
+    }
+
+    .settings-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .settings-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+    }
+
+    .form-group input[type="text"],
+    .form-group select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .form-group input[type="checkbox"] {
+        margin-right: 8px;
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #777;
+        font-size: 12px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+</style>

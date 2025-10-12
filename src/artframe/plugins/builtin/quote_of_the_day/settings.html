@@ -1,0 +1,114 @@
+<!-- Settings template for Quote of the Day plugin -->
+<div class="plugin-settings">
+    <h3>Quote of the Day Settings</h3>
+
+    <!-- Quote Settings -->
+    <div class="settings-section">
+        <h4>Quote Selection</h4>
+
+        <div class="form-group">
+            <label for="category">Quote Category</label>
+            <select id="category" name="category">
+                <option value="inspirational" {% if settings.category == 'inspirational' or not settings.category %}selected{% endif %}>Inspirational</option>
+                <option value="wisdom" {% if settings.category == 'wisdom' %}selected{% endif %}>Wisdom</option>
+                <option value="funny" {% if settings.category == 'funny' %}selected{% endif %}>Funny</option>
+                <option value="technology" {% if settings.category == 'technology' %}selected{% endif %}>Technology</option>
+                <option value="random" {% if settings.category == 'random' %}selected{% endif %}>Random (Mix)</option>
+            </select>
+            <small>Choose the type of quotes to display</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox"
+                       id="daily_quote"
+                       name="daily_quote"
+                       {% if settings.daily_quote or settings.daily_quote == None %}checked{% endif %}>
+                Same Quote All Day
+            </label>
+            <small>If checked, shows the same quote for the entire day. If unchecked, shows a new random quote each time.</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox"
+                       id="show_author"
+                       name="show_author"
+                       {% if settings.show_author or settings.show_author == None %}checked{% endif %}>
+                Show Author Name
+            </label>
+            <small>Display the quote author/attribution</small>
+        </div>
+    </div>
+
+    <!-- Appearance Settings -->
+    <div class="settings-section">
+        <h4>Appearance</h4>
+
+        <div class="form-group">
+            <label for="font_size">Font Size</label>
+            <select id="font_size" name="font_size">
+                <option value="small" {% if settings.font_size == 'small' %}selected{% endif %}>Small</option>
+                <option value="medium" {% if settings.font_size == 'medium' or not settings.font_size %}selected{% endif %}>Medium</option>
+                <option value="large" {% if settings.font_size == 'large' %}selected{% endif %}>Large</option>
+            </select>
+            <small>Size of the quote text</small>
+        </div>
+
+        <div class="form-group">
+            <label for="text_color">Text Color</label>
+            <input type="text"
+                   id="text_color"
+                   name="text_color"
+                   value="{{ settings.text_color or '#000000' }}"
+                   placeholder="#000000">
+            <small>Color of the quote text (hex color code)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="background_color">Background Color</label>
+            <input type="text"
+                   id="background_color"
+                   name="background_color"
+                   value="{{ settings.background_color or '#FFFFFF' }}"
+                   placeholder="#FFFFFF">
+            <small>Background color (hex color code)</small>
+        </div>
+    </div>
+
+    <div class="settings-info">
+        <p><strong>ℹ️ Quote Database:</strong> This plugin includes 40 carefully curated quotes across 4 categories (Inspirational, Wisdom, Funny, Technology).</p>
+    </div>
+</div>
+
+<style>
+    .plugin-settings {
+        max-width: 600px;
+    }
+
+    .settings-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .settings-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+    }
+
+    .settings-info {
+        padding: 15px;
+        background: #e3f2fd;
+        border-left: 4px solid #2196f3;
+        border-radius: 4px;
+        color: #1565c0;
+        font-size: 14px;
+    }
+
+    .settings-info p {
+        margin: 0;
+    }
+</style>

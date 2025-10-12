@@ -173,7 +173,7 @@ class TestDisplayController:
 
         controller.display_styled_image(sample_styled_image)
 
-        assert controller.state.current_image_id == sample_styled_image.id
+        assert controller.state.current_image_id == sample_styled_image.original_photo_id
         assert controller.state.last_refresh is not None
         assert controller.state.status == "idle"
 
@@ -198,7 +198,7 @@ class TestDisplayController:
         assert controller.state.last_refresh is not None
         assert controller.state.status == "idle"
 
-    def test_error_handling(self, mock_display_config):
+    def test_error_handling(self, mock_display_config, temp_dir):
         """Test error handling in display operations."""
         controller = DisplayController(mock_display_config)
 
@@ -209,14 +209,19 @@ class TestDisplayController:
         from pathlib import Path
         from datetime import datetime
         from src.artframe.models import StyledImage
+        from PIL import Image
+
+        # Create a dummy image file
+        img = Image.new('RGB', (100, 100), color='blue')
+        img_path = temp_dir / "test_styled.jpg"
+        img.save(img_path)
 
         styled_image = StyledImage(
-            id="test",
-            photo_id="test_photo",
+            original_photo_id="test_photo",
             style_name="test_style",
+            styled_path=img_path,
             created_at=datetime.now(),
-            file_path=Path("/nonexistent/path.jpg"),
-            dimensions=(100, 100)
+            metadata={'dimensions': (100, 100)}
         )
 
         # Should handle error gracefully
@@ -295,4 +300,4 @@ class TestDisplayController:
 
         controller.display_styled_image(sample_styled_image, show_metadata=False)
 
-        assert controller.state.current_image_id == sample_styled_image.id
+        assert controller.state.current_image_id == sample_styled_image.original_photo_id

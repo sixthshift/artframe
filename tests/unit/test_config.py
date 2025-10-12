@@ -39,14 +39,14 @@ class TestConfigValidator:
         validator = ConfigValidator()
         config = {
             'artframe': {
-                'source': {'provider': 'invalid'},
-                'style': {'provider': 'nanobanana', 'config': {}},
+                'source': {'provider': 'invalid', 'config': {}},
+                'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'styles': ['test']}},
                 'display': {'driver': 'mock', 'config': {}},
-                'cache': {'directory': '/tmp'}
+                'storage': {'directory': '/tmp'}
             }
         }
 
-        with pytest.raises(ValueError, match="Invalid source provider 'invalid'"):
+        with pytest.raises(ValueError, match=r"Invalid source provider 'invalid'\."):
             validator.validate(config)
 
     def test_invalid_immich_config(self):
@@ -60,11 +60,11 @@ class TestConfigValidator:
                 },
                 'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
                 'display': {'driver': 'mock', 'config': {}},
-                'cache': {'directory': '/tmp'}
+                'storage': {'directory': '/tmp'}
             }
         }
 
-        with pytest.raises(ValueError, match="Immich config missing required key"):
+        with pytest.raises(ValueError, match=r"Immich config missing required key:"):
             validator.validate(config)
 
     def test_invalid_url_format(self):
@@ -81,11 +81,11 @@ class TestConfigValidator:
                 },
                 'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
                 'display': {'driver': 'mock', 'config': {}},
-                'cache': {'directory': '/tmp'}
+                'storage': {'directory': '/tmp'}
             }
         }
 
-        with pytest.raises(ValueError, match="server_url must start with http"):
+        with pytest.raises(ValueError, match=r"server_url must start with http:// or https://"):
             validator.validate(config)
 
 
@@ -119,7 +119,7 @@ class TestConfigManager:
                 },
                 'style': {'provider': 'nanobanana', 'config': {'api_url': 'http://test', 'api_key': 'key', 'styles': ['test']}},
                 'display': {'driver': 'mock', 'config': {}},
-                'cache': {'directory': '/tmp'}
+                'storage': {'directory': '/tmp'}
             }
         }
 

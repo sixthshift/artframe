@@ -36,8 +36,8 @@ def sample_config():
             'style': {
                 'provider': 'nanobanana',
                 'config': {
-                    'api_url': 'http://localhost:8000',
-                    'api_key': 'test_key',
+                    'api_url': 'http://localhost:8080',
+                    'api_key': 'test_style_key',
                     'styles': ['ghibli', 'watercolor']
                 }
             },
@@ -45,11 +45,28 @@ def sample_config():
                 'driver': 'mock',
                 'config': {
                     'width': 600,
-                    'height': 448
+                    'height': 448,
+                    'rotation': 0
                 }
             },
             'storage': {
-                'directory': '/tmp/test_storage'
+                'directory': '/tmp/test_cache'
+            },
+            'scheduler': {
+                'timezone': 'America/New_York',
+                'default_duration': 3600,
+                'refresh_interval': 86400
+            },
+            'logging': {
+                'level': 'INFO',
+                'file': '/tmp/test.log',
+                'max_size_mb': 10,
+                'backup_count': 5
+            },
+            'web': {
+                'host': '127.0.0.1',
+                'port': 8000,
+                'debug': False
             }
         }
     }
@@ -87,13 +104,14 @@ def sample_styled_image(temp_dir):
     img.save(img_path)
 
     return StyledImage(
-        id="styled_123",
-        photo_id="test_photo_123",
+        original_photo_id="test_photo_123",
         style_name="ghibli",
+        styled_path=img_path,
         created_at=datetime.now(),
-        file_path=img_path,
-        dimensions=(100, 100),
-        file_size=1024
+        metadata={
+            'dimensions': (100, 100),
+            'file_size': 1024
+        }
     )
 
 

@@ -3,6 +3,7 @@ Configuration manager for Artframe.
 """
 
 import os
+import re
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Callable
@@ -34,6 +35,9 @@ class ConfigManager:
             with open(self.config_path, 'r') as f:
                 self._config = yaml.safe_load(f)
 
+            # Expand environment variables
+            self._config = self._expand_env_vars(self._config)
+
             # Validate configuration
             self.validator.validate(self._config)
 
@@ -41,6 +45,32 @@ class ConfigManager:
             raise ValueError(f"Invalid YAML in configuration file: {e}")
         except Exception as e:
             raise ValueError(f"Failed to load configuration: {e}")
+
+    def _expand_env_vars(self, config: Any) -> Any:
+        """
+        Recursively expand environment variables in configuration.
+
+        Supports ${VAR_NAME} syntax for environment variable expansion.
+
+        Args:
+            config: Configuration value (dict, list, str, or other)
+
+        Returns:
+            Configuration with environment variables expanded
+        """
+        if isinstance(config, dict):
+            return {key: self._expand_env_vars(value) for key, value in config.items()}
+        elif isinstance(config, list):
+            return [self._expand_env_vars(item) for item in config]
+        elif isinstance(config, str):
+            # Match ${VAR_NAME} pattern
+            def replace_env_var(match):
+                var_name = match.group(1)
+                return os.environ.get(var_name, match.group(0))
+
+            return re.sub(r'\$\{([^}]+)\}', replace_env_var, config)
+        else:
+            return config
 
 
     def get(self, key: str, default: Any = None) -> Any:

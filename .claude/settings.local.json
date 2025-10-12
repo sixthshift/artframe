@@ -6,7 +6,10 @@
       "Bash(find:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(python3:*)",
+      "Bash(python -m pytest tests/unit/test_config.py tests/unit/test_display.py -v)",
+      "Bash(pip3 install:*)"
     ],
     "deny": [],
     "ask": []

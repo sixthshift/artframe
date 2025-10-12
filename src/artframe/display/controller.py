@@ -68,7 +68,7 @@ class DisplayController:
             self.state.status = "updating"
 
             # Load image
-            image = Image.open(styled_image.file_path)
+            image = Image.open(styled_image.styled_path)
 
             # Add metadata overlay if requested
             if show_metadata and self.config.get('show_metadata', True):
@@ -78,7 +78,7 @@ class DisplayController:
             self.driver.display_image(image)
 
             # Update state
-            self.state.current_image_id = styled_image.id
+            self.state.current_image_id = styled_image.original_photo_id
             self.state.last_refresh = datetime.now()
             self.state.status = "idle"
             self.state.error_count = 0
