@@ -30,11 +30,6 @@ function renderConfigForm(config) {
 
     const formHtml = `
         <form id="config-form" class="config-form">
-            <div class="config-notice">
-                <p>ℹ️ <strong>Plugin settings</strong> are now managed in the <a href="/plugins">Plugins</a> tab.</p>
-                <p>This page only contains system-level configuration.</p>
-            </div>
-
             <!-- Scheduler Section -->
             <div class="config-section">
                 <h3>⏰ Scheduler</h3>

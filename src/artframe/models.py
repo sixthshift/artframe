@@ -84,3 +84,27 @@ class Playlist:
     items: List[PlaylistItem]
     created_at: datetime
     updated_at: datetime
+
+
+@dataclass
+class ScheduleEntry:
+    """Represents a time-based schedule entry."""
+
+    id: str
+    name: str
+    instance_id: str  # Which plugin instance to display
+    start_time: str  # HH:MM format (e.g., "08:00")
+    end_time: str  # HH:MM format (e.g., "09:00")
+    days_of_week: List[int]  # 0=Monday, 6=Sunday
+    priority: int  # Higher number = higher priority
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass
+class ScheduleConfig:
+    """Global schedule configuration."""
+
+    default_instance_id: Optional[str]  # Fallback when nothing scheduled
+    check_interval_seconds: int = 60  # How often to check for schedule changes

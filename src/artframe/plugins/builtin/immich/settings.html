@@ -1,0 +1,286 @@
+<!-- Settings template for Immich plugin -->
+<div class="plugin-settings">
+    <h3>Immich Album Sync Settings</h3>
+
+    <!-- Connection Settings -->
+    <div class="settings-section">
+        <h4>Immich Server Connection</h4>
+
+        <div class="form-group">
+            <label for="immich_url">Immich Server URL *</label>
+            <input type="text"
+                   id="immich_url"
+                   name="immich_url"
+                   value="{{ settings.immich_url or '' }}"
+                   placeholder="https://immich.example.com"
+                   required>
+            <small>URL of your Immich server (e.g., https://immich.example.com)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="immich_api_key">Immich API Key *</label>
+            <input type="password"
+                   id="immich_api_key"
+                   name="immich_api_key"
+                   value="{{ settings.immich_api_key or '' }}"
+                   placeholder="Your API key"
+                   required>
+            <small>API key from Immich user settings (Settings → Account → API Keys)</small>
+        </div>
+    </div>
+
+    <!-- Album Settings -->
+    <div class="settings-section">
+        <h4>Album Selection</h4>
+
+        <div class="form-group">
+            <label for="album_id">Album ID (Optional)</label>
+            <input type="text"
+                   id="album_id"
+                   name="album_id"
+                   value="{{ settings.album_id or '' }}"
+                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+            <small>UUID of the album to sync. Leave empty to sync all photos. Find in album URL: /albums/<strong>album-id</strong></small>
+        </div>
+
+        <div class="form-group">
+            <label for="max_photos">Maximum Photos to Sync</label>
+            <input type="number"
+                   id="max_photos"
+                   name="max_photos"
+                   value="{{ settings.max_photos or 0 }}"
+                   min="0"
+                   max="10000"
+                   placeholder="0">
+            <small>Limit number of photos synced (0 = unlimited). Useful for large albums.</small>
+        </div>
+    </div>
+
+    <!-- Display Settings -->
+    <div class="settings-section">
+        <h4>Display Options</h4>
+
+        <div class="form-group">
+            <label for="selection_mode">Photo Selection Mode</label>
+            <select id="selection_mode" name="selection_mode">
+                <option value="random" {% if settings.selection_mode == 'random' or not settings.selection_mode %}selected{% endif %}>Random</option>
+                <option value="sequential" {% if settings.selection_mode == 'sequential' %}selected{% endif %}>Sequential</option>
+                <option value="newest" {% if settings.selection_mode == 'newest' %}selected{% endif %}>Newest First</option>
+                <option value="oldest" {% if settings.selection_mode == 'oldest' %}selected{% endif %}>Oldest First</option>
+            </select>
+            <small>How to select which photo to display from synced collection</small>
+        </div>
+    </div>
+
+    <!-- Sync Settings -->
+    <div class="settings-section">
+        <h4>Synchronization</h4>
+
+        <div class="form-group">
+            <label for="sync_interval_hours">Sync Interval (hours)</label>
+            <input type="number"
+                   id="sync_interval_hours"
+                   name="sync_interval_hours"
+                   value="{{ settings.sync_interval_hours or 6 }}"
+                   min="1"
+                   max="168"
+                   placeholder="6">
+            <small>How often to check for album changes (1-168 hours). Default: 6 hours.</small>
+        </div>
+
+        <div class="info-box">
+            <strong>How Sync Works:</strong>
+            <ul>
+                <li>✓ First run: Downloads all photos from album</li>
+                <li>✓ Periodic sync: Checks for new/deleted photos</li>
+                <li>✓ Local cache: Photos stored in <code>~/.artframe/plugins/immich/</code></li>
+                <li>✓ Offline mode: Works without internet after initial sync</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Help Section -->
+    <div class="settings-section help-section">
+        <h4>📖 Quick Setup Guide</h4>
+
+        <div class="help-item">
+            <strong>1. Get Your API Key:</strong>
+            <ol>
+                <li>Open Immich web interface</li>
+                <li>Go to Settings (gear icon)</li>
+                <li>Navigate to Account Settings</li>
+                <li>Scroll to API Keys section</li>
+                <li>Click "New API Key"</li>
+                <li>Copy the generated key</li>
+            </ol>
+        </div>
+
+        <div class="help-item">
+            <strong>2. Get Album ID (Optional):</strong>
+            <ol>
+                <li>Open Immich web interface</li>
+                <li>Navigate to Albums</li>
+                <li>Open the album you want</li>
+                <li>Copy UUID from URL: <code>/albums/<span style="color: #4CAF50;">uuid-here</span></code></li>
+            </ol>
+        </div>
+
+        <div class="help-item">
+            <strong>3. First Sync:</strong>
+            <p>First sync may take 2-5 minutes depending on album size. Subsequent syncs are much faster (only downloads changes).</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .plugin-settings {
+        max-width: 700px;
+    }
+
+    .settings-section {
+        margin-bottom: 25px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+    }
+
+    .settings-section h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #555;
+    }
+
+    .form-group input[type="text"],
+    .form-group input[type="password"],
+    .form-group input[type="number"],
+    .form-group select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    .form-group input[type="number"] {
+        width: 150px;
+    }
+
+    .form-group small {
+        display: block;
+        margin-top: 5px;
+        color: #777;
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .form-group small code {
+        background: #e8e8e8;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 11px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #4CAF50;
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+    }
+
+    .info-box {
+        background: #e8f5e9;
+        border-left: 4px solid #4CAF50;
+        padding: 15px;
+        border-radius: 4px;
+        margin-top: 15px;
+    }
+
+    .info-box strong {
+        color: #2e7d32;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .info-box ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+
+    .info-box li {
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    .info-box code {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+    }
+
+    .help-section {
+        background: #fff3e0;
+        border: 1px solid #ffb74d;
+    }
+
+    .help-section h4 {
+        color: #e65100;
+        border-bottom-color: #ffb74d;
+    }
+
+    .help-item {
+        margin-bottom: 20px;
+    }
+
+    .help-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .help-item strong {
+        color: #e65100;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .help-item ol {
+        margin: 8px 0 0 0;
+        padding-left: 20px;
+    }
+
+    .help-item li {
+        margin-bottom: 4px;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .help-item p {
+        margin: 8px 0 0 0;
+        color: #666;
+        line-height: 1.5;
+    }
+
+    .help-item code {
+        background: rgba(230, 81, 0, 0.08);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 12px;
+        color: #bf360c;
+    }
+</style>

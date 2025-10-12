@@ -1,0 +1,9 @@
+{
+  "id": "immich",
+  "display_name": "Immich",
+  "class": "Immich",
+  "description": "Syncs and displays photos from an Immich album. Downloads all photos locally and keeps them in sync with the server.",
+  "author": "Artframe",
+  "version": "1.0.0",
+  "icon": "icon.png"
+}

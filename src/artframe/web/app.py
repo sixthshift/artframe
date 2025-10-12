@@ -28,10 +28,12 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
     app.controller = controller
 
-    # Initialize InstanceManager and PlaylistManager
+    # Initialize InstanceManager, PlaylistManager, and ScheduleManager
     from ..plugins.instance_manager import InstanceManager
     from ..plugins.plugin_registry import load_plugins
     from ..playlists import PlaylistManager
+    from ..playlists.schedule_manager import ScheduleManager
+    from ..playlists.schedule_executor import ScheduleExecutor
 
     # Load plugins from builtin directory
     plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"
@@ -43,6 +45,18 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
     # Create playlist manager
     app.playlist_manager = PlaylistManager(storage_dir)
+
+    # Create schedule manager and executor
+    app.schedule_manager = ScheduleManager(storage_dir)
+    device_config = {
+        "width": 600,  # TODO: Get from controller/config
+        "height": 448,
+        "rotation": 0,
+        "color_mode": "grayscale",
+    }
+    app.schedule_executor = ScheduleExecutor(
+        app.schedule_manager, app.instance_manager, device_config
+    )
 
     from . import routes
 

@@ -14,6 +14,8 @@ from .utils import Scheduler
 from .models import StorageStats
 from .logging import Logger
 from .playlists import PlaylistManager, PlaylistExecutor
+from .playlists.schedule_manager import ScheduleManager
+from .playlists.schedule_executor import ScheduleExecutor
 from .plugins import InstanceManager
 
 
@@ -46,11 +48,15 @@ class ArtframeController:
         storage_dir = Path.home() / ".artframe" / "data"
         self.instance_manager = InstanceManager(storage_dir)
         self.playlist_manager = PlaylistManager(storage_dir)
+        self.schedule_manager = ScheduleManager(storage_dir)
 
-        # Create playlist executor
+        # Create playlist and schedule executors
         device_config = self._get_device_config()
         self.playlist_executor = PlaylistExecutor(
             self.playlist_manager, self.instance_manager, device_config
+        )
+        self.schedule_executor = ScheduleExecutor(
+            self.schedule_manager, self.instance_manager, device_config
         )
 
         # Track state

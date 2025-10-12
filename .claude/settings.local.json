@@ -12,7 +12,9 @@
       "Bash(pip3 install:*)",
       "Bash(grep:*)",
       "Bash(xargs python3 -m black:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:immich.app)",
+      "WebFetch(domain:docs.immich.app)"
     ],
     "deny": [],
     "ask": []

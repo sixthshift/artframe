@@ -48,6 +48,12 @@ def playlists_page():
     return render_template("playlists.html")
 
 
+@bp.route("/schedule")
+def schedule_page():
+    """Render schedule management page."""
+    return render_template("schedule.html")
+
+
 @bp.route("/api/status")
 def api_status():
     """Get current system status as JSON."""
@@ -924,5 +930,295 @@ def api_playlist_deactivate():
             return jsonify({"success": False, "error": "Failed to deactivate playlist"}), 400
 
         return jsonify({"success": True, "message": "Playlist deactivated successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ===== Schedule Management APIs =====
+
+
+@bp.route("/api/schedules", methods=["GET"])
+def api_schedules_list():
+    """Get list of all schedule entries."""
+    try:
+        schedule_manager = current_app.schedule_manager
+        entries = schedule_manager.list_entries()
+
+        entries_data = []
+        for entry in entries:
+            entries_data.append(
+                {
+                    "id": entry.id,
+                    "name": entry.name,
+                    "instance_id": entry.instance_id,
+                    "start_time": entry.start_time,
+                    "end_time": entry.end_time,
+                    "days_of_week": entry.days_of_week,
+                    "priority": entry.priority,
+                    "enabled": entry.enabled,
+                    "created_at": entry.created_at.isoformat(),
+                    "updated_at": entry.updated_at.isoformat(),
+                }
+            )
+
+        config = schedule_manager.get_config()
+
+        return jsonify(
+            {
+                "success": True,
+                "data": entries_data,
+                "config": {
+                    "default_instance_id": config.default_instance_id,
+                    "check_interval_seconds": config.check_interval_seconds,
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules", methods=["POST"])
+def api_schedule_create():
+    """Create a new schedule entry."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+
+        name = data.get("name")
+        instance_id = data.get("instance_id")
+        start_time = data.get("start_time")
+        end_time = data.get("end_time")
+        days_of_week = data.get("days_of_week", [])
+        priority = data.get("priority", 5)
+
+        if not name:
+            return jsonify({"success": False, "error": "name is required"}), 400
+        if not instance_id:
+            return jsonify({"success": False, "error": "instance_id is required"}), 400
+        if not start_time:
+            return jsonify({"success": False, "error": "start_time is required"}), 400
+        if not end_time:
+            return jsonify({"success": False, "error": "end_time is required"}), 400
+
+        schedule_manager = current_app.schedule_manager
+        entry = schedule_manager.create_entry(
+            name=name,
+            instance_id=instance_id,
+            start_time=start_time,
+            end_time=end_time,
+            days_of_week=days_of_week,
+            priority=priority,
+        )
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": entry.id,
+                    "name": entry.name,
+                    "instance_id": entry.instance_id,
+                    "start_time": entry.start_time,
+                    "end_time": entry.end_time,
+                    "days_of_week": entry.days_of_week,
+                    "priority": entry.priority,
+                    "enabled": entry.enabled,
+                    "created_at": entry.created_at.isoformat(),
+                    "updated_at": entry.updated_at.isoformat(),
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/<entry_id>", methods=["GET"])
+def api_schedule_details(entry_id):
+    """Get details for a specific schedule entry."""
+    try:
+        schedule_manager = current_app.schedule_manager
+        entry = schedule_manager.get_entry(entry_id)
+
+        if entry is None:
+            return jsonify({"success": False, "error": "Schedule entry not found"}), 404
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": entry.id,
+                    "name": entry.name,
+                    "instance_id": entry.instance_id,
+                    "start_time": entry.start_time,
+                    "end_time": entry.end_time,
+                    "days_of_week": entry.days_of_week,
+                    "priority": entry.priority,
+                    "enabled": entry.enabled,
+                    "created_at": entry.created_at.isoformat(),
+                    "updated_at": entry.updated_at.isoformat(),
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/<entry_id>", methods=["PUT"])
+def api_schedule_update(entry_id):
+    """Update a schedule entry."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+
+        schedule_manager = current_app.schedule_manager
+        success = schedule_manager.update_entry(
+            entry_id,
+            name=data.get("name"),
+            instance_id=data.get("instance_id"),
+            start_time=data.get("start_time"),
+            end_time=data.get("end_time"),
+            days_of_week=data.get("days_of_week"),
+            priority=data.get("priority"),
+            enabled=data.get("enabled"),
+        )
+
+        if not success:
+            return jsonify({"success": False, "error": "Failed to update schedule entry"}), 400
+
+        entry = schedule_manager.get_entry(entry_id)
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "id": entry.id,
+                    "name": entry.name,
+                    "instance_id": entry.instance_id,
+                    "start_time": entry.start_time,
+                    "end_time": entry.end_time,
+                    "days_of_week": entry.days_of_week,
+                    "priority": entry.priority,
+                    "enabled": entry.enabled,
+                    "created_at": entry.created_at.isoformat(),
+                    "updated_at": entry.updated_at.isoformat(),
+                },
+            }
+        )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/<entry_id>", methods=["DELETE"])
+def api_schedule_delete(entry_id):
+    """Delete a schedule entry."""
+    try:
+        schedule_manager = current_app.schedule_manager
+        success = schedule_manager.delete_entry(entry_id)
+
+        if not success:
+            return jsonify({"success": False, "error": "Failed to delete schedule entry"}), 400
+
+        return jsonify({"success": True, "message": "Schedule entry deleted successfully"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/config", methods=["PUT"])
+def api_schedule_config_update():
+    """Update schedule configuration (e.g., default instance)."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+
+        schedule_manager = current_app.schedule_manager
+
+        if "default_instance_id" in data:
+            schedule_manager.set_default_instance(data["default_instance_id"])
+
+        return jsonify({"success": True, "message": "Schedule configuration updated"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/current", methods=["GET"])
+def api_schedule_current():
+    """Get information about what's currently scheduled."""
+    try:
+        schedule_executor = current_app.schedule_executor
+        info = schedule_executor.get_current_schedule_info()
+
+        return jsonify({"success": True, "data": info})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/timeline", methods=["GET"])
+def api_schedule_timeline():
+    """
+    Get timeline view of schedule for visualization.
+
+    Query params:
+    - day: Day of week (0=Monday, 6=Sunday). Defaults to today.
+    """
+    try:
+        from datetime import datetime
+
+        schedule_manager = current_app.schedule_manager
+        instance_manager = current_app.instance_manager
+
+        # Get day parameter (defaults to today)
+        day_param = request.args.get("day")
+        if day_param is not None:
+            day = int(day_param)
+        else:
+            day = datetime.now().weekday()
+
+        # Get all entries for this day
+        entries = schedule_manager.list_entries()
+        day_entries = [e for e in entries if e.enabled and day in e.days_of_week]
+
+        # Sort by start time
+        day_entries.sort(key=lambda e: e.start_time)
+
+        # Build timeline data
+        timeline = []
+        for entry in day_entries:
+            instance = instance_manager.get_instance(entry.instance_id)
+            timeline.append(
+                {
+                    "entry_id": entry.id,
+                    "entry_name": entry.name,
+                    "start_time": entry.start_time,
+                    "end_time": entry.end_time,
+                    "priority": entry.priority,
+                    "instance_id": entry.instance_id,
+                    "instance_name": instance.name if instance else "Unknown",
+                    "plugin_id": instance.plugin_id if instance else "Unknown",
+                }
+            )
+
+        # Get default instance info
+        default_id = schedule_manager.get_default_instance_id()
+        default_info = None
+        if default_id:
+            default_instance = instance_manager.get_instance(default_id)
+            if default_instance:
+                default_info = {
+                    "instance_id": default_id,
+                    "instance_name": default_instance.name,
+                    "plugin_id": default_instance.plugin_id,
+                }
+
+        return jsonify(
+            {
+                "success": True,
+                "data": {
+                    "day": day,
+                    "entries": timeline,
+                    "default": default_info,
+                },
+            }
+        )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

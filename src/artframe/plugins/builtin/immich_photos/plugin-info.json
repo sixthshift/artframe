@@ -1,6 +1,6 @@
 {
     "id": "immich_photos",
-    "display_name": "Immich Photos",
+    "display_name": "AI Styled Immich",
     "class": "ImmichPhotos",
     "description": "Display photos from Immich server with optional AI style transformation",
     "author": "Artframe Team",
