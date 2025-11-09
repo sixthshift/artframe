@@ -1,33 +1,126 @@
+// Track last display state to avoid unnecessary updates
+let lastDisplayCount = -1;
+let lastDisplayData = null;
+
 async function fetchCurrentDisplay() {
     try {
         const result = await apiCall('/api/display/current');
 
         if (result.success && result.data) {
             const display = result.data;
-            const displayHtml = `
-                <div class="display-preview">
-                    <div class="preview-placeholder">
-                        <div class="preview-icon">🖼️</div>
-                        <p class="preview-text">Image Preview</p>
-                        <p class="preview-note">E-ink display preview coming soon</p>
+
+            // Check what changed
+            const displayCountChanged = display.display_count !== lastDisplayCount;
+            const metadataChanged = JSON.stringify(display) !== JSON.stringify(lastDisplayData);
+
+            // Only update if something actually changed
+            if (!metadataChanged && !displayCountChanged) {
+                return; // Nothing changed, skip update entirely
+            }
+
+            const container = document.getElementById('current-display-content');
+            if (!container) return;
+
+            // Update image ONLY if display count changed
+            if (display.has_preview && displayCountChanged) {
+                let previewDiv = container.querySelector('.display-preview');
+
+                if (!previewDiv) {
+                    // Create preview container if doesn't exist
+                    previewDiv = document.createElement('div');
+                    previewDiv.className = 'display-preview';
+                    container.insertBefore(previewDiv, container.firstChild);
+                }
+
+                // Update image with cache buster
+                const timestamp = new Date().getTime();
+                previewDiv.innerHTML = `
+                    <img src="/api/display/preview?t=${timestamp}"
+                         alt="Current Display"
+                         class="preview-image"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="preview-placeholder" style="display:none;">
+                        <div class="preview-icon">⚠️</div>
+                        <p class="preview-text">Preview not available</p>
                     </div>
-                    <div class="display-metadata">
-                        <div class="metadata-item">
-                            <span class="label">Style:</span>
-                            <span class="value">${display.style || 'N/A'}</span>
+                `;
+
+                lastDisplayCount = display.display_count;
+            } else if (display.has_preview && !displayCountChanged) {
+                // Image hasn't changed - do nothing (no flicker!)
+            } else if (!display.has_preview) {
+                // First time or no preview available
+                let previewDiv = container.querySelector('.display-preview');
+                if (!previewDiv || displayCountChanged) {
+                    const previewHtml = display.has_preview ? `
+                        <div class="display-preview">
+                            <img src="/api/display/preview?t=${new Date().getTime()}"
+                                 alt="Current Display"
+                                 class="preview-image"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="preview-placeholder" style="display:none;">
+                                <div class="preview-icon">⚠️</div>
+                                <p class="preview-text">Preview not available</p>
+                            </div>
                         </div>
-                        <div class="metadata-item">
-                            <span class="label">Last Updated:</span>
-                            <span class="value">${formatTimestamp(display.last_update)}</span>
+                    ` : `
+                        <div class="display-preview">
+                            <div class="preview-placeholder">
+                                <div class="preview-icon">🖼️</div>
+                                <p class="preview-text">Physical E-ink Display</p>
+                                <p class="preview-note">Preview only available with mock driver</p>
+                            </div>
                         </div>
-                        <div class="metadata-item">
-                            <span class="label">Image ID:</span>
-                            <span class="value">${display.image_id || 'None'}</span>
-                        </div>
+                    `;
+
+                    if (!previewDiv) {
+                        container.insertAdjacentHTML('afterbegin', previewHtml);
+                    } else {
+                        previewDiv.outerHTML = previewHtml;
+                    }
+                }
+            }
+
+            // Update metadata ONLY if it changed
+            if (metadataChanged) {
+                let metadataDiv = container.querySelector('.display-metadata');
+
+                const metadataHtml = `
+                    <div class="metadata-item">
+                        <span class="label">Plugin:</span>
+                        <span class="value">${display.plugin_name || 'N/A'}</span>
                     </div>
-                </div>
-            `;
-            setElementContent('current-display-content', displayHtml);
+                    <div class="metadata-item">
+                        <span class="label">Instance:</span>
+                        <span class="value">${display.instance_name || 'N/A'}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="label">Last Updated:</span>
+                        <span class="value">${formatTimestamp(display.last_update)}</span>
+                    </div>
+                    <div class="metadata-item">
+                        <span class="label">Status:</span>
+                        <span class="value status-${display.status}">${display.status}</span>
+                    </div>
+                    ${display.display_count ? `
+                    <div class="metadata-item">
+                        <span class="label">Display Count:</span>
+                        <span class="value">${display.display_count}</span>
+                    </div>
+                    ` : ''}
+                `;
+
+                if (!metadataDiv) {
+                    const div = document.createElement('div');
+                    div.className = 'display-metadata';
+                    div.innerHTML = metadataHtml;
+                    container.appendChild(div);
+                } else {
+                    metadataDiv.innerHTML = metadataHtml;
+                }
+            }
+
+            lastDisplayData = display;
         } else {
             showInfo('current-display-content', 'No image currently displayed');
         }
@@ -106,5 +199,8 @@ function refresh() {
     fetchHistory();
 }
 
+// Initial load
 refresh();
-setInterval(refresh, 1000);
+
+// Poll every 2 seconds (reduced from 1s to minimize flicker)
+setInterval(refresh, 2000);

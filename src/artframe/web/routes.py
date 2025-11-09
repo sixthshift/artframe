@@ -4,10 +4,18 @@ Web routes for Artframe dashboard.
 
 import os
 import signal
+from typing import cast
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 
+from .types import ArtframeFlask
+
 bp = Blueprint("dashboard", __name__)
+
+
+def get_app() -> ArtframeFlask:
+    """Get the current app with proper typing."""
+    return cast(ArtframeFlask, current_app)
 
 
 @bp.route("/")
@@ -55,7 +63,7 @@ def schedule_page():
 @bp.route("/api/status")
 def api_status():
     """Get current system status as JSON."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         status = controller.get_status()
@@ -67,7 +75,7 @@ def api_status():
 @bp.route("/api/config")
 def api_config():
     """Get current configuration as JSON."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         config = controller.config_manager.config
@@ -79,7 +87,7 @@ def api_config():
 @bp.route("/api/connections")
 def api_connections():
     """Test all external connections."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         connections = controller.test_connections()
@@ -91,7 +99,7 @@ def api_connections():
 @bp.route("/api/update", methods=["POST"])
 def api_trigger_update():
     """Trigger immediate photo update."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         success = controller.manual_refresh()
@@ -108,7 +116,7 @@ def api_trigger_update():
 @bp.route("/api/clear", methods=["POST"])
 def api_clear_display():
     """Clear the display."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         controller.display_controller.clear_display()
@@ -120,7 +128,7 @@ def api_clear_display():
 @bp.route("/api/config", methods=["PUT"])
 def api_update_config():
     """Update in-memory configuration (validation only, not saved)."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         new_config = request.get_json()
@@ -142,7 +150,7 @@ def api_update_config():
 @bp.route("/api/config/save", methods=["POST"])
 def api_save_config():
     """Save current in-memory configuration to YAML file."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         controller.config_manager.save_to_file(backup=True)
@@ -160,7 +168,7 @@ def api_save_config():
 @bp.route("/api/config/revert", methods=["POST"])
 def api_revert_config():
     """Revert in-memory config to what's on disk."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         controller.config_manager.revert_to_file()
@@ -185,7 +193,7 @@ def api_restart():
 @bp.route("/api/scheduler/status")
 def api_scheduler_status():
     """Get scheduler status."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         status = controller.scheduler.get_status()
@@ -197,7 +205,7 @@ def api_scheduler_status():
 @bp.route("/api/scheduler/pause", methods=["POST"])
 def api_scheduler_pause():
     """Pause automatic updates (daily e-ink refresh still occurs)."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         controller.scheduler.pause()
@@ -215,7 +223,7 @@ def api_scheduler_pause():
 @bp.route("/api/scheduler/resume", methods=["POST"])
 def api_scheduler_resume():
     """Resume automatic updates."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         controller.scheduler.resume()
@@ -233,23 +241,77 @@ def api_scheduler_resume():
 @bp.route("/api/display/current")
 def api_display_current():
     """Get current display information."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         state = controller.display_controller.get_state()
+        driver = controller.display_controller.driver
+
+        # Check if using mock driver
+        has_preview = hasattr(driver, 'get_current_image_path')
+        plugin_info = driver.get_last_plugin_info() if hasattr(driver, 'get_last_plugin_info') else {}
+
         return jsonify(
             {
                 "success": True,
                 "data": {
                     "image_id": state.current_image_id,
                     "last_update": state.last_refresh.isoformat() if state.last_refresh else None,
-                    "style": "Unknown",  # TODO: Track style with image
+                    "plugin_name": plugin_info.get("plugin_name", "Unknown"),
+                    "instance_name": plugin_info.get("instance_name", "Unknown"),
                     "status": state.status,
+                    "has_preview": has_preview,
+                    "display_count": driver.get_display_count() if hasattr(driver, 'get_display_count') else 0,
                 },
             }
         )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/display/preview")
+def api_display_preview():
+    """Serve the current display preview image (mock driver only)."""
+    from flask import send_file
+    from pathlib import Path
+    import os
+    controller = get_app().controller
+
+    try:
+        driver = controller.display_controller.driver
+
+        # Check if mock driver
+        if hasattr(driver, 'get_current_image_path'):
+            # Try to get the current image path
+            image_path = driver.get_current_image_path()
+
+            # If no image displayed yet, check if latest.png exists in output dir
+            if not image_path or not image_path.exists():
+                # Get output dir and ensure it's an absolute path
+                output_dir = driver.output_dir
+                if isinstance(output_dir, str):
+                    output_dir = Path(output_dir)
+
+                # Make absolute if relative
+                if not output_dir.is_absolute():
+                    # Resolve relative to project root (where config file is)
+                    project_root = Path(__file__).parent.parent.parent.parent
+                    output_dir = (project_root / output_dir).resolve()
+
+                latest_path = output_dir / "latest.png"
+
+                if latest_path.exists():
+                    return send_file(str(latest_path), mimetype='image/png')
+            elif image_path.exists():
+                return send_file(str(image_path), mimetype='image/png')
+
+        # Return placeholder if no image available
+        return jsonify({"success": False, "error": "No preview available"}), 404
+
+    except Exception as e:
+        import traceback
+        error_detail = f"{str(e)}\n{traceback.format_exc()}"
+        return jsonify({"success": False, "error": str(e), "detail": error_detail}), 500
 
 
 @bp.route("/api/display/history")
@@ -265,7 +327,7 @@ def api_display_history():
 @bp.route("/api/display/health")
 def api_display_health():
     """Get e-ink display health metrics."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         state = controller.display_controller.get_state()
@@ -287,7 +349,7 @@ def api_display_health():
 @bp.route("/api/source/stats")
 def api_source_stats():
     """Get source statistics."""
-    controller = current_app.controller
+    controller = get_app().controller
 
     try:
         # Basic stats for now
@@ -487,7 +549,7 @@ def api_plugin_settings_template(plugin_id):
 def api_instances_list():
     """Get list of all plugin instances."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         instances = instance_manager.list_instances()
 
         instances_data = []
@@ -527,7 +589,7 @@ def api_instances_create():
         if not name:
             return jsonify({"success": False, "error": "name is required"}), 400
 
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         instance = instance_manager.create_instance(plugin_id, name, settings)
 
         if instance is None:
@@ -560,7 +622,7 @@ def api_instances_create():
 def api_instance_details(instance_id):
     """Get details for a specific instance."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         instance = instance_manager.get_instance(instance_id)
 
         if instance is None:
@@ -595,7 +657,7 @@ def api_instance_update(instance_id):
         name = data.get("name")
         settings = data.get("settings")
 
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         success = instance_manager.update_instance(instance_id, name, settings)
 
         if not success:
@@ -624,7 +686,7 @@ def api_instance_update(instance_id):
 def api_instance_delete(instance_id):
     """Delete an instance."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         success = instance_manager.delete_instance(instance_id)
 
         if not success:
@@ -639,7 +701,7 @@ def api_instance_delete(instance_id):
 def api_instance_enable(instance_id):
     """Enable an instance."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         success = instance_manager.enable_instance(instance_id)
 
         if not success:
@@ -654,7 +716,7 @@ def api_instance_enable(instance_id):
 def api_instance_disable(instance_id):
     """Disable an instance."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
         success = instance_manager.disable_instance(instance_id)
 
         if not success:
@@ -669,7 +731,7 @@ def api_instance_disable(instance_id):
 def api_instance_test(instance_id):
     """Test run a plugin instance."""
     try:
-        instance_manager = current_app.instance_manager
+        instance_manager = get_app().instance_manager
 
         # Get device config from display controller
         device_config = {
@@ -696,7 +758,7 @@ def api_instance_test(instance_id):
 def api_playlists_list():
     """Get list of all playlists."""
     try:
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         playlists = playlist_manager.list_playlists()
 
         playlists_data = []
@@ -757,7 +819,7 @@ def api_playlist_create():
                 )
             )
 
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         playlist = playlist_manager.create_playlist(name, description, items)
 
         return jsonify(
@@ -789,7 +851,7 @@ def api_playlist_create():
 def api_playlist_details(playlist_id):
     """Get details for a specific playlist."""
     try:
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         playlist = playlist_manager.get_playlist(playlist_id)
 
         if playlist is None:
@@ -848,7 +910,7 @@ def api_playlist_update(playlist_id):
                     )
                 )
 
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         success = playlist_manager.update_playlist(
             playlist_id, name=name, description=description, items=items, enabled=enabled
         )
@@ -886,7 +948,7 @@ def api_playlist_update(playlist_id):
 def api_playlist_delete(playlist_id):
     """Delete a playlist."""
     try:
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         success = playlist_manager.delete_playlist(playlist_id)
 
         if not success:
@@ -901,7 +963,7 @@ def api_playlist_delete(playlist_id):
 def api_playlist_activate(playlist_id):
     """Set a playlist as active."""
     try:
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         success = playlist_manager.set_active_playlist(playlist_id)
 
         if not success:
@@ -916,7 +978,7 @@ def api_playlist_activate(playlist_id):
 def api_playlist_deactivate():
     """Deactivate the current playlist."""
     try:
-        playlist_manager = current_app.playlist_manager
+        playlist_manager = get_app().playlist_manager
         success = playlist_manager.set_active_playlist(None)
 
         if not success:
@@ -934,7 +996,7 @@ def api_playlist_deactivate():
 def api_schedules_list():
     """Get list of all schedule entries."""
     try:
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
         entries = schedule_manager.list_entries()
 
         entries_data = []
@@ -994,7 +1056,7 @@ def api_schedule_create():
         if not end_time:
             return jsonify({"success": False, "error": "end_time is required"}), 400
 
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
         entry = schedule_manager.create_entry(
             name=name,
             instance_id=instance_id,
@@ -1029,7 +1091,7 @@ def api_schedule_create():
 def api_schedule_details(entry_id):
     """Get details for a specific schedule entry."""
     try:
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
         entry = schedule_manager.get_entry(entry_id)
 
         if entry is None:
@@ -1064,7 +1126,7 @@ def api_schedule_update(entry_id):
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
         success = schedule_manager.update_entry(
             entry_id,
             name=data.get("name"),
@@ -1105,7 +1167,7 @@ def api_schedule_update(entry_id):
 def api_schedule_delete(entry_id):
     """Delete a schedule entry."""
     try:
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
         success = schedule_manager.delete_entry(entry_id)
 
         if not success:
@@ -1124,7 +1186,7 @@ def api_schedule_config_update():
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
-        schedule_manager = current_app.schedule_manager
+        schedule_manager = get_app().schedule_manager
 
         if "default_instance_id" in data:
             schedule_manager.set_default_instance(data["default_instance_id"])
@@ -1157,8 +1219,8 @@ def api_schedule_timeline():
     try:
         from datetime import datetime
 
-        schedule_manager = current_app.schedule_manager
-        instance_manager = current_app.instance_manager
+        schedule_manager = get_app().schedule_manager
+        instance_manager = get_app().instance_manager
 
         # Get day parameter (defaults to today)
         day_param = request.args.get("day")

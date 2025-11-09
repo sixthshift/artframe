@@ -80,6 +80,9 @@ data/
 logs/
 *.log
 
+# Debug scripts (temporary development scripts)
+scripts/debug/
+
 # Cache directories
 cache/
 .cache/

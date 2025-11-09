@@ -19,7 +19,8 @@
       "Bash(cat:*)",
       "WebFetch(domain:code.claude.com)",
       "Read(//tmp/**)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

@@ -9,9 +9,10 @@ from typing import Optional
 from flask import Flask
 
 from ..controller import ArtframeController
+from .types import ArtframeFlask
 
 
-def create_app(controller: ArtframeController, config: Optional[dict] = None) -> Flask:
+def create_app(controller: ArtframeController, config: Optional[dict] = None) -> ArtframeFlask:
     """
     Create and configure Flask application.
 
@@ -20,9 +21,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         config: Optional Flask configuration
 
     Returns:
-        Configured Flask application
+        Configured Flask application with Artframe attributes
     """
-    app = Flask(__name__)
+    app = ArtframeFlask(__name__)
 
     if config:
         app.config.update(config)
