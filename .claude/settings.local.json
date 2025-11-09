@@ -15,9 +15,17 @@
       "Bash(git add:*)",
       "WebFetch(domain:immich.app)",
       "WebFetch(domain:docs.immich.app)",
-      "Bash(flake8:*)"
+      "Bash(flake8:*)",
+      "Bash(cat:*)",
+      "WebFetch(domain:code.claude.com)",
+      "Read(//tmp/**)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }
