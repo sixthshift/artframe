@@ -146,7 +146,7 @@ class Clock(BasePlugin):
             self.logger.error(f"Failed to generate clock image: {e}", exc_info=True)
             return self._create_error_image(str(e), device_config)
 
-    def _get_font(self, size: str, text_type: str) -> ImageFont.FreeTypeFont:
+    def _get_font(self, size: str, text_type: str):
         """
         Get font for rendering.
 
@@ -155,7 +155,7 @@ class Clock(BasePlugin):
             text_type: Type of text ('time' or 'date')
 
         Returns:
-            PIL font object
+            PIL font object (Union[FreeTypeFont, ImageFont])
         """
         # Font size mappings
         size_map = {

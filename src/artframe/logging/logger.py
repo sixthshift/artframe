@@ -80,3 +80,20 @@ class Logger:
     def log_manual_refresh_triggered(self) -> None:
         """Log manual refresh trigger."""
         self._logger.info("Manual refresh triggered")
+
+    # Standard logging methods for general use
+    def info(self, msg: str) -> None:
+        """Log info message."""
+        self._logger.info(msg)
+
+    def warning(self, msg: str) -> None:
+        """Log warning message."""
+        self._logger.warning(msg)
+
+    def error(self, msg: str) -> None:
+        """Log error message."""
+        self._logger.error(msg)
+
+    def debug(self, msg: str) -> None:
+        """Log debug message."""
+        self._logger.debug(msg)

@@ -4,11 +4,15 @@ Web routes for Artframe dashboard.
 
 import os
 import signal
-from typing import cast
+from pathlib import Path
+from typing import Any, cast
 
-from flask import Blueprint, current_app, jsonify, render_template, request
+from flask import Blueprint, current_app, jsonify, render_template, request, send_file
 
 from .types import ArtframeFlask
+
+# Placeholder image path for when no display image is available
+PLACEHOLDER_IMAGE_PATH = Path(__file__).parent / "static" / "placeholder.png"
 
 bp = Blueprint("dashboard", __name__)
 
@@ -287,8 +291,10 @@ def api_display_preview():
 
             # If no image displayed yet, check if latest.png exists in output dir
             if not image_path or not image_path.exists():
-                # Get output dir and ensure it's an absolute path
-                output_dir = driver.output_dir
+                # Get output dir and ensure it's an absolute path (MockDriver only)
+                output_dir = getattr(driver, 'output_dir', None)
+                if output_dir is None:
+                    return send_file(PLACEHOLDER_IMAGE_PATH, mimetype="image/png")
                 if isinstance(output_dir, str):
                     output_dir = Path(output_dir)
 
@@ -377,6 +383,7 @@ def api_system_info():
     """Get system information."""
     try:
         import platform
+        import time
         from datetime import timedelta
 
         import psutil
@@ -385,7 +392,7 @@ def api_system_info():
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage("/")
         uptime_seconds = psutil.boot_time()
-        uptime = str(timedelta(seconds=int(psutil.time.time() - uptime_seconds)))
+        uptime = str(timedelta(seconds=int(time.time() - uptime_seconds)))
 
         # Try to get temperature (Raspberry Pi)
         temp = None
@@ -664,6 +671,8 @@ def api_instance_update(instance_id):
             return jsonify({"success": False, "error": "Failed to update instance"}), 400
 
         instance = instance_manager.get_instance(instance_id)
+        if instance is None:
+            return jsonify({"success": False, "error": "Instance not found"}), 404
         return jsonify(
             {
                 "success": True,
@@ -808,8 +817,9 @@ def api_playlist_create():
 
         # Parse items
         from ..models import PlaylistItem
+        from typing import List
 
-        items = []
+        items: List[PlaylistItem] = []
         for item_data in items_data:
             items.append(
                 PlaylistItem(
@@ -896,10 +906,11 @@ def api_playlist_update(playlist_id):
         items_data = data.get("items")
 
         # Parse items if provided
-        items = None
-        if items_data is not None:
-            from ..models import PlaylistItem
+        from typing import List, Optional
+        from ..models import PlaylistItem
 
+        items: Optional[List[PlaylistItem]] = None
+        if items_data is not None:
             items = []
             for item_data in items_data:
                 items.append(
@@ -919,6 +930,8 @@ def api_playlist_update(playlist_id):
             return jsonify({"success": False, "error": "Failed to update playlist"}), 400
 
         playlist = playlist_manager.get_playlist(playlist_id)
+        if playlist is None:
+            return jsonify({"success": False, "error": "Playlist not found"}), 404
         return jsonify(
             {
                 "success": True,
@@ -1142,6 +1155,8 @@ def api_schedule_update(entry_id):
             return jsonify({"success": False, "error": "Failed to update schedule entry"}), 400
 
         entry = schedule_manager.get_entry(entry_id)
+        if entry is None:
+            return jsonify({"success": False, "error": "Schedule entry not found"}), 404
         return jsonify(
             {
                 "success": True,
@@ -1200,7 +1215,7 @@ def api_schedule_config_update():
 def api_schedule_current():
     """Get information about what's currently scheduled."""
     try:
-        schedule_executor = current_app.schedule_executor
+        schedule_executor = get_app().schedule_executor
         info = schedule_executor.get_current_schedule_info()
 
         return jsonify({"success": True, "data": info})

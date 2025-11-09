@@ -6,7 +6,7 @@ Displays inspirational and thought-provoking quotes.
 
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -268,7 +268,7 @@ class QuoteOfTheDay(BasePlugin):
         return quote
 
     def _wrap_text(
-        self, text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: ImageDraw.Draw
+        self, text: str, font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont], max_width: int, draw: ImageDraw.ImageDraw
     ) -> List[str]:
         """
         Wrap text to fit within max_width.
@@ -284,7 +284,7 @@ class QuoteOfTheDay(BasePlugin):
         """
         words = text.split()
         lines = []
-        current_line = []
+        current_line: List[str] = []
 
         for word in words:
             test_line = " ".join(current_line + [word])
@@ -303,14 +303,17 @@ class QuoteOfTheDay(BasePlugin):
 
         return lines
 
-    def _get_line_height(self, font: ImageFont.FreeTypeFont) -> int:
+    def _get_line_height(self, font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]) -> int:
         """Get the line height for a font."""
         try:
-            return font.size + 10  # Font size + spacing
+            # FreeTypeFont has .size attribute, ImageFont doesn't
+            if hasattr(font, 'size'):
+                return int(font.size + 10)  # Font size + spacing
+            return 30
         except Exception:
             return 30  # Default fallback
 
-    def _get_font(self, size: str, text_type: str) -> ImageFont.FreeTypeFont:
+    def _get_font(self, size: str, text_type: str) -> Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]:
         """
         Get font for rendering.
 

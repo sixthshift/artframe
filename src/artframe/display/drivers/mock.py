@@ -102,7 +102,7 @@ class MockDriver(DriverInterface):
         """Mock wake from sleep."""
         print("Mock display: Waking from sleep mode")
 
-    def get_last_displayed_image(self) -> Image.Image:
+    def get_last_displayed_image(self) -> Optional[Image.Image]:
         """Get the last displayed image (for testing)."""
         return self.current_image
 
@@ -146,6 +146,8 @@ class MockDriver(DriverInterface):
 
         # Apply quantization
         pixels = image.load()
+        if pixels is None:
+            return image
         width, height = image.size
         for y in range(height):
             for x in range(width):

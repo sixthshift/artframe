@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import requests
 from PIL import Image
@@ -30,7 +30,7 @@ class ImmichPhotos(BasePlugin):
     def __init__(self):
         """Initialize Immich Photos plugin."""
         super().__init__()
-        self.session = None
+        self.session: Optional[requests.Session] = None
 
     def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
         """
@@ -150,6 +150,11 @@ class ImmichPhotos(BasePlugin):
         album_id = settings.get("album_id")
         selection_mode = settings.get("selection_mode", "random")
 
+        if self.session is None:
+            raise RuntimeError("Session not initialized. Plugin must be enabled first.")
+
+        photo_data: Optional[Dict[str, Any]] = None
+
         try:
             if album_id:
                 # Fetch from specific album
@@ -194,6 +199,9 @@ class ImmichPhotos(BasePlugin):
                     assets = response.json()
                     photo_data = self._select_photo(assets, selection_mode)
 
+            if photo_data is None:
+                raise RuntimeError("Failed to fetch photo from Immich")
+
             return photo_data
 
         except requests.RequestException as e:
@@ -201,17 +209,19 @@ class ImmichPhotos(BasePlugin):
 
     def _select_photo(self, assets: list, mode: str) -> Dict[str, Any]:
         """Select photo based on strategy."""
+        from typing import cast
+
         if not assets:
             raise RuntimeError("No photos available")
 
         if mode == "random":
-            return random.choice(assets)
+            return cast(Dict[str, Any], random.choice(assets))
         elif mode == "newest":
-            return max(assets, key=lambda a: a.get("fileCreatedAt", ""))
+            return cast(Dict[str, Any], max(assets, key=lambda a: a.get("fileCreatedAt", "")))
         elif mode == "oldest":
-            return min(assets, key=lambda a: a.get("fileCreatedAt", ""))
+            return cast(Dict[str, Any], min(assets, key=lambda a: a.get("fileCreatedAt", "")))
         else:
-            return assets[0]
+            return cast(Dict[str, Any], assets[0])
 
     def _download_photo(self, settings: Dict[str, Any], photo_data: Dict[str, Any]) -> Image.Image:
         """
@@ -229,6 +239,9 @@ class ImmichPhotos(BasePlugin):
         """
         immich_url = settings["immich_url"].rstrip("/")
         photo_id = photo_data["id"]
+
+        if self.session is None:
+            raise RuntimeError("Session not initialized. Plugin must be enabled first.")
 
         try:
             image_url = f"{immich_url}/api/asset/file/{photo_id}"
@@ -319,7 +332,7 @@ class ImmichPhotos(BasePlugin):
     ) -> str:
         """Poll AI service until job completes."""
         start_time = time.time()
-        poll_interval = 2
+        poll_interval = 2.0
 
         while time.time() - start_time < timeout:
             try:
@@ -333,7 +346,7 @@ class ImmichPhotos(BasePlugin):
                     result_url = job_status.get("result_url")
                     if not result_url:
                         raise RuntimeError("Job completed but no result_url")
-                    return result_url
+                    return str(result_url)
 
                 elif status == "failed":
                     error = job_status.get("error", "Unknown error")

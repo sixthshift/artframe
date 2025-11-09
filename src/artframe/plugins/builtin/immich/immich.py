@@ -10,7 +10,7 @@ import json
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import requests
 from PIL import Image
@@ -30,11 +30,11 @@ class Immich(BasePlugin):
     def __init__(self):
         """Initialize Immich plugin."""
         super().__init__()
-        self.session = None
-        self._sync_dir = None
-        self._photos_dir = None
-        self._metadata_file = None
-        self._metadata = None
+        self.session: Optional[requests.Session] = None
+        self._sync_dir: Optional[Path] = None
+        self._photos_dir: Optional[Path] = None
+        self._metadata_file: Optional[Path] = None
+        self._metadata: Optional[Dict[str, Any]] = None
         self._current_index = 0
 
     def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
@@ -87,7 +87,7 @@ class Immich(BasePlugin):
             self.session = None
         self.logger.info("Immich plugin disabled")
 
-    def _init_storage(self, settings: Dict[str, Any]) -> None:
+    def _init_storage(self, settings):
         """Initialize storage directories for this instance."""
         # Use instance-specific directory
         instance_id = settings.get("_instance_id", "default")
@@ -104,23 +104,31 @@ class Immich(BasePlugin):
         # Load or initialize metadata
         self._load_metadata()
 
-    def _load_metadata(self) -> None:
+    def _load_metadata(self):
         """Load sync metadata from disk."""
+        if self._metadata_file is None:
+            self._metadata = self._create_empty_metadata()
+            return
+
         if self._metadata_file.exists():
             try:
                 with open(self._metadata_file, "r") as f:
                     self._metadata = json.load(f)
-                self.logger.debug(
-                    f"Loaded metadata: {len(self._metadata.get('synced_assets', {}))} assets"
-                )
+                if self._metadata:
+                    self.logger.debug(
+                        f"Loaded metadata: {len(self._metadata.get('synced_assets', {}))} assets"
+                    )
             except Exception as e:
                 self.logger.error(f"Failed to load metadata: {e}")
                 self._metadata = self._create_empty_metadata()
         else:
             self._metadata = self._create_empty_metadata()
 
-    def _save_metadata(self) -> None:
+    def _save_metadata(self):
         """Save sync metadata to disk."""
+        if self._metadata_file is None or self._metadata is None:
+            return
+
         try:
             with open(self._metadata_file, "w") as f:
                 json.dump(self._metadata, f, indent=2)
@@ -128,7 +136,7 @@ class Immich(BasePlugin):
         except Exception as e:
             self.logger.error(f"Failed to save metadata: {e}")
 
-    def _create_empty_metadata(self) -> Dict[str, Any]:
+    def _create_empty_metadata(self):
         """Create empty metadata structure."""
         return {"last_sync": None, "album_id": None, "synced_assets": {}, "sync_count": 0}
 
@@ -175,7 +183,7 @@ class Immich(BasePlugin):
             self.logger.info(f"Displaying photo: {photo_path.name}")
 
             # Load and prepare image
-            image = Image.open(photo_path)
+            image: Image.Image = Image.open(photo_path).convert("RGB")
             image = self._fit_to_display(image, device_config)
 
             return image
@@ -184,7 +192,7 @@ class Immich(BasePlugin):
             self.logger.error(f"Failed to generate image: {e}", exc_info=True)
             return self._create_error_image(str(e), device_config)
 
-    def _should_sync(self, settings: Dict[str, Any]) -> bool:
+    def _should_sync(self, settings):
         """
         Check if synchronization is needed.
 
@@ -194,6 +202,9 @@ class Immich(BasePlugin):
         Returns:
             True if sync is needed
         """
+        if self._metadata is None:
+            return True
+
         last_sync = self._metadata.get("last_sync")
 
         if last_sync is None:
@@ -218,13 +229,17 @@ class Immich(BasePlugin):
 
         return False
 
-    def _sync_with_server(self, settings: Dict[str, Any]) -> None:
+    def _sync_with_server(self, settings):
         """
         Synchronize local photos with Immich server.
 
         Args:
             settings: Plugin settings
         """
+        if self._metadata is None:
+            self.logger.error("Metadata not initialized")
+            return
+
         immich_url = settings["immich_url"].rstrip("/")
         album_id = settings.get("album_id")
 
@@ -242,6 +257,10 @@ class Immich(BasePlugin):
             server_assets = server_assets[:max_photos]
 
         # Get currently synced asset IDs
+        if self._metadata is None:
+            self.logger.error("Metadata not initialized")
+            return
+
         synced_asset_ids = set(self._metadata["synced_assets"].keys())
         server_asset_ids = {asset["id"] for asset in server_assets}
 
@@ -282,9 +301,7 @@ class Immich(BasePlugin):
             f"+{len(assets_to_download)} new, -{len(assets_to_delete)} removed"
         )
 
-    def _fetch_server_assets(
-        self, immich_url: str, album_id: Optional[str]
-    ) -> List[Dict[str, Any]]:
+    def _fetch_server_assets(self, immich_url, album_id):
         """
         Fetch assets from Immich server.
 
@@ -295,6 +312,9 @@ class Immich(BasePlugin):
         Returns:
             List of asset dictionaries
         """
+        if self.session is None:
+            raise RuntimeError("Session not initialized")
+
         try:
             if album_id:
                 # Fetch from specific album
@@ -343,7 +363,7 @@ class Immich(BasePlugin):
             self.logger.error(f"Failed to fetch assets from server: {e}")
             raise RuntimeError(f"Failed to fetch from Immich: {e}")
 
-    def _download_asset(self, immich_url: str, asset: Dict[str, Any]) -> None:
+    def _download_asset(self, immich_url, asset):
         """
         Download asset from Immich to local storage.
 
@@ -351,6 +371,13 @@ class Immich(BasePlugin):
             immich_url: Immich server URL
             asset: Asset metadata dictionary
         """
+        if self._photos_dir is None:
+            raise RuntimeError("Photos directory not initialized")
+        if self.session is None:
+            raise RuntimeError("Session not initialized")
+        if self._metadata is None:
+            raise RuntimeError("Metadata not initialized")
+
         asset_id = asset["id"]
         filename = asset.get("originalFileName", f"{asset_id}.jpg")
 
@@ -393,13 +420,20 @@ class Immich(BasePlugin):
                 local_path.unlink()
             raise e
 
-    def _delete_local_asset(self, asset_id: str) -> None:
+    def _delete_local_asset(self, asset_id):
         """
         Delete local asset file and metadata.
 
         Args:
             asset_id: Asset ID to delete
         """
+        if self._metadata is None:
+            self.logger.error("Metadata not initialized")
+            return
+        if self._photos_dir is None:
+            self.logger.error("Photos directory not initialized")
+            return
+
         if asset_id not in self._metadata["synced_assets"]:
             return
 
@@ -417,13 +451,15 @@ class Immich(BasePlugin):
         # Remove from metadata
         del self._metadata["synced_assets"][asset_id]
 
-    def _get_local_photos(self) -> List[Path]:
+    def _get_local_photos(self):
         """
         Get list of local photo files.
 
         Returns:
             List of Path objects for local photos
         """
+        if self._photos_dir is None:
+            return []
         if not self._photos_dir.exists():
             return []
 
@@ -435,7 +471,7 @@ class Immich(BasePlugin):
 
         return sorted(photos)
 
-    def _select_local_photo(self, photos: List[Path], settings: Dict[str, Any]) -> Path:
+    def _select_local_photo(self, photos, settings):
         """
         Select photo based on selection mode.
 
@@ -470,7 +506,7 @@ class Immich(BasePlugin):
         else:
             return photos[0]
 
-    def _fit_to_display(self, image: Image.Image, device_config: Dict[str, Any]) -> Image.Image:
+    def _fit_to_display(self, image, device_config):
         """
         Resize and fit image to display dimensions.
 
@@ -507,7 +543,7 @@ class Immich(BasePlugin):
 
         return canvas
 
-    def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
+    def _create_error_image(self, error_message, device_config):
         """Create error image with message."""
         from PIL import ImageDraw, ImageFont
 
@@ -528,7 +564,7 @@ class Immich(BasePlugin):
         return image
 
     @staticmethod
-    def _sanitize_filename(filename: str) -> str:
+    def _sanitize_filename(filename):
         """
         Create safe filename by removing problematic characters.
 

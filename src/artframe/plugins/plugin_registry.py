@@ -10,7 +10,7 @@ import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Optional, Type, cast
 
 from .base_plugin import BasePlugin
 
@@ -55,7 +55,7 @@ def discover_plugins(plugins_dir: Path) -> Dict[str, Path]:
         plugins = discover_plugins(Path('src/artframe/plugins/builtin'))
         # Returns: {'clock': Path('.../clock'), 'weather': Path('.../weather')}
     """
-    discovered = {}
+    discovered: Dict[str, Path] = {}
 
     if not plugins_dir.exists():
         logger.warning(f"Plugins directory not found: {plugins_dir}")
@@ -185,7 +185,7 @@ def load_plugin_class(plugin_dir: Path, class_name: str) -> Optional[Type[BasePl
             logger.error(f"Plugin {plugin_id}: Class '{class_name}' must inherit from BasePlugin")
             return None
 
-        return plugin_class
+        return cast(Type[BasePlugin], plugin_class)
 
     except Exception as e:
         logger.error(f"Plugin {plugin_id}: Failed to load module: {e}", exc_info=True)

@@ -2,6 +2,7 @@
 Type definitions for Flask app with custom attributes.
 """
 
+import threading
 from flask import Flask
 
 from ..controller import ArtframeController
@@ -24,3 +25,4 @@ class ArtframeFlask(Flask):
     schedule_manager: ScheduleManager
     schedule_executor: ScheduleExecutor
     scheduler_started: bool
+    scheduler_thread: threading.Thread

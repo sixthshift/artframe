@@ -3,7 +3,7 @@ Spectra 6 e-ink display driver.
 """
 
 import time
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from PIL import Image, ImageEnhance
 
@@ -41,7 +41,7 @@ class Spectra6Driver(DriverInterface):
         self.rotation = self.config.get("rotation", 0)
         self.show_metadata = self.config.get("show_metadata", True)
 
-        self.spi = None
+        self.spi: Optional[Any] = None  # spidev.SpiDev instance when initialized
         self.initialized = False
 
     def validate_config(self) -> None:
@@ -256,6 +256,8 @@ class Spectra6Driver(DriverInterface):
 
     def _send_command(self, command: int) -> None:
         """Send command to display."""
+        if self.spi is None:
+            raise DisplayError("SPI not initialized")
         GPIO.output(self.gpio_pins["cs"], GPIO.LOW)
         GPIO.output(self.gpio_pins["dc"], GPIO.LOW)
         self.spi.writebytes([command])
@@ -263,6 +265,8 @@ class Spectra6Driver(DriverInterface):
 
     def _send_data(self, data) -> None:
         """Send data to display."""
+        if self.spi is None:
+            raise DisplayError("SPI not initialized")
         GPIO.output(self.gpio_pins["cs"], GPIO.LOW)
         GPIO.output(self.gpio_pins["dc"], GPIO.HIGH)
 

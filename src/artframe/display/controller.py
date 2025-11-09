@@ -4,7 +4,7 @@ Display controller for managing e-ink display operations.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union, cast
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -40,11 +40,11 @@ class DisplayController:
         if driver_name == "spectra6":
             from .drivers import Spectra6Driver
 
-            return Spectra6Driver(driver_config)
+            return cast(DriverInterface, Spectra6Driver(driver_config))
         elif driver_name == "mock":
             from .drivers import MockDriver
 
-            return MockDriver(driver_config)
+            return cast(DriverInterface, MockDriver(driver_config))
         else:
             raise ValueError(f"Unknown display driver: {driver_name}")
 
@@ -71,7 +71,7 @@ class DisplayController:
             self.state.status = "updating"
 
             # Load image
-            image = Image.open(styled_image.styled_path)
+            image: Image.Image = Image.open(styled_image.styled_path).convert("RGB")
 
             # Add metadata overlay if requested
             if show_metadata and self.config.get("show_metadata", True):
@@ -103,7 +103,7 @@ class DisplayController:
             self.state.status = "updating"
 
             # Load image
-            image = Image.open(image_path)
+            image: Image.Image = Image.open(image_path).convert("RGB")
 
             # Add title overlay if provided
             if title:
@@ -152,6 +152,7 @@ class DisplayController:
             draw = ImageDraw.Draw(image)
 
             # Try to use a default font
+            font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
             except (OSError, IOError):
@@ -209,6 +210,7 @@ class DisplayController:
             draw = ImageDraw.Draw(overlay_image)
 
             # Try to use a small font
+            font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
             except (OSError, IOError):
@@ -253,6 +255,7 @@ class DisplayController:
             draw = ImageDraw.Draw(overlay_image)
 
             # Try to use a larger font for title
+            font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
             try:
                 font = ImageFont.truetype(
                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20

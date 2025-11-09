@@ -59,7 +59,7 @@ class ArtframeController:
 
         # Track state
         self.running = False
-        self.last_update = None
+        self.last_update: Optional[datetime] = None
 
     def _create_storage_manager(self) -> StorageManager:
         """Create and configure storage manager."""

@@ -4,7 +4,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from ..logging.logger import Logger
 from ..models import Photo, StorageStats, StyledImage
@@ -35,7 +35,7 @@ class StorageManager:
         if self.index_file.exists():
             try:
                 with open(self.index_file, "r") as f:
-                    return json.load(f)
+                    return cast(Dict[str, Any], json.load(f))
             except (json.JSONDecodeError, OSError) as e:
                 self.logger.warning(f"Failed to load index, starting fresh: {e}")
 

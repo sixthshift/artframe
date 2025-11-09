@@ -5,7 +5,7 @@ Configuration manager for Artframe.
 import os
 import re
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 import yaml
 
@@ -98,27 +98,27 @@ class ConfigManager:
 
     def get_source_config(self) -> Dict[str, Any]:
         """Get source plugin configuration."""
-        return self.get("artframe.source", {})
+        return cast(Dict[str, Any], self.get("artframe.source", {}))
 
     def get_style_config(self) -> Dict[str, Any]:
         """Get style plugin configuration."""
-        return self.get("artframe.style", {})
+        return cast(Dict[str, Any], self.get("artframe.style", {}))
 
     def get_display_config(self) -> Dict[str, Any]:
         """Get display configuration."""
-        return self.get("artframe.display", {})
+        return cast(Dict[str, Any], self.get("artframe.display", {}))
 
     def get_storage_config(self) -> Dict[str, Any]:
         """Get storage configuration."""
-        return self.get("artframe.storage", {})
+        return cast(Dict[str, Any], self.get("artframe.storage", {}))
 
     def get_schedule_config(self) -> Dict[str, Any]:
         """Get schedule configuration."""
-        return self.get("artframe.schedule", {})
+        return cast(Dict[str, Any], self.get("artframe.schedule", {}))
 
     def get_logging_config(self) -> Dict[str, Any]:
         """Get logging configuration."""
-        return self.get("artframe.logging", {})
+        return cast(Dict[str, Any], self.get("artframe.logging", {}))
 
     def add_observer(self, callback: Callable[[str, Any], None]) -> None:
         """

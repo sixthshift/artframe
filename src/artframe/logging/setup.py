@@ -6,7 +6,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 def setup_logging(
@@ -26,7 +26,7 @@ def setup_logging(
     log_level = getattr(logging, level.upper(), logging.INFO)
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-    handlers = []
+    handlers: List[logging.Handler] = []
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(logging.Formatter(log_format))

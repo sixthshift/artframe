@@ -6,7 +6,7 @@ Displays vocabulary words with definitions, pronunciation, and examples.
 
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -397,7 +397,7 @@ class WordOfTheDay(BasePlugin):
         return word
 
     def _wrap_text(
-        self, text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: ImageDraw.Draw
+        self, text: str, font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont], max_width: int, draw: ImageDraw.ImageDraw
     ) -> List[str]:
         """
         Wrap text to fit within max_width.
@@ -413,7 +413,7 @@ class WordOfTheDay(BasePlugin):
         """
         words = text.split()
         lines = []
-        current_line = []
+        current_line: List[str] = []
 
         for word in words:
             test_line = " ".join(current_line + [word])
@@ -432,14 +432,17 @@ class WordOfTheDay(BasePlugin):
 
         return lines
 
-    def _get_line_height(self, font: ImageFont.FreeTypeFont) -> int:
+    def _get_line_height(self, font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]) -> int:
         """Get the line height for a font."""
         try:
-            return font.size + 8
+            # FreeTypeFont has .size attribute, ImageFont doesn't
+            if hasattr(font, 'size'):
+                return int(font.size + 8)
+            return 25
         except Exception:
             return 25  # Default fallback
 
-    def _get_font(self, size: str, text_type: str) -> ImageFont.FreeTypeFont:
+    def _get_font(self, size: str, text_type: str) -> Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]:
         """
         Get font for rendering.
 
