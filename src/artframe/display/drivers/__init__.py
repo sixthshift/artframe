@@ -4,7 +4,7 @@ Display drivers for different e-ink displays.
 
 from .base import DriverInterface
 
-__all__ = ["DriverInterface", "MockDriver", "Spectra6Driver"]
+__all__ = ["DriverInterface", "MockDriver", "WaveshareDriver"]
 
 
 def __getattr__(name):
@@ -13,8 +13,8 @@ def __getattr__(name):
         from .mock import MockDriver
 
         return MockDriver
-    elif name == "Spectra6Driver":
-        from .spectra6 import Spectra6Driver
+    elif name == "WaveshareDriver":
+        from .waveshare import WaveshareDriver
 
-        return Spectra6Driver
+        return WaveshareDriver
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

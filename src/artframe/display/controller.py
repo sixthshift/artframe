@@ -37,10 +37,10 @@ class DisplayController:
         driver_name = self.config.get("driver", "mock")
         driver_config = self.config.get("config", {})
 
-        if driver_name == "spectra6":
-            from .drivers import Spectra6Driver
+        if driver_name == "waveshare":
+            from .drivers import WaveshareDriver
 
-            return cast(DriverInterface, Spectra6Driver(driver_config))
+            return cast(DriverInterface, WaveshareDriver(driver_config))
         elif driver_name == "mock":
             from .drivers import MockDriver
 

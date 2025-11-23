@@ -464,7 +464,7 @@ class Immich(BasePlugin):
             return []
 
         # Get all image files
-        photos = []
+        photos: list[Path] = []
         for ext in [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"]:
             photos.extend(self._photos_dir.glob(f"*{ext}"))
             photos.extend(self._photos_dir.glob(f"*{ext.upper()}"))
