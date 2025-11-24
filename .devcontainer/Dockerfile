@@ -24,10 +24,14 @@ RUN apt-get update \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
+# Install uv - fast Python package manager
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # Python environment configuration
 ENV PYTHONPATH=/workspace/src
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV UV_SYSTEM_PYTHON=1
 ENV DEBIAN_FRONTEND=dialog
 
 WORKDIR /workspace

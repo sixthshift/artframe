@@ -52,17 +52,15 @@ rsync -avz --delete \
 
 echo -e "${GREEN}✓ Code synced${NC}"
 
-# Install dependencies if requirements.txt changed
+# Install uv if not present
 echo ""
-echo -e "${BLUE}📥 Checking dependencies...${NC}"
-ssh $PI_HOST "cd $PI_DIR && \
-    if [ ! -d venv ]; then \
-        echo 'Creating virtual environment...'; \
-        python3 -m venv venv; \
-    fi && \
-    source venv/bin/activate && \
-    pip install -q -r requirements.txt && \
-    pip install -q -e ."
+echo -e "${BLUE}📥 Ensuring uv is installed...${NC}"
+ssh $PI_HOST "command -v uv >/dev/null 2>&1 || curl -LsSf https://astral.sh/uv/install.sh | sh"
+
+# Install dependencies using uv sync (production only, no dev deps)
+echo ""
+echo -e "${BLUE}📥 Installing dependencies with uv sync...${NC}"
+ssh $PI_HOST "cd $PI_DIR && ~/.cargo/bin/uv sync"
 
 echo -e "${GREEN}✓ Dependencies installed${NC}"
 
@@ -89,10 +87,9 @@ echo -e "${BLUE}📝 Next steps:${NC}"
 echo -e "   ${YELLOW}Test on Pi:${NC}"
 echo -e "   ssh $PI_HOST"
 echo -e "   cd $PI_DIR"
-echo -e "   source venv/bin/activate"
-echo -e "   python3 -m artframe.main --config config/artframe-pi.yaml"
+echo -e "   uv run python -m artframe.main --config config/artframe-pi.yaml"
 echo ""
 echo -e "   ${YELLOW}Or start web dashboard:${NC}"
-echo -e "   python3 -m artframe.main --config config/artframe-pi.yaml --host 0.0.0.0 --port 8000"
+echo -e "   uv run python -m artframe.main --config config/artframe-pi.yaml --host 0.0.0.0 --port 8000"
 echo -e "   (Access at http://$(echo $PI_HOST | cut -d@ -f2):8000)"
 echo ""

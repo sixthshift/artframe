@@ -133,6 +133,9 @@ Pipfile.lock
 # Poetry
 poetry.lock
 
+# uv - commit uv.lock for reproducible builds
+.uv/
+
 # PEP 582
 __pypackages__/
 
