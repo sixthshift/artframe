@@ -37,7 +37,9 @@
 				"ms-python.black-formatter",
 				"ms-python.mypy-type-checker",
 				"ms-toolsai.jupyter",
-				"eamodio.gitlens"
+				"eamodio.gitlens",
+				"Anthropic.claude-code",
+				"mhutchie.git-graph"
 			]
 		}
 	},
