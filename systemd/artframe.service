@@ -11,12 +11,12 @@ Group=pi
 WorkingDirectory=/opt/artframe
 
 # Environment
-Environment="PATH=/opt/artframe/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PATH=/home/pi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="PYTHONUNBUFFERED=1"
 
-# Main process
-ExecStart=/opt/artframe/venv/bin/python -m artframe
-ExecStopPost=/opt/artframe/venv/bin/python -m artframe.clear_display
+# Main process - using uv run for dependency management
+ExecStart=/home/pi/.local/bin/uv run artframe
+ExecStopPost=/home/pi/.local/bin/uv run python -m artframe.clear_display
 
 # Restart policy
 Restart=always

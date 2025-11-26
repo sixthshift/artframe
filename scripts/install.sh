@@ -17,6 +17,34 @@ INSTALL_DIR="/opt/artframe"
 SERVICE_NAME="artframe"
 LOG_DIR="/var/log/artframe"
 CACHE_DIR="/var/cache/artframe"
+REPO_URL="https://github.com/yourusername/artframe.git"
+REPO_BRANCH="main"
+
+# Check if we're running from within the repo or need to clone it
+if [ -f "pyproject.toml" ] && grep -q "artframe" pyproject.toml 2>/dev/null; then
+    echo "📂 Running from existing repository..."
+    REPO_DIR="$(pwd)"
+else
+    echo "📥 Cloning Artframe repository..."
+
+    # Install git if not present
+    if ! command -v git &> /dev/null; then
+        apt-get update
+        apt-get install -y git
+    fi
+
+    # Clone or update the repository
+    if [ -d "$INSTALL_DIR/.git" ]; then
+        echo "   Repository exists, pulling latest changes..."
+        cd "$INSTALL_DIR"
+        git pull origin "$REPO_BRANCH"
+    else
+        rm -rf "$INSTALL_DIR"
+        git clone --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+    fi
+    REPO_DIR="$INSTALL_DIR"
+fi
 
 echo "📦 Updating system packages..."
 apt-get update
@@ -25,8 +53,6 @@ apt-get upgrade -y
 echo "🔧 Installing system dependencies..."
 apt-get install -y \
     python3 \
-    python3-pip \
-    python3-venv \
     libjpeg-dev \
     zlib1g-dev \
     libfreetype6-dev \
@@ -35,7 +61,8 @@ apt-get install -y \
     libtiff5-dev \
     libffi-dev \
     libssl-dev \
-    build-essential
+    build-essential \
+    curl
 
 # Enable SPI for e-ink display
 echo "🖥️  Enabling SPI interface..."
@@ -57,32 +84,28 @@ chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$INSTALL_DIR"
 chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$LOG_DIR"
 chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$CACHE_DIR"
 
-echo "🐍 Setting up Python environment..."
+echo "🐍 Setting up Python environment with uv..."
 cd "$INSTALL_DIR"
 
-# Create virtual environment
-sudo -u "$ARTFRAME_USER" python3 -m venv venv
-
-# Activate virtual environment and install packages
+# Install uv for the artframe user
 sudo -u "$ARTFRAME_USER" bash -c "
-    source venv/bin/activate
-    pip install --upgrade pip
-    pip install wheel setuptools
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 "
 
-echo "📥 Installing Artframe..."
-# Install in editable mode from pyproject.toml
+echo "📥 Installing Artframe with uv..."
+# uv sync creates .venv automatically and installs all dependencies
 sudo -u "$ARTFRAME_USER" bash -c "
-    source venv/bin/activate
-    pip install -e .
+    export PATH=\"\$HOME/.local/bin:\$PATH\"
+    cd $INSTALL_DIR
+    uv sync
 "
 
 echo "⚙️  Creating configuration..."
 mkdir -p "$INSTALL_DIR/config"
 
 # Copy example configuration if it doesn't exist
-if [ ! -f "$INSTALL_DIR/config/artframe.yaml" ] && [ -f "config/artframe.yaml" ]; then
-    cp config/artframe.yaml "$INSTALL_DIR/config/"
+if [ ! -f "$INSTALL_DIR/config/artframe.yaml" ] && [ -f "$REPO_DIR/config/artframe.yaml" ]; then
+    cp "$REPO_DIR/config/artframe.yaml" "$INSTALL_DIR/config/"
     chown "$ARTFRAME_USER:$ARTFRAME_USER" "$INSTALL_DIR/config/artframe.yaml"
     echo "📝 Example configuration copied to $INSTALL_DIR/config/artframe.yaml"
     echo "⚠️  Please edit the configuration file with your API keys and settings"
@@ -90,13 +113,15 @@ fi
 
 echo "🔧 Installing systemd service..."
 # Copy service file from repository
-if [ -f "systemd/artframe.service" ]; then
+if [ -f "$REPO_DIR/systemd/artframe.service" ]; then
     # Use template and substitute variables
+    ARTFRAME_USER_HOME=$(eval echo ~$ARTFRAME_USER)
     sed -e "s|User=pi|User=$ARTFRAME_USER|g" \
         -e "s|Group=pi|Group=$ARTFRAME_USER|g" \
         -e "s|WorkingDirectory=/opt/artframe|WorkingDirectory=$INSTALL_DIR|g" \
         -e "s|ReadWritePaths=/var/log/artframe /var/cache/artframe|ReadWritePaths=$LOG_DIR $CACHE_DIR $INSTALL_DIR/data|g" \
-        systemd/artframe.service > "/etc/systemd/system/$SERVICE_NAME.service"
+        -e "s|/home/pi/.local/bin|$ARTFRAME_USER_HOME/.local/bin|g" \
+        "$REPO_DIR/systemd/artframe.service" > "/etc/systemd/system/$SERVICE_NAME.service"
 
     echo "✓ Service file installed from systemd/artframe.service"
 
@@ -105,9 +130,9 @@ if [ -f "systemd/artframe.service" ]; then
     systemctl enable "$SERVICE_NAME"
     echo "✓ Systemd service enabled"
 else
-    echo "⚠️  Warning: systemd/artframe.service not found"
+    echo "⚠️  Warning: $REPO_DIR/systemd/artframe.service not found"
     echo "   Systemd service not installed. You'll need to:"
-    echo "   1. Ensure systemd/artframe.service exists in the repository"
+    echo "   1. Ensure systemd/artframe.service exists in the repository at $REPO_DIR"
     echo "   2. Manually install the service, or"
     echo "   3. Run Artframe manually without systemd"
     SYSTEMD_SKIPPED=true
@@ -165,9 +190,9 @@ if [ "$SYSTEMD_SKIPPED" = true ]; then
     echo ""
     echo "⚠️  Systemd service was not installed (service file missing)"
     echo "   To run manually:"
-    echo "   sudo -u $ARTFRAME_USER $INSTALL_DIR/venv/bin/python -m artframe"
+    echo "   cd $INSTALL_DIR && sudo -u $ARTFRAME_USER uv run artframe"
     echo ""
-    echo "   Or install systemd service manually (see systemd/README.md)"
+    echo "   Or install systemd service manually (see $REPO_DIR/systemd/README.md)"
 else
     echo "2. Start the service: systemctl start $SERVICE_NAME"
     echo "3. Check service status: systemctl status $SERVICE_NAME"

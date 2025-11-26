@@ -27,12 +27,6 @@ if [ ! -f .env ]; then
 fi
 
 
-# Set up git configuration
-echo "🔧 Configuring git..."
-git config --global init.defaultBranch main
-git config --global pull.rebase false
-git config --global core.autocrlf input
-
 # Make scripts executable
 echo "🔧 Making scripts executable..."
 chmod +x scripts/*.sh 2>/dev/null || true
