@@ -19,7 +19,7 @@ def main():
     parser.add_argument(
         "--config",
         type=Path,
-        help="Path to configuration file (default: config/artframe.yaml)",
+        help="Path to configuration file (default: config/artframe-laptop.yaml)",
     )
 
     parser.add_argument(

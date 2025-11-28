@@ -92,10 +92,9 @@ cache/
 data/display_output/
 data/storage/
 
-# Configuration files with secrets
-config/artframe.yaml
+# Configuration files with secrets (keep example files only)
 config/*.yaml
-!config/artframe.example.yaml
+!config/artframe-*.example.yaml
 .env
 .env.local
 .env.*.local

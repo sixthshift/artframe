@@ -20,9 +20,9 @@ class ConfigManager:
         Initialize configuration manager.
 
         Args:
-            config_path: Path to configuration file. Defaults to config/artframe.yaml
+            config_path: Path to configuration file. Defaults to config/artframe-laptop.yaml
         """
-        self.config_path = config_path or Path("config/artframe.yaml")
+        self.config_path = config_path or Path("config/artframe-laptop.yaml")
         self._config: Dict[str, Any] = {}
         self._observers: List[Callable[[str, Any], None]] = []
         self.validator = ConfigValidator()
