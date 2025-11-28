@@ -252,8 +252,10 @@ def api_display_current():
         driver = controller.display_controller.driver
 
         # Check if using mock driver
-        has_preview = hasattr(driver, 'get_current_image_path')
-        plugin_info = driver.get_last_plugin_info() if hasattr(driver, 'get_last_plugin_info') else {}
+        has_preview = hasattr(driver, "get_current_image_path")
+        plugin_info = (
+            driver.get_last_plugin_info() if hasattr(driver, "get_last_plugin_info") else {}
+        )
 
         return jsonify(
             {
@@ -265,7 +267,9 @@ def api_display_current():
                     "instance_name": plugin_info.get("instance_name", "Unknown"),
                     "status": state.status,
                     "has_preview": has_preview,
-                    "display_count": driver.get_display_count() if hasattr(driver, 'get_display_count') else 0,
+                    "display_count": (
+                        driver.get_display_count() if hasattr(driver, "get_display_count") else 0
+                    ),
                 },
             }
         )
@@ -279,20 +283,21 @@ def api_display_preview():
     from flask import send_file
     from pathlib import Path
     import os
+
     controller = get_app().controller
 
     try:
         driver = controller.display_controller.driver
 
         # Check if mock driver
-        if hasattr(driver, 'get_current_image_path'):
+        if hasattr(driver, "get_current_image_path"):
             # Try to get the current image path
             image_path = driver.get_current_image_path()
 
             # If no image displayed yet, check if latest.png exists in output dir
             if not image_path or not image_path.exists():
                 # Get output dir and ensure it's an absolute path (MockDriver only)
-                output_dir = getattr(driver, 'output_dir', None)
+                output_dir = getattr(driver, "output_dir", None)
                 if output_dir is None:
                     return send_file(PLACEHOLDER_IMAGE_PATH, mimetype="image/png")
                 if isinstance(output_dir, str):
@@ -307,15 +312,16 @@ def api_display_preview():
                 latest_path = output_dir / "latest.png"
 
                 if latest_path.exists():
-                    return send_file(str(latest_path), mimetype='image/png')
+                    return send_file(str(latest_path), mimetype="image/png")
             elif image_path.exists():
-                return send_file(str(image_path), mimetype='image/png')
+                return send_file(str(image_path), mimetype="image/png")
 
         # Return placeholder if no image available
         return jsonify({"success": False, "error": "No preview available"}), 404
 
     except Exception as e:
         import traceback
+
         error_detail = f"{str(e)}\n{traceback.format_exc()}"
         return jsonify({"success": False, "error": str(e), "detail": error_detail}), 500
 

@@ -268,7 +268,11 @@ class QuoteOfTheDay(BasePlugin):
         return quote
 
     def _wrap_text(
-        self, text: str, font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont], max_width: int, draw: ImageDraw.ImageDraw
+        self,
+        text: str,
+        font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont],
+        max_width: int,
+        draw: ImageDraw.ImageDraw,
     ) -> List[str]:
         """
         Wrap text to fit within max_width.
@@ -307,13 +311,15 @@ class QuoteOfTheDay(BasePlugin):
         """Get the line height for a font."""
         try:
             # FreeTypeFont has .size attribute, ImageFont doesn't
-            if hasattr(font, 'size'):
+            if hasattr(font, "size"):
                 return int(font.size + 10)  # Font size + spacing
             return 30
         except Exception:
             return 30  # Default fallback
 
-    def _get_font(self, size: str, text_type: str) -> Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]:
+    def _get_font(
+        self, size: str, text_type: str
+    ) -> Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]:
         """
         Get font for rendering.
 

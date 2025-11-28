@@ -51,9 +51,7 @@ class WaveshareDriver(DriverInterface):
         model = self.config["model"]
         if model not in self.SUPPORTED_MODELS:
             supported = ", ".join(self.SUPPORTED_MODELS.keys())
-            raise ValueError(
-                f"Unsupported display model: {model}. Supported models: {supported}"
-            )
+            raise ValueError(f"Unsupported display model: {model}. Supported models: {supported}")
 
         # Validate GPIO pins if provided
         if "gpio_pins" in self.config:
@@ -78,9 +76,7 @@ class WaveshareDriver(DriverInterface):
             module = importlib.import_module(module_name, package="artframe.display.drivers")
             return module
         except ImportError as e:
-            raise DisplayError(
-                f"Failed to load Waveshare display module '{self.model}': {e}"
-            )
+            raise DisplayError(f"Failed to load Waveshare display module '{self.model}': {e}")
 
     def initialize(self) -> None:
         """Initialize the Waveshare display."""

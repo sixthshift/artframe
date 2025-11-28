@@ -51,7 +51,9 @@ class MockDriver(DriverInterface):
         """Get mock display dimensions."""
         return (self.width, self.height)
 
-    def display_image(self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None) -> None:
+    def display_image(
+        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Display image (save to file if configured)."""
         try:
             # Optimize for display
@@ -140,6 +142,7 @@ class MockDriver(DriverInterface):
         # Quantize to limited grayscale levels
         # This simulates e-ink's limited gray range
         factor = 255.0 / (levels - 1)
+
         def quantize_pixel(val):
             level = round(val / factor)
             return int(level * factor)

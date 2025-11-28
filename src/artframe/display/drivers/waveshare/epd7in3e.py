@@ -12,8 +12,9 @@ from PIL import Image
 # Import epdconfig from parent directory
 import sys
 import os
-picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'pic')
-libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib')
+
+picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "pic")
+libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "lib")
 if os.path.exists(libdir):
     sys.path.append(libdir)
 
@@ -28,13 +29,13 @@ class EPD:
     height = 480
 
     # Color definitions (RGB values for 7-color palette)
-    BLACK = 0x000000   # 000
-    WHITE = 0xffffff   # 001
-    YELLOW = 0x00ffff  # 010
-    RED = 0x0000ff     # 011
-    BLUE = 0xff0000    # 100
-    GREEN = 0x00ff00   # 101
-    ORANGE = 0x0080ff  # 110
+    BLACK = 0x000000  # 000
+    WHITE = 0xFFFFFF  # 001
+    YELLOW = 0x00FFFF  # 010
+    RED = 0x0000FF  # 011
+    BLUE = 0xFF0000  # 100
+    GREEN = 0x00FF00  # 101
+    ORANGE = 0x0080FF  # 110
 
     def __init__(self):
         self.reset_pin = 17
@@ -47,6 +48,7 @@ class EPD:
     def reset(self):
         """Hardware reset"""
         import epdconfig
+
         epdconfig.digital_write(epdconfig.RST_PIN, 1)
         epdconfig.delay_ms(20)
         epdconfig.digital_write(epdconfig.RST_PIN, 0)
@@ -57,6 +59,7 @@ class EPD:
     def send_command(self, command):
         """Send command to display"""
         import epdconfig
+
         epdconfig.digital_write(epdconfig.DC_PIN, 0)
         epdconfig.digital_write(epdconfig.CS_PIN, 0)
         epdconfig.spi_writebyte([command])
@@ -65,6 +68,7 @@ class EPD:
     def send_data(self, data):
         """Send single byte of data"""
         import epdconfig
+
         epdconfig.digital_write(epdconfig.DC_PIN, 1)
         epdconfig.digital_write(epdconfig.CS_PIN, 0)
         epdconfig.spi_writebyte([data])
@@ -73,6 +77,7 @@ class EPD:
     def send_data2(self, data):
         """Send data array"""
         import epdconfig
+
         epdconfig.digital_write(epdconfig.DC_PIN, 1)
         epdconfig.digital_write(epdconfig.CS_PIN, 0)
         epdconfig.spi_writebyte2(data)
@@ -81,6 +86,7 @@ class EPD:
     def ReadBusyH(self):
         """Wait until display is ready (busy pin high)"""
         import epdconfig
+
         logger.debug("e-Paper busy")
         while epdconfig.digital_read(epdconfig.BUSY_PIN) == 0:
             epdconfig.delay_ms(5)
@@ -102,6 +108,7 @@ class EPD:
     def init(self):
         """Initialize display"""
         import epdconfig
+
         if epdconfig.module_init() != 0:
             return -1
 
@@ -110,21 +117,21 @@ class EPD:
         self.send_command(0x01)  # Power setting
         self.send_data(0x07)
         self.send_data(0x07)
-        self.send_data(0x3f)
-        self.send_data(0x3f)
+        self.send_data(0x3F)
+        self.send_data(0x3F)
 
         self.send_command(0x04)  # Power on
         epdconfig.delay_ms(100)
         self.ReadBusyH()
 
         self.send_command(0x00)  # Panel setting
-        self.send_data(0x0f)
+        self.send_data(0x0F)
 
         self.send_command(0x61)  # Resolution setting
         self.send_data(0x03)
         self.send_data(0x20)
         self.send_data(0x01)
-        self.send_data(0xe0)
+        self.send_data(0xE0)
 
         self.send_command(0x15)
         self.send_data(0x00)
@@ -144,7 +151,7 @@ class EPD:
         Images should be RGB mode
         """
         buf = [0x00] * int(self.width * self.height / 2)
-        image_monocolor = image.convert('RGB')
+        image_monocolor = image.convert("RGB")
         imwidth, imheight = image_monocolor.size
         pixels = image_monocolor.load()
 
@@ -161,9 +168,9 @@ class EPD:
                     # Pack 2 pixels per byte (4 bits each)
                     addr = int((x + y * self.width) / 2)
                     if (x % 2) == 0:
-                        buf[addr] = (buf[addr] & 0x0f) | ((color << 4) & 0xf0)
+                        buf[addr] = (buf[addr] & 0x0F) | ((color << 4) & 0xF0)
                     else:
-                        buf[addr] = (buf[addr] & 0xf0) | (color & 0x0f)
+                        buf[addr] = (buf[addr] & 0xF0) | (color & 0x0F)
         elif imwidth == self.height and imheight == self.width:
             # Image is rotated
             for y in range(imheight):
@@ -177,17 +184,17 @@ class EPD:
 
                     addr = int((newx + newy * self.width) / 2)
                     if (newx % 2) == 0:
-                        buf[addr] = (buf[addr] & 0x0f) | ((color << 4) & 0xf0)
+                        buf[addr] = (buf[addr] & 0x0F) | ((color << 4) & 0xF0)
                     else:
-                        buf[addr] = (buf[addr] & 0xf0) | (color & 0x0f)
+                        buf[addr] = (buf[addr] & 0xF0) | (color & 0x0F)
         return buf
 
     def _get_closest_color(self, rgb_value):
         """Map RGB value to closest 7-color palette value"""
         # Extract RGB components
-        r = (rgb_value >> 16) & 0xff
-        g = (rgb_value >> 8) & 0xff
-        b = rgb_value & 0xff
+        r = (rgb_value >> 16) & 0xFF
+        g = (rgb_value >> 8) & 0xFF
+        b = rgb_value & 0xFF
 
         # Convert to grayscale for intensity check
         gray = int(0.299 * r + 0.587 * g + 0.114 * b)
