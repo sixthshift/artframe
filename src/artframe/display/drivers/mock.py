@@ -22,7 +22,7 @@ class MockDriver(DriverInterface):
         self.height = self.config.get("height", 448)
         self.save_images = self.config.get("save_images", True)
         self.output_dir = Path(self.config.get("output_dir", "/tmp/artframe_mock"))
-        self.simulate_eink = self.config.get("simulate_eink", True)
+        self.simulate_eink = self.config.get("simulate_eink", False)
 
         if self.save_images:
             self.output_dir.mkdir(parents=True, exist_ok=True)

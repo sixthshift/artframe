@@ -7,6 +7,7 @@ should be displayed at any given moment.
 
 import logging
 import random
+import threading
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -79,6 +80,11 @@ class ContentOrchestrator:
         # For random mode, track history to avoid immediate repeats
         self._random_history: List[str] = []
         self._max_history_size = 5
+
+        # Plugin-driven refresh: track active plugin thread
+        self._active_plugin_thread: Optional[threading.Thread] = None
+        self._active_plugin_stop_event: Optional[threading.Event] = None
+        self._active_instance_id: Optional[str] = None
 
     def get_current_content_source(self) -> ContentSource:
         """
@@ -417,6 +423,18 @@ class ContentOrchestrator:
                 if elapsed >= content_source.duration_seconds:
                     return True
 
+        # Check if plugin's refresh interval (cache_ttl) has elapsed
+        if content_source.instance and self.current_item_start:
+            plugin = get_plugin(content_source.instance.plugin_id)
+            if plugin and hasattr(plugin, 'get_cache_ttl'):
+                try:
+                    ttl = plugin.get_cache_ttl(content_source.instance.settings)
+                    elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                    if elapsed >= ttl:
+                        return True
+                except Exception:
+                    pass  # If TTL check fails, don't force refresh
+
         return False
 
     def execute_content(self, content_source: ContentSource) -> Optional[Image.Image]:
@@ -456,42 +474,43 @@ class ContentOrchestrator:
             logger.error(f"Failed to execute plugin: {e}", exc_info=True)
             return None
 
-    def run_loop(self, display_controller, check_interval: int = 5) -> None:
+    def run_loop(self, display_controller) -> None:
         """
         Run the main content orchestration loop.
 
-        This continuously evaluates what should display and updates when needed.
+        The orchestrator decides WHICH plugin should be active based on the schedule.
+        Each plugin manages its OWN refresh loop via run_active().
+
+        Schedule granularity is 1 hour, so we only check at hour boundaries.
 
         Args:
             display_controller: DisplayController instance
-            check_interval: Seconds between checks
         """
         self.running = True
-        logger.info(f"Content orchestrator loop started (interval: {check_interval}s)")
+        logger.info("Content orchestrator loop started (hourly schedule checks)")
 
         while self.running:
             try:
-                # Get what should display now
+                # Get what should display now based on schedule
                 content_source = self.get_current_content_source()
 
-                # Determine if display needs updating
-                if self.should_update_display(content_source):
-                    image = self.execute_content(content_source)
+                # Check if we need to switch plugins
+                new_instance_id = content_source.instance.id if content_source.instance else None
 
-                    if image:
-                        try:
-                            display_controller.display_image(image)
-                            logger.info(
-                                f"Displayed content from: {content_source.source_name or 'unknown'}"
-                            )
-                        except Exception as e:
-                            logger.error(f"Failed to display image: {e}", exc_info=True)
-                    elif not content_source.is_empty():
-                        logger.error("Failed to generate image")
+                if new_instance_id != self._active_instance_id:
+                    # Plugin changed - stop old one, start new one
+                    self._switch_active_plugin(
+                        content_source, display_controller
+                    )
 
-                # Calculate sleep duration
-                sleep_duration = self._calculate_sleep_duration(content_source)
-                time.sleep(min(sleep_duration, check_interval))
+                # Sleep until next hour boundary
+                sleep_seconds = self._seconds_until_next_hour()
+                logger.debug(f"Sleeping {sleep_seconds}s until next hour")
+
+                # Sleep in chunks so we can respond to stop signals
+                sleep_end = time.time() + sleep_seconds
+                while self.running and time.time() < sleep_end:
+                    time.sleep(min(10, sleep_end - time.time()))
 
             except KeyboardInterrupt:
                 logger.info("Content orchestrator interrupted")
@@ -500,9 +519,87 @@ class ContentOrchestrator:
 
             except Exception as e:
                 logger.error(f"Error in orchestrator loop: {e}", exc_info=True)
-                time.sleep(check_interval)
+                time.sleep(60)  # Wait a minute on error
 
+        # Stop any active plugin
+        self._stop_active_plugin()
         logger.info("Content orchestrator loop stopped")
+
+    def _seconds_until_next_hour(self) -> int:
+        """Calculate seconds until the next hour boundary."""
+        now = datetime.now()
+        # Next hour starts at minute=0, second=0
+        seconds_into_hour = now.minute * 60 + now.second
+        seconds_until_next = 3600 - seconds_into_hour
+        # Add a small buffer to ensure we're past the boundary
+        return seconds_until_next + 1
+
+    def _switch_active_plugin(
+        self, content_source: ContentSource, display_controller
+    ) -> None:
+        """
+        Switch to a new active plugin.
+
+        Stops the current plugin's loop and starts the new one.
+        """
+        # Stop current plugin if running
+        self._stop_active_plugin()
+
+        if content_source.is_empty() or content_source.instance is None:
+            logger.info("No content to display")
+            self._active_instance_id = None
+            return
+
+        instance = content_source.instance
+        plugin = get_plugin(instance.plugin_id)
+
+        if not plugin:
+            logger.error(f"Plugin not found: {instance.plugin_id}")
+            self._active_instance_id = None
+            return
+
+        # Create stop event for this plugin
+        self._active_plugin_stop_event = threading.Event()
+        self._active_instance_id = instance.id
+
+        # Start plugin in its own thread
+        self._active_plugin_thread = threading.Thread(
+            target=self._run_plugin_active,
+            args=(plugin, display_controller, instance.settings, self.device_config),
+            daemon=True,
+            name=f"plugin-{instance.plugin_id}",
+        )
+        self._active_plugin_thread.start()
+
+        logger.info(f"Started plugin: {instance.name} ({instance.plugin_id})")
+
+    def _run_plugin_active(
+        self, plugin, display_controller, settings: Dict[str, Any], device_config: Dict[str, Any]
+    ) -> None:
+        """Wrapper to run plugin's run_active method."""
+        try:
+            plugin.run_active(
+                display_controller,
+                settings,
+                device_config,
+                self._active_plugin_stop_event,
+            )
+        except Exception as e:
+            logger.error(f"Plugin run_active failed: {e}", exc_info=True)
+
+    def _stop_active_plugin(self) -> None:
+        """Stop the currently active plugin."""
+        if self._active_plugin_stop_event:
+            self._active_plugin_stop_event.set()
+
+        if self._active_plugin_thread and self._active_plugin_thread.is_alive():
+            # Give it a moment to stop gracefully
+            self._active_plugin_thread.join(timeout=2.0)
+            if self._active_plugin_thread.is_alive():
+                logger.warning("Plugin thread did not stop gracefully")
+
+        self._active_plugin_thread = None
+        self._active_plugin_stop_event = None
 
     def _calculate_sleep_duration(self, content_source: ContentSource) -> int:
         """
@@ -516,6 +613,21 @@ class ContentOrchestrator:
         """
         if content_source.is_empty():
             return 60  # Check every minute when nothing is scheduled
+
+        # Check plugin's refresh interval (cache_ttl)
+        if content_source.instance and self.current_item_start:
+            plugin = get_plugin(content_source.instance.plugin_id)
+            if plugin and hasattr(plugin, 'get_cache_ttl'):
+                try:
+                    ttl = plugin.get_cache_ttl(content_source.instance.settings)
+                    elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                    remaining = ttl - elapsed
+                    if remaining > 0:
+                        return max(1, int(remaining))
+                    else:
+                        return 1  # Time to refresh
+                except Exception:
+                    pass
 
         if content_source.source_type == "playlist" and self.current_item_start:
             # Calculate time until current item expires
@@ -552,9 +664,10 @@ class ContentOrchestrator:
             return False
 
     def stop(self) -> None:
-        """Stop the orchestrator loop."""
+        """Stop the orchestrator loop and active plugin."""
         logger.info("Stopping content orchestrator")
         self.running = False
+        self._stop_active_plugin()
 
     def get_current_status(self) -> Dict[str, Any]:
         """

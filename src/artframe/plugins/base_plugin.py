@@ -193,6 +193,48 @@ class BasePlugin(ABC):
         """
         pass
 
+    def run_active(
+        self,
+        display_controller,
+        settings: Dict[str, Any],
+        device_config: Dict[str, Any],
+        stop_event,
+    ) -> None:
+        """
+        Run while this plugin is the active content source.
+
+        Override to manage your own refresh loop. The scheduler will call
+        this when your plugin becomes active and expects it to keep running
+        until stop_event is set.
+
+        Default implementation: generates image once and waits for stop.
+        Plugins that need periodic updates (like Clock) should override this.
+
+        Args:
+            display_controller: DisplayController to push images to
+            settings: Plugin instance settings
+            device_config: Display device configuration
+            stop_event: threading.Event - set when plugin should stop
+
+        Example (Clock plugin):
+            def run_active(self, display_controller, settings, device_config, stop_event):
+                while not stop_event.is_set():
+                    image = self.generate_image(settings, device_config)
+                    display_controller.display_image(image)
+                    # Wait 60 seconds or until stopped
+                    stop_event.wait(timeout=60)
+        """
+        # Default: generate once and wait
+        try:
+            image = self.generate_image(settings, device_config)
+            if image:
+                display_controller.display_image(image)
+        except Exception as e:
+            self.logger.error(f"Failed to generate/display image: {e}")
+
+        # Wait until stopped
+        stop_event.wait()
+
     def on_settings_change(
         self, old_settings: Dict[str, Any], new_settings: Dict[str, Any]
     ) -> None:

@@ -91,6 +91,33 @@ class DisplayController:
             self.state.error_count += 1
             raise DisplayError(f"Failed to display image: {e}")
 
+    def display_image(
+        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+    ) -> None:
+        """
+        Display a PIL Image directly.
+
+        Args:
+            image: PIL Image to display
+            plugin_info: Optional metadata about the plugin that generated the image
+        """
+        try:
+            self.state.status = "updating"
+
+            # Display image via driver
+            self.driver.display_image(image, plugin_info)
+
+            # Update state
+            self.state.current_image_id = plugin_info.get("instance_id") if plugin_info else None
+            self.state.last_refresh = datetime.now()
+            self.state.status = "idle"
+            self.state.error_count = 0
+
+        except Exception as e:
+            self.state.status = "error"
+            self.state.error_count += 1
+            raise DisplayError(f"Failed to display image: {e}")
+
     def display_image_file(self, image_path: Path, title: Optional[str] = None) -> None:
         """
         Display an image file directly.

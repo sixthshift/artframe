@@ -198,7 +198,7 @@ async function openCreateInstanceModal(pluginId) {
     editingInstance = null;
 
     if (!selectedPlugin) {
-        alert('Plugin not found');
+        showNotification('Plugin not found', 'error');
         return;
     }
 
@@ -221,7 +221,7 @@ async function openCreateInstanceModal(pluginId) {
 async function editInstance(instanceId) {
     const instance = currentInstances.find(i => i.id === instanceId);
     if (!instance) {
-        alert('Instance not found');
+        showNotification('Instance not found', 'error');
         return;
     }
 
@@ -254,36 +254,30 @@ async function loadPluginSettingsTemplate(pluginId, currentSettings) {
 
         let template = result.data.template;
 
-        // Replace Jinja2 template variables with values
-        // This is a simple replacement - for production might need better templating
-        for (const [key, value] of Object.entries(currentSettings)) {
-            const patterns = [
-                new RegExp(`value="{{ settings\\.${key} or '' }}"`, 'g'),
-                new RegExp(`value="{{ settings\\.${key} }}"`, 'g'),
-                new RegExp(`{% if settings\\.${key} %}checked{% endif %}`, 'g'),
-                new RegExp(`{% if settings\\.${key} == '([^']+)' %}selected{% endif %}`, 'g')
-            ];
+        // Step 1: Clean all Jinja2 template syntax from the HTML
+        // Remove value="{{ ... }}" patterns and replace with empty value
+        template = template.replace(/value="{{[^}]+}}"/g, 'value=""');
+        // Remove checked conditionals
+        template = template.replace(/\{%[^%]+%\}checked\{%[^%]+%\}/g, '');
+        template = template.replace(/\{%\s*if[^%]+%\}checked\{%\s*endif\s*%\}/g, '');
+        // Remove selected conditionals
+        template = template.replace(/\{%[^%]+%\}selected\{%[^%]+%\}/g, '');
+        template = template.replace(/\{%\s*if[^%]+%\}selected\{%\s*endif\s*%\}/g, '');
+        // Remove any remaining Jinja2 blocks
+        template = template.replace(/\{%[^%]+%\}/g, '');
+        template = template.replace(/\{\{[^}]+\}\}/g, '');
 
-            template = template.replace(patterns[0], `value="${value || ''}"`);
-            template = template.replace(patterns[1], `value="${value || ''}"`);
-            template = template.replace(patterns[2], value ? 'checked' : '');
+        // Step 2: Insert cleaned HTML into DOM
+        const container = document.getElementById('plugin-settings-container');
+        container.innerHTML = template;
 
-            // Handle select options
-            template = template.replace(patterns[3], (match, optionValue) => {
-                return value === optionValue ? 'selected' : '';
-            });
+        // Step 3: Populate form fields from currentSettings using DOM manipulation
+        if (currentSettings && typeof currentSettings === 'object') {
+            populateFormFields(container, currentSettings);
         }
 
-        // Remove any remaining Jinja2 syntax
-        template = template.replace(/{{ settings\.\w+ or '' }}/g, '');
-        template = template.replace(/{{ settings\.\w+ }}/g, '');
-        template = template.replace(/{% if settings\.\w+ %}checked{% endif %}/g, '');
-        template = template.replace(/{% if settings\.\w+ == '[^']+' %}selected{% endif %}/g, '');
-
-        document.getElementById('plugin-settings-container').innerHTML = template;
-
         // Re-execute any scripts in the template
-        const scripts = document.getElementById('plugin-settings-container').querySelectorAll('script');
+        const scripts = container.querySelectorAll('script');
         scripts.forEach(oldScript => {
             const newScript = document.createElement('script');
             newScript.textContent = oldScript.textContent;
@@ -297,6 +291,55 @@ async function loadPluginSettingsTemplate(pluginId, currentSettings) {
                 <p>Failed to load settings: ${error.message}</p>
             </div>
         `;
+    }
+}
+
+/**
+ * Populate form fields from a settings object.
+ * Handles input[type=text], input[type=checkbox], input[type=color],
+ * input[type=number], select, and textarea elements.
+ */
+function populateFormFields(container, settings) {
+    for (const [key, value] of Object.entries(settings)) {
+        // Find elements by name or id
+        const elements = container.querySelectorAll(`[name="${key}"], #${key}`);
+
+        elements.forEach(element => {
+            const tagName = element.tagName.toLowerCase();
+            const inputType = element.type ? element.type.toLowerCase() : '';
+
+            if (tagName === 'input') {
+                if (inputType === 'checkbox') {
+                    // Handle checkbox - check if value is truthy
+                    element.checked = Boolean(value);
+                } else if (inputType === 'radio') {
+                    // Handle radio - check if value matches
+                    element.checked = (element.value === String(value));
+                } else {
+                    // Handle text, number, color, etc.
+                    element.value = value !== null && value !== undefined ? value : '';
+                }
+            } else if (tagName === 'select') {
+                // Handle select - find and select the matching option
+                const options = element.querySelectorAll('option');
+                let found = false;
+                options.forEach(option => {
+                    if (option.value === String(value)) {
+                        option.selected = true;
+                        found = true;
+                    } else {
+                        option.selected = false;
+                    }
+                });
+                // If no match found, try setting value directly
+                if (!found && value !== null && value !== undefined) {
+                    element.value = value;
+                }
+            } else if (tagName === 'textarea') {
+                // Handle textarea
+                element.value = value !== null && value !== undefined ? value : '';
+            }
+        });
     }
 }
 
@@ -450,6 +493,18 @@ async function deleteInstance(instanceId, instanceName) {
 // ===== Utility Functions =====
 
 function showNotification(message, type = 'info') {
-    // Simple notification - could be enhanced with a proper toast system
-    alert(message);
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.add('visible'), 10);
+
+    // Remove after delay
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
