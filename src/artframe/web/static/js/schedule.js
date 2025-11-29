@@ -9,6 +9,11 @@ let currentPlaylists = [];
 let currentDefault = {};
 let currentTimeInterval = null;
 
+// Multi-select state
+let selectedSlots = new Set();  // Set of "day-hour" keys
+let isSelecting = false;
+let selectionStart = null;
+
 // Constants for timetable
 const HOUR_HEIGHT = 30; // pixels per hour slot
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -26,6 +31,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update current time indicator every minute
     currentTimeInterval = setInterval(updateCurrentTimeIndicator, 60000);
+
+    // Global mouse up to end selection
+    document.addEventListener('mouseup', onMouseUp);
+
+    // Escape key to clear selection
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            clearSelection();
+        }
+    });
 });
 
 // ===== Load Data =====
@@ -188,13 +203,15 @@ function renderTimetable() {
             const slotKey = `${day}-${hour}`;
             const slot = currentSlots[slotKey];
             const hasContent = !!slot;
+            const isSelected = selectedSlots.has(slotKey);
 
             html += `
-                <div class="day-column hour-start ${hasContent ? 'has-content' : ''}"
+                <div class="day-column hour-start ${hasContent ? 'has-content' : ''} ${isSelected ? 'selected' : ''}"
                      data-day="${day}"
                      data-hour="${hour}"
                      data-slot-key="${slotKey}"
-                     onclick="onSlotClick(${day}, ${hour})">
+                     onmousedown="onSlotMouseDown(event, ${day}, ${hour})"
+                     onmouseenter="onSlotMouseEnter(event, ${day}, ${hour})">
             `;
 
             if (hasContent) {
@@ -223,6 +240,9 @@ function renderTimetable() {
 
     // Render legend
     renderLegend();
+
+    // Update selection toolbar
+    updateSelectionToolbar();
 
     // Scroll to current time after a short delay
     setTimeout(() => scrollToCurrentTime(), 100);
@@ -312,15 +332,219 @@ function toggleCompactMode(enabled) {
     }
 }
 
-// ===== Slot Click Handler =====
+// ===== Multi-Select Handlers =====
 
-function onSlotClick(day, hour) {
+function onSlotMouseDown(event, day, hour) {
+    event.preventDefault();
+
     const slotKey = `${day}-${hour}`;
-    const existingSlot = currentSlots[slotKey];
 
-    // Open the slot assignment modal
-    openSlotModal(day, hour, existingSlot);
+    if (event.shiftKey && selectionStart) {
+        // Shift-click: extend selection from start to here
+        extendSelection(day, hour);
+    } else if (event.ctrlKey || event.metaKey) {
+        // Ctrl/Cmd-click: toggle individual slot
+        toggleSlotSelection(slotKey);
+        selectionStart = { day, hour };
+    } else {
+        // Regular click: start new selection
+        clearSelection();
+        selectedSlots.add(slotKey);
+        selectionStart = { day, hour };
+        isSelecting = true;
+        updateCellSelection(slotKey, true);
+    }
+
+    updateSelectionToolbar();
 }
+
+function onSlotMouseEnter(event, day, hour) {
+    if (!isSelecting) return;
+
+    // Extend selection to this cell (rectangular selection)
+    extendSelection(day, hour);
+}
+
+function onMouseUp() {
+    if (isSelecting) {
+        isSelecting = false;
+
+        // If only one slot selected and it was a simple click, open modal
+        if (selectedSlots.size === 1) {
+            const slotKey = [...selectedSlots][0];
+            const [d, h] = slotKey.split('-').map(Number);
+            clearSelection();
+            openSlotModal(d, h, currentSlots[slotKey]);
+        }
+    }
+}
+
+function extendSelection(endDay, endHour) {
+    if (!selectionStart) return;
+
+    // Calculate rectangular selection
+    const minDay = Math.min(selectionStart.day, endDay);
+    const maxDay = Math.max(selectionStart.day, endDay);
+    const minHour = Math.min(selectionStart.hour, endHour);
+    const maxHour = Math.max(selectionStart.hour, endHour);
+
+    // Clear and rebuild selection
+    const oldSelection = new Set(selectedSlots);
+    selectedSlots.clear();
+
+    for (let d = minDay; d <= maxDay; d++) {
+        for (let h = minHour; h <= maxHour; h++) {
+            selectedSlots.add(`${d}-${h}`);
+        }
+    }
+
+    // Update visual state
+    oldSelection.forEach(key => {
+        if (!selectedSlots.has(key)) {
+            updateCellSelection(key, false);
+        }
+    });
+    selectedSlots.forEach(key => {
+        updateCellSelection(key, true);
+    });
+
+    updateSelectionToolbar();
+}
+
+function toggleSlotSelection(slotKey) {
+    if (selectedSlots.has(slotKey)) {
+        selectedSlots.delete(slotKey);
+        updateCellSelection(slotKey, false);
+    } else {
+        selectedSlots.add(slotKey);
+        updateCellSelection(slotKey, true);
+    }
+}
+
+function updateCellSelection(slotKey, isSelected) {
+    const cell = document.querySelector(`.day-column[data-slot-key="${slotKey}"]`);
+    if (cell) {
+        cell.classList.toggle('selected', isSelected);
+    }
+}
+
+function clearSelection() {
+    selectedSlots.forEach(key => {
+        updateCellSelection(key, false);
+    });
+    selectedSlots.clear();
+    selectionStart = null;
+    updateSelectionToolbar();
+}
+
+function updateSelectionToolbar() {
+    const toolbar = document.getElementById('selection-toolbar');
+    const countSpan = document.getElementById('selection-count');
+
+    if (selectedSlots.size > 1) {
+        toolbar.classList.add('visible');
+        countSpan.textContent = selectedSlots.size;
+    } else {
+        toolbar.classList.remove('visible');
+    }
+}
+
+// ===== Bulk Operations =====
+
+function openBulkAssignModal() {
+    if (selectedSlots.size === 0) return;
+
+    document.getElementById('bulk-slot-count').textContent = selectedSlots.size;
+
+    // Populate content selector
+    const select = document.getElementById('bulk-content-select');
+    let options = '<option value="">-- Select content --</option>';
+
+    options += '<optgroup label="Plugin Instances">';
+    options += currentInstances.map(instance => {
+        return `<option value="instance:${instance.id}">📷 ${instance.name}</option>`;
+    }).join('');
+    options += '</optgroup>';
+
+    options += '<optgroup label="Playlists">';
+    options += currentPlaylists.map(playlist => {
+        return `<option value="playlist:${playlist.id}">📋 ${playlist.name}</option>`;
+    }).join('');
+    options += '</optgroup>';
+
+    select.innerHTML = options;
+
+    document.getElementById('bulk-modal').classList.add('active');
+}
+
+function closeBulkModal() {
+    document.getElementById('bulk-modal').classList.remove('active');
+}
+
+async function saveBulkSlots() {
+    const contentValue = document.getElementById('bulk-content-select').value;
+
+    if (!contentValue) {
+        showNotification('Please select content to assign', 'error');
+        return;
+    }
+
+    const [targetType, targetId] = contentValue.split(':');
+
+    // Build slots array
+    const slots = [...selectedSlots].map(key => {
+        const [day, hour] = key.split('-').map(Number);
+        return { day, hour, target_type: targetType, target_id: targetId };
+    });
+
+    try {
+        const response = await fetch('/api/schedules/slots/bulk', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slots })
+        });
+
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
+        closeBulkModal();
+        clearSelection();
+        await loadSchedules();
+        showNotification(`Assigned content to ${slots.length} slots`, 'success');
+
+    } catch (error) {
+        console.error('Failed to bulk assign:', error);
+        showNotification('Failed to assign slots: ' + error.message, 'error');
+    }
+}
+
+async function clearSelectedSlots() {
+    if (selectedSlots.size === 0) return;
+
+    if (!confirm(`Clear ${selectedSlots.size} selected slots?`)) {
+        return;
+    }
+
+    try {
+        // Clear each slot individually (could add bulk clear endpoint)
+        for (const key of selectedSlots) {
+            const [day, hour] = key.split('-').map(Number);
+            await clearSlot(day, hour);
+        }
+
+        clearSelection();
+        await loadSchedules();
+        showNotification('Selected slots cleared', 'success');
+
+    } catch (error) {
+        console.error('Failed to clear slots:', error);
+        showNotification('Failed to clear slots: ' + error.message, 'error');
+    }
+}
+
+// ===== Single Slot Modal =====
 
 function openSlotModal(day, hour, existingSlot) {
     document.getElementById('slot-modal-title').textContent =
@@ -519,8 +743,20 @@ function getColorForSlot(slotKey) {
 }
 
 function showNotification(message, type = 'info') {
-    // Simple notification - could be enhanced with a proper toast system
-    alert(message);
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => toast.classList.add('visible'), 10);
+
+    // Remove after delay
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 function renderLegend() {
@@ -538,7 +774,7 @@ function renderLegend() {
     const items = Object.entries(contentMap);
 
     if (items.length === 0) {
-        legendContainer.innerHTML = '<p class="hint">Click on any slot to assign content</p>';
+        legendContainer.innerHTML = '<p class="hint">Click and drag to select multiple slots</p>';
         return;
     }
 

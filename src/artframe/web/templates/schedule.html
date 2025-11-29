@@ -8,7 +8,7 @@
     <div class="page-header">
         <div>
             <h2>Weekly Schedule</h2>
-            <p class="subtitle">Click any slot to assign content</p>
+            <p class="subtitle">Click to assign, drag to select multiple slots</p>
         </div>
         <button class="btn btn-danger" onclick="clearAllSlots()">
             Clear All
@@ -77,6 +77,38 @@
                     <div class="stat-value" id="stat-coverage">0%</div>
                     <div class="stat-label">Coverage</div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Selection Toolbar (floating) -->
+<div id="selection-toolbar" class="selection-toolbar">
+    <span><strong id="selection-count">0</strong> slots selected</span>
+    <button class="btn btn-primary btn-small" onclick="openBulkAssignModal()">Assign Content</button>
+    <button class="btn btn-danger btn-small" onclick="clearSelectedSlots()">Clear</button>
+    <button class="btn btn-secondary btn-small" onclick="clearSelection()">Cancel</button>
+</div>
+
+<!-- Bulk Assignment Modal -->
+<div id="bulk-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Assign to <span id="bulk-slot-count">0</span> Slots</h3>
+            <button class="modal-close" onclick="closeBulkModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="bulk-content-select">Content</label>
+                <select id="bulk-content-select">
+                    <option value="">-- Select content --</option>
+                </select>
+                <small>This will be assigned to all selected slots</small>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeBulkModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveBulkSlots()">Assign All</button>
             </div>
         </div>
     </div>
@@ -320,6 +352,15 @@
 
     .day-column:hover {
         background: #f0f4ff;
+    }
+
+    .day-column.selected {
+        background: rgba(102, 126, 234, 0.25) !important;
+        box-shadow: inset 0 0 0 2px #667eea;
+    }
+
+    .day-column.selected .slot-content {
+        opacity: 0.7;
     }
 
     .day-column.hour-start {
@@ -685,6 +726,78 @@
         color: #e74c3c;
     }
 
+    /* Selection Toolbar */
+    .selection-toolbar {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: #333;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .selection-toolbar.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+
+    .selection-toolbar span {
+        font-size: 14px;
+    }
+
+    .selection-toolbar strong {
+        color: #667eea;
+        font-size: 16px;
+    }
+
+    /* Toast Notifications */
+    .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-size: 14px;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 2000;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.3s, transform 0.3s;
+    }
+
+    .toast.visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .toast-success {
+        background: #27ae60;
+    }
+
+    .toast-error {
+        background: #e74c3c;
+    }
+
+    .toast-info {
+        background: #667eea;
+    }
+
+    /* Prevent text selection while dragging */
+    .timetable {
+        user-select: none;
+    }
+
     @media (max-width: 768px) {
         .settings-row {
             grid-template-columns: 1fr;
@@ -694,6 +807,17 @@
             flex-direction: column;
             gap: 16px;
             align-items: flex-start;
+        }
+
+        .selection-toolbar {
+            left: 16px;
+            right: 16px;
+            transform: translateX(0) translateY(100px);
+            width: auto;
+        }
+
+        .selection-toolbar.visible {
+            transform: translateX(0) translateY(0);
         }
     }
 </style>
