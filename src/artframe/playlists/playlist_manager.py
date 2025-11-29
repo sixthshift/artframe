@@ -9,9 +9,9 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from ..models import Playlist, PlaylistItem
+from ..models import PlaybackMode, Playlist, PlaylistItem
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,8 @@ class PlaylistManager:
                         instance_id=item["instance_id"],
                         duration_seconds=item["duration_seconds"],
                         order=item["order"],
+                        conditions=item.get("conditions"),
+                        weight=item.get("weight", 1),
                     )
                     for item in playlist_data["items"]
                 ]
@@ -71,6 +73,9 @@ class PlaylistManager:
                     items=items,
                     created_at=datetime.fromisoformat(playlist_data["created_at"]),
                     updated_at=datetime.fromisoformat(playlist_data["updated_at"]),
+                    playback_mode=playlist_data.get(
+                        "playback_mode", PlaybackMode.SEQUENTIAL.value
+                    ),
                 )
                 self._playlists[playlist.id] = playlist
 
@@ -89,11 +94,14 @@ class PlaylistManager:
                         "name": playlist.name,
                         "description": playlist.description,
                         "enabled": playlist.enabled,
+                        "playback_mode": playlist.playback_mode,
                         "items": [
                             {
                                 "instance_id": item.instance_id,
                                 "duration_seconds": item.duration_seconds,
                                 "order": item.order,
+                                "conditions": item.conditions,
+                                "weight": item.weight,
                             }
                             for item in playlist.items
                         ],
@@ -115,7 +123,11 @@ class PlaylistManager:
             logger.error(f"Failed to save playlists: {e}", exc_info=True)
 
     def create_playlist(
-        self, name: str, description: str = "", items: Optional[List[PlaylistItem]] = None
+        self,
+        name: str,
+        description: str = "",
+        items: Optional[List[PlaylistItem]] = None,
+        playback_mode: str = PlaybackMode.SEQUENTIAL.value,
     ) -> Playlist:
         """
         Create a new playlist.
@@ -124,6 +136,7 @@ class PlaylistManager:
             name: Human-readable name for playlist
             description: Optional description
             items: Initial playlist items
+            playback_mode: Playback mode (sequential, random, weighted_random)
 
         Returns:
             Created Playlist
@@ -136,6 +149,7 @@ class PlaylistManager:
             items=items or [],
             created_at=datetime.now(),
             updated_at=datetime.now(),
+            playback_mode=playback_mode,
         )
 
         self._playlists[playlist.id] = playlist
@@ -172,6 +186,7 @@ class PlaylistManager:
         description: Optional[str] = None,
         items: Optional[List[PlaylistItem]] = None,
         enabled: Optional[bool] = None,
+        playback_mode: Optional[str] = None,
     ) -> bool:
         """
         Update an existing playlist.
@@ -182,6 +197,7 @@ class PlaylistManager:
             description: Optional new description
             items: Optional new items list
             enabled: Optional enabled state
+            playback_mode: Optional new playback mode
 
         Returns:
             True if updated successfully
@@ -202,6 +218,9 @@ class PlaylistManager:
 
         if enabled is not None:
             playlist.enabled = enabled
+
+        if playback_mode is not None:
+            playlist.playback_mode = playback_mode
 
         playlist.updated_at = datetime.now()
         self._save_playlists()
@@ -281,7 +300,13 @@ class PlaylistManager:
         return self._active_playlist_id
 
     def add_item(
-        self, playlist_id: str, instance_id: str, duration_seconds: int, order: Optional[int] = None
+        self,
+        playlist_id: str,
+        instance_id: str,
+        duration_seconds: int,
+        order: Optional[int] = None,
+        conditions: Optional[Dict[str, Any]] = None,
+        weight: int = 1,
     ) -> bool:
         """
         Add an item to a playlist.
@@ -291,6 +316,8 @@ class PlaylistManager:
             instance_id: Plugin instance identifier
             duration_seconds: How long to display
             order: Optional position, defaults to end
+            conditions: Optional conditions for when item should be shown
+            weight: Weight for weighted random selection
 
         Returns:
             True if added successfully
@@ -303,7 +330,13 @@ class PlaylistManager:
         if order is None:
             order = len(playlist.items)
 
-        item = PlaylistItem(instance_id=instance_id, duration_seconds=duration_seconds, order=order)
+        item = PlaylistItem(
+            instance_id=instance_id,
+            duration_seconds=duration_seconds,
+            order=order,
+            conditions=conditions,
+            weight=weight,
+        )
 
         playlist.items.append(item)
         playlist.items.sort(key=lambda x: x.order)

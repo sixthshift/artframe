@@ -13,6 +13,7 @@ from .playlists import PlaylistExecutor, PlaylistManager
 from .playlists.schedule_executor import ScheduleExecutor
 from .playlists.schedule_manager import ScheduleManager
 from .plugins import InstanceManager
+from .scheduling import ConditionEvaluator, ContentOrchestrator
 from .storage import StorageManager
 from .utils import Scheduler
 
@@ -21,8 +22,8 @@ class ArtframeController:
     """
     Main controller that orchestrates the Artframe system.
 
-    Simplified controller for the new plugin architecture.
-    Plugin execution is now handled by InstanceManager and playlists.
+    Uses the unified ContentOrchestrator for all content scheduling
+    and display decisions.
     """
 
     def __init__(self, config_path: Optional[Path] = None):
@@ -48,8 +49,22 @@ class ArtframeController:
         self.playlist_manager = PlaylistManager(storage_dir)
         self.schedule_manager = ScheduleManager(storage_dir)
 
-        # Create playlist and schedule executors
+        # Create device config
         device_config = self._get_device_config()
+
+        # Create condition evaluator
+        self.condition_evaluator = ConditionEvaluator()
+
+        # Create unified content orchestrator
+        self.orchestrator = ContentOrchestrator(
+            schedule_manager=self.schedule_manager,
+            playlist_manager=self.playlist_manager,
+            instance_manager=self.instance_manager,
+            device_config=device_config,
+            condition_evaluator=self.condition_evaluator,
+        )
+
+        # Legacy executors (kept for backward compatibility)
         self.playlist_executor = PlaylistExecutor(
             self.playlist_manager, self.instance_manager, device_config
         )
@@ -123,8 +138,8 @@ class ArtframeController:
         """
         Trigger an immediate refresh.
 
-        Note: This is a placeholder. Actual plugin execution
-        will be handled by playlists and InstanceManager.
+        Uses the ContentOrchestrator to determine and display
+        the current content.
 
         Returns:
             bool: True if refresh was successful
@@ -132,11 +147,10 @@ class ArtframeController:
         self.logger.log_manual_refresh_triggered()
 
         try:
-            # For now, just clear the display
-            # TODO: Execute current playlist item
-            self.display_controller.clear_display()
-            self.last_update = datetime.now()
-            return True
+            success = self.orchestrator.force_refresh(self.display_controller)
+            if success:
+                self.last_update = datetime.now()
+            return success
 
         except Exception as e:
             self.logger._logger.error(f"Manual refresh failed: {e}")
@@ -144,18 +158,17 @@ class ArtframeController:
 
     def run_scheduled_loop(self) -> None:
         """
-        Run the main scheduled loop with playlist execution.
+        Run the main scheduled loop with unified content orchestration.
 
-        This runs the playlist executor which continuously displays
-        content from the active playlist.
+        This runs the ContentOrchestrator which handles both schedule-based
+        and playlist-based content selection.
         """
         self.logger.log_scheduled_loop_start()
         self.running = True
 
         try:
-            # Run the playlist executor loop
-            # This will continuously execute playlist items
-            self.playlist_executor.run_loop(self.display_controller, check_interval=5)
+            # Run the unified content orchestrator loop
+            self.orchestrator.run_loop(self.display_controller, check_interval=5)
 
         except KeyboardInterrupt:
             self.logger.log_interrupt_received()
@@ -165,27 +178,27 @@ class ArtframeController:
             self.logger.log_scheduled_loop_error(e)
             self.running = False
         finally:
-            self.playlist_executor.stop()
+            self.orchestrator.stop()
 
     def stop(self) -> None:
         """Stop the scheduled loop."""
         self.logger.log_controller_stopping()
         self.running = False
-        self.playlist_executor.stop()
+        self.orchestrator.stop()
 
     def get_status(self) -> Dict[str, Any]:
         """Get current system status."""
         storage_stats = self.storage_manager.get_storage_stats()
         display_state = self.display_controller.get_state()
 
-        # Get playlist executor status
-        current_item_info = self.playlist_executor.get_current_item_info()
+        # Get orchestrator status
+        orchestrator_status = self.orchestrator.get_current_status()
 
         return {
             "running": self.running,
             "last_update": self.last_update.isoformat() if self.last_update else None,
             "next_scheduled": self.scheduler.get_next_update_time().isoformat(),
-            "current_playlist_item": current_item_info,
+            "orchestrator": orchestrator_status,
             "storage_stats": {
                 "total_photos": storage_stats.total_photos,
                 "total_styled_images": storage_stats.total_styled_images,

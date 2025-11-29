@@ -769,6 +769,31 @@ def api_instance_test(instance_id):
 # ===== Playlist Management APIs =====
 
 
+def _serialize_playlist_item(item):
+    """Serialize a playlist item to a dictionary."""
+    return {
+        "instance_id": item.instance_id,
+        "duration_seconds": item.duration_seconds,
+        "order": item.order,
+        "conditions": item.conditions,
+        "weight": item.weight,
+    }
+
+
+def _serialize_playlist(playlist):
+    """Serialize a playlist to a dictionary."""
+    return {
+        "id": playlist.id,
+        "name": playlist.name,
+        "description": playlist.description,
+        "enabled": playlist.enabled,
+        "playback_mode": playlist.playback_mode,
+        "items": [_serialize_playlist_item(item) for item in playlist.items],
+        "created_at": playlist.created_at.isoformat(),
+        "updated_at": playlist.updated_at.isoformat(),
+    }
+
+
 @bp.route("/api/playlists", methods=["GET"])
 def api_playlists_list():
     """Get list of all playlists."""
@@ -776,27 +801,7 @@ def api_playlists_list():
         playlist_manager = get_app().playlist_manager
         playlists = playlist_manager.list_playlists()
 
-        playlists_data = []
-        for playlist in playlists:
-            playlists_data.append(
-                {
-                    "id": playlist.id,
-                    "name": playlist.name,
-                    "description": playlist.description,
-                    "enabled": playlist.enabled,
-                    "items": [
-                        {
-                            "instance_id": item.instance_id,
-                            "duration_seconds": item.duration_seconds,
-                            "order": item.order,
-                        }
-                        for item in playlist.items
-                    ],
-                    "created_at": playlist.created_at.isoformat(),
-                    "updated_at": playlist.updated_at.isoformat(),
-                }
-            )
-
+        playlists_data = [_serialize_playlist(playlist) for playlist in playlists]
         active_playlist_id = playlist_manager.get_active_playlist_id()
 
         return jsonify(
@@ -817,6 +822,7 @@ def api_playlist_create():
         name = data.get("name")
         description = data.get("description", "")
         items_data = data.get("items", [])
+        playback_mode = data.get("playback_mode", "sequential")
 
         if not name:
             return jsonify({"success": False, "error": "name is required"}), 400
@@ -832,33 +838,17 @@ def api_playlist_create():
                     instance_id=item_data["instance_id"],
                     duration_seconds=item_data["duration_seconds"],
                     order=item_data.get("order", len(items)),
+                    conditions=item_data.get("conditions"),
+                    weight=item_data.get("weight", 1),
                 )
             )
 
         playlist_manager = get_app().playlist_manager
-        playlist = playlist_manager.create_playlist(name, description, items)
-
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "id": playlist.id,
-                    "name": playlist.name,
-                    "description": playlist.description,
-                    "enabled": playlist.enabled,
-                    "items": [
-                        {
-                            "instance_id": item.instance_id,
-                            "duration_seconds": item.duration_seconds,
-                            "order": item.order,
-                        }
-                        for item in playlist.items
-                    ],
-                    "created_at": playlist.created_at.isoformat(),
-                    "updated_at": playlist.updated_at.isoformat(),
-                },
-            }
+        playlist = playlist_manager.create_playlist(
+            name, description, items, playback_mode=playback_mode
         )
+
+        return jsonify({"success": True, "data": _serialize_playlist(playlist)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -873,27 +863,7 @@ def api_playlist_details(playlist_id):
         if playlist is None:
             return jsonify({"success": False, "error": "Playlist not found"}), 404
 
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "id": playlist.id,
-                    "name": playlist.name,
-                    "description": playlist.description,
-                    "enabled": playlist.enabled,
-                    "items": [
-                        {
-                            "instance_id": item.instance_id,
-                            "duration_seconds": item.duration_seconds,
-                            "order": item.order,
-                        }
-                        for item in playlist.items
-                    ],
-                    "created_at": playlist.created_at.isoformat(),
-                    "updated_at": playlist.updated_at.isoformat(),
-                },
-            }
-        )
+        return jsonify({"success": True, "data": _serialize_playlist(playlist)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -909,6 +879,7 @@ def api_playlist_update(playlist_id):
         name = data.get("name")
         description = data.get("description")
         enabled = data.get("enabled")
+        playback_mode = data.get("playback_mode")
         items_data = data.get("items")
 
         # Parse items if provided
@@ -924,12 +895,19 @@ def api_playlist_update(playlist_id):
                         instance_id=item_data["instance_id"],
                         duration_seconds=item_data["duration_seconds"],
                         order=item_data.get("order", len(items)),
+                        conditions=item_data.get("conditions"),
+                        weight=item_data.get("weight", 1),
                     )
                 )
 
         playlist_manager = get_app().playlist_manager
         success = playlist_manager.update_playlist(
-            playlist_id, name=name, description=description, items=items, enabled=enabled
+            playlist_id,
+            name=name,
+            description=description,
+            items=items,
+            enabled=enabled,
+            playback_mode=playback_mode,
         )
 
         if not success:
@@ -938,27 +916,8 @@ def api_playlist_update(playlist_id):
         playlist = playlist_manager.get_playlist(playlist_id)
         if playlist is None:
             return jsonify({"success": False, "error": "Playlist not found"}), 404
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "id": playlist.id,
-                    "name": playlist.name,
-                    "description": playlist.description,
-                    "enabled": playlist.enabled,
-                    "items": [
-                        {
-                            "instance_id": item.instance_id,
-                            "duration_seconds": item.duration_seconds,
-                            "order": item.order,
-                        }
-                        for item in playlist.items
-                    ],
-                    "created_at": playlist.created_at.isoformat(),
-                    "updated_at": playlist.updated_at.isoformat(),
-                },
-            }
-        )
+
+        return jsonify({"success": True, "data": _serialize_playlist(playlist)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -1008,97 +967,113 @@ def api_playlist_deactivate():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ===== Schedule Management APIs =====
+# ===== Schedule Management APIs (Slot-based) =====
+
+
+def _serialize_slot(slot, instance_manager, playlist_manager):
+    """Serialize a time slot with target info."""
+    target_name = "Unknown"
+    target_details = {}
+
+    if slot.target_type == "playlist":
+        playlist = playlist_manager.get_playlist(slot.target_id)
+        if playlist:
+            target_name = playlist.name
+            target_details = {
+                "item_count": len(playlist.items),
+                "playback_mode": playlist.playback_mode,
+            }
+    else:
+        instance = instance_manager.get_instance(slot.target_id)
+        if instance:
+            target_name = instance.name
+            target_details = {"plugin_id": instance.plugin_id}
+
+    return {
+        "day": slot.day,
+        "hour": slot.hour,
+        "key": slot.key,
+        "target_type": slot.target_type,
+        "target_id": slot.target_id,
+        "target_name": target_name,
+        "target_details": target_details,
+    }
 
 
 @bp.route("/api/schedules", methods=["GET"])
 def api_schedules_list():
-    """Get list of all schedule entries."""
+    """Get all schedule slots."""
     try:
         schedule_manager = get_app().schedule_manager
-        entries = schedule_manager.list_entries()
+        instance_manager = get_app().instance_manager
+        playlist_manager = get_app().playlist_manager
 
-        entries_data = []
-        for entry in entries:
-            entries_data.append(
-                {
-                    "id": entry.id,
-                    "name": entry.name,
-                    "instance_id": entry.instance_id,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "days_of_week": entry.days_of_week,
-                    "priority": entry.priority,
-                    "enabled": entry.enabled,
-                    "created_at": entry.created_at.isoformat(),
-                    "updated_at": entry.updated_at.isoformat(),
+        # Get all slots as a dict for easy lookup
+        slots_dict = schedule_manager.get_slots_dict()
+
+        # Get default
+        default = schedule_manager.get_default()
+        default_info = None
+        if default:
+            if default["target_type"] == "instance":
+                instance = instance_manager.get_instance(default["target_id"])
+                default_info = {
+                    "target_type": "instance",
+                    "target_id": default["target_id"],
+                    "target_name": instance.name if instance else "Unknown",
                 }
-            )
-
-        config = schedule_manager.get_config()
+            else:
+                playlist = playlist_manager.get_playlist(default["target_id"])
+                default_info = {
+                    "target_type": "playlist",
+                    "target_id": default["target_id"],
+                    "target_name": playlist.name if playlist else "Unknown",
+                }
 
         return jsonify(
             {
                 "success": True,
-                "data": entries_data,
-                "config": {
-                    "default_instance_id": config.default_instance_id,
-                    "check_interval_seconds": config.check_interval_seconds,
-                },
+                "slots": slots_dict,
+                "default": default_info,
+                "slot_count": schedule_manager.get_slot_count(),
             }
         )
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route("/api/schedules", methods=["POST"])
-def api_schedule_create():
-    """Create a new schedule entry."""
+@bp.route("/api/schedules/slot", methods=["POST"])
+def api_schedule_set_slot():
+    """Set a single time slot."""
     try:
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
-        name = data.get("name")
-        instance_id = data.get("instance_id")
-        start_time = data.get("start_time")
-        end_time = data.get("end_time")
-        days_of_week = data.get("days_of_week", [])
-        priority = data.get("priority", 5)
+        day = data.get("day")
+        hour = data.get("hour")
+        target_type = data.get("target_type", "instance")
+        target_id = data.get("target_id")
 
-        if not name:
-            return jsonify({"success": False, "error": "name is required"}), 400
-        if not instance_id:
-            return jsonify({"success": False, "error": "instance_id is required"}), 400
-        if not start_time:
-            return jsonify({"success": False, "error": "start_time is required"}), 400
-        if not end_time:
-            return jsonify({"success": False, "error": "end_time is required"}), 400
+        if day is None:
+            return jsonify({"success": False, "error": "day is required"}), 400
+        if hour is None:
+            return jsonify({"success": False, "error": "hour is required"}), 400
+        if not target_id:
+            return jsonify({"success": False, "error": "target_id is required"}), 400
 
         schedule_manager = get_app().schedule_manager
-        entry = schedule_manager.create_entry(
-            name=name,
-            instance_id=instance_id,
-            start_time=start_time,
-            end_time=end_time,
-            days_of_week=days_of_week,
-            priority=priority,
-        )
+        slot = schedule_manager.set_slot(day, hour, target_type, target_id)
 
         return jsonify(
             {
                 "success": True,
-                "data": {
-                    "id": entry.id,
-                    "name": entry.name,
-                    "instance_id": entry.instance_id,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "days_of_week": entry.days_of_week,
-                    "priority": entry.priority,
-                    "enabled": entry.enabled,
-                    "created_at": entry.created_at.isoformat(),
-                    "updated_at": entry.updated_at.isoformat(),
+                "slot": {
+                    "day": slot.day,
+                    "hour": slot.hour,
+                    "key": slot.key,
+                    "target_type": slot.target_type,
+                    "target_id": slot.target_id,
                 },
             }
         )
@@ -1106,195 +1081,162 @@ def api_schedule_create():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route("/api/schedules/<entry_id>", methods=["GET"])
-def api_schedule_details(entry_id):
-    """Get details for a specific schedule entry."""
+@bp.route("/api/schedules/slot", methods=["DELETE"])
+def api_schedule_clear_slot():
+    """Clear a single time slot."""
     try:
+        # Accept both query params and JSON body
+        data = request.get_json(silent=True) or {}
+        day = data.get("day") if data else request.args.get("day", type=int)
+        hour = data.get("hour") if data else request.args.get("hour", type=int)
+
+        if day is None:
+            return jsonify({"success": False, "error": "day is required"}), 400
+        if hour is None:
+            return jsonify({"success": False, "error": "hour is required"}), 400
+
         schedule_manager = get_app().schedule_manager
-        entry = schedule_manager.get_entry(entry_id)
+        cleared = schedule_manager.clear_slot(int(day), int(hour))
 
-        if entry is None:
-            return jsonify({"success": False, "error": "Schedule entry not found"}), 404
-
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "id": entry.id,
-                    "name": entry.name,
-                    "instance_id": entry.instance_id,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "days_of_week": entry.days_of_week,
-                    "priority": entry.priority,
-                    "enabled": entry.enabled,
-                    "created_at": entry.created_at.isoformat(),
-                    "updated_at": entry.updated_at.isoformat(),
-                },
-            }
-        )
+        return jsonify({"success": True, "cleared": cleared})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route("/api/schedules/<entry_id>", methods=["PUT"])
-def api_schedule_update(entry_id):
-    """Update a schedule entry."""
+@bp.route("/api/schedules/slots/bulk", methods=["POST"])
+def api_schedule_bulk_set():
+    """Set multiple slots at once."""
     try:
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
+        slots = data.get("slots", [])
+        if not slots:
+            return jsonify({"success": False, "error": "slots array is required"}), 400
+
         schedule_manager = get_app().schedule_manager
-        success = schedule_manager.update_entry(
-            entry_id,
-            name=data.get("name"),
-            instance_id=data.get("instance_id"),
-            start_time=data.get("start_time"),
-            end_time=data.get("end_time"),
-            days_of_week=data.get("days_of_week"),
-            priority=data.get("priority"),
-            enabled=data.get("enabled"),
-        )
+        count = schedule_manager.bulk_set_slots(slots)
 
-        if not success:
-            return jsonify({"success": False, "error": "Failed to update schedule entry"}), 400
-
-        entry = schedule_manager.get_entry(entry_id)
-        if entry is None:
-            return jsonify({"success": False, "error": "Schedule entry not found"}), 404
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "id": entry.id,
-                    "name": entry.name,
-                    "instance_id": entry.instance_id,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "days_of_week": entry.days_of_week,
-                    "priority": entry.priority,
-                    "enabled": entry.enabled,
-                    "created_at": entry.created_at.isoformat(),
-                    "updated_at": entry.updated_at.isoformat(),
-                },
-            }
-        )
+        return jsonify({"success": True, "count": count})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route("/api/schedules/<entry_id>", methods=["DELETE"])
-def api_schedule_delete(entry_id):
-    """Delete a schedule entry."""
-    try:
-        schedule_manager = get_app().schedule_manager
-        success = schedule_manager.delete_entry(entry_id)
-
-        if not success:
-            return jsonify({"success": False, "error": "Failed to delete schedule entry"}), 400
-
-        return jsonify({"success": True, "message": "Schedule entry deleted successfully"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@bp.route("/api/schedules/config", methods=["PUT"])
-def api_schedule_config_update():
-    """Update schedule configuration (e.g., default instance)."""
+@bp.route("/api/schedules/default", methods=["PUT"])
+def api_schedule_set_default():
+    """Set the default content for empty slots."""
     try:
         data = request.get_json()
         if not data:
             return jsonify({"success": False, "error": "No data provided"}), 400
 
+        target_type = data.get("target_type")
+        target_id = data.get("target_id")
+
         schedule_manager = get_app().schedule_manager
+        schedule_manager.set_default(target_type, target_id)
 
-        if "default_instance_id" in data:
-            schedule_manager.set_default_instance(data["default_instance_id"])
-
-        return jsonify({"success": True, "message": "Schedule configuration updated"})
+        return jsonify({"success": True, "message": "Default updated"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
 
 @bp.route("/api/schedules/current", methods=["GET"])
 def api_schedule_current():
-    """Get information about what's currently scheduled."""
-    try:
-        schedule_executor = get_app().schedule_executor
-        info = schedule_executor.get_current_schedule_info()
-
-        return jsonify({"success": True, "data": info})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-@bp.route("/api/schedules/timeline", methods=["GET"])
-def api_schedule_timeline():
-    """
-    Get timeline view of schedule for visualization.
-
-    Query params:
-    - day: Day of week (0=Monday, 6=Sunday). Defaults to today.
-    """
+    """Get what's currently scheduled for right now."""
     try:
         from datetime import datetime
 
         schedule_manager = get_app().schedule_manager
         instance_manager = get_app().instance_manager
+        playlist_manager = get_app().playlist_manager
 
-        # Get day parameter (defaults to today)
-        day_param = request.args.get("day")
-        if day_param is not None:
-            day = int(day_param)
-        else:
-            day = datetime.now().weekday()
+        now = datetime.now()
+        slot = schedule_manager.get_current_slot(now)
 
-        # Get all entries for this day
-        entries = schedule_manager.list_entries()
-        day_entries = [e for e in entries if e.enabled and day in e.days_of_week]
+        if slot:
+            if slot.target_type == "playlist":
+                playlist = playlist_manager.get_playlist(slot.target_id)
+                return jsonify(
+                    {
+                        "success": True,
+                        "data": {
+                            "has_content": True,
+                            "source_type": "schedule",
+                            "target_type": "playlist",
+                            "target_id": slot.target_id,
+                            "target_name": playlist.name if playlist else "Unknown",
+                            "day": slot.day,
+                            "hour": slot.hour,
+                        },
+                    }
+                )
+            else:
+                instance = instance_manager.get_instance(slot.target_id)
+                return jsonify(
+                    {
+                        "success": True,
+                        "data": {
+                            "has_content": True,
+                            "source_type": "schedule",
+                            "target_type": "instance",
+                            "target_id": slot.target_id,
+                            "target_name": instance.name if instance else "Unknown",
+                            "instance": {"name": instance.name} if instance else None,
+                            "day": slot.day,
+                            "hour": slot.hour,
+                        },
+                    }
+                )
 
-        # Sort by start time
-        day_entries.sort(key=lambda e: e.start_time)
-
-        # Build timeline data
-        timeline = []
-        for entry in day_entries:
-            instance = instance_manager.get_instance(entry.instance_id)
-            timeline.append(
-                {
-                    "entry_id": entry.id,
-                    "entry_name": entry.name,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "priority": entry.priority,
-                    "instance_id": entry.instance_id,
-                    "instance_name": instance.name if instance else "Unknown",
-                    "plugin_id": instance.plugin_id if instance else "Unknown",
-                }
-            )
-
-        # Get default instance info
-        default_id = schedule_manager.get_default_instance_id()
-        default_info = None
-        if default_id:
-            default_instance = instance_manager.get_instance(default_id)
-            if default_instance:
-                default_info = {
-                    "instance_id": default_id,
-                    "instance_name": default_instance.name,
-                    "plugin_id": default_instance.plugin_id,
-                }
+        # No slot - check default
+        default = schedule_manager.get_default()
+        if default:
+            if default["target_type"] == "instance":
+                instance = instance_manager.get_instance(default["target_id"])
+                return jsonify(
+                    {
+                        "success": True,
+                        "data": {
+                            "has_content": True,
+                            "source_type": "default",
+                            "target_type": "instance",
+                            "target_id": default["target_id"],
+                            "target_name": instance.name if instance else "Unknown",
+                            "instance": {"name": instance.name} if instance else None,
+                        },
+                    }
+                )
+            else:
+                playlist = playlist_manager.get_playlist(default["target_id"])
+                return jsonify(
+                    {
+                        "success": True,
+                        "data": {
+                            "has_content": True,
+                            "source_type": "default",
+                            "target_type": "playlist",
+                            "target_id": default["target_id"],
+                            "target_name": playlist.name if playlist else "Unknown",
+                        },
+                    }
+                )
 
         return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "day": day,
-                    "entries": timeline,
-                    "default": default_info,
-                },
-            }
+            {"success": True, "data": {"has_content": False, "source_type": "none"}}
         )
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/api/schedules/clear", methods=["POST"])
+def api_schedule_clear_all():
+    """Clear all schedule slots."""
+    try:
+        schedule_manager = get_app().schedule_manager
+        count = schedule_manager.clear_all_slots()
+
+        return jsonify({"success": True, "cleared": count})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

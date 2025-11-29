@@ -2,10 +2,26 @@
 Data models for the Artframe system.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+
+class PlaybackMode(str, Enum):
+    """Playback mode for playlists."""
+
+    SEQUENTIAL = "sequential"
+    RANDOM = "random"
+    WEIGHTED_RANDOM = "weighted_random"
+
+
+class TargetType(str, Enum):
+    """Target type for schedule entries."""
+
+    INSTANCE = "instance"
+    PLAYLIST = "playlist"
 
 
 @dataclass
@@ -71,6 +87,10 @@ class PlaylistItem:
     instance_id: str
     duration_seconds: int
     order: int
+    # Optional conditions for when this item should be shown
+    conditions: Optional[Dict[str, Any]] = None
+    # Weight for weighted random selection (higher = more likely)
+    weight: int = 1
 
 
 @dataclass
@@ -84,27 +104,87 @@ class Playlist:
     items: List[PlaylistItem]
     created_at: datetime
     updated_at: datetime
+    # Playback mode: sequential, random, or weighted_random
+    playback_mode: str = PlaybackMode.SEQUENTIAL.value
 
 
 @dataclass
-class ScheduleEntry:
-    """Represents a time-based schedule entry."""
+class TimeSlot:
+    """
+    Represents a single time slot assignment.
 
-    id: str
-    name: str
-    instance_id: str  # Which plugin instance to display
-    start_time: str  # HH:MM format (e.g., "08:00")
-    end_time: str  # HH:MM format (e.g., "09:00")
-    days_of_week: List[int]  # 0=Monday, 6=Sunday
-    priority: int  # Higher number = higher priority
-    enabled: bool
-    created_at: datetime
-    updated_at: datetime
+    Each slot is one hour on one day of the week.
+    Simple model: one slot = one content assignment.
+    """
+
+    day: int  # 0=Monday, 6=Sunday
+    hour: int  # 0-23
+    target_type: str  # "instance" or "playlist"
+    target_id: str  # instance_id or playlist_id
+
+    @property
+    def key(self) -> str:
+        """Get the unique key for this slot (day-hour)."""
+        return f"{self.day}-{self.hour}"
+
+    @classmethod
+    def from_key(cls, key: str, target_type: str, target_id: str) -> "TimeSlot":
+        """Create a TimeSlot from a key string."""
+        day, hour = key.split("-")
+        return cls(
+            day=int(day),
+            hour=int(hour),
+            target_type=target_type,
+            target_id=target_id,
+        )
 
 
 @dataclass
 class ScheduleConfig:
     """Global schedule configuration."""
 
-    default_instance_id: Optional[str]  # Fallback when nothing scheduled
-    check_interval_seconds: int = 60  # How often to check for schedule changes
+    default_target_type: Optional[str] = None  # "instance" or "playlist"
+    default_target_id: Optional[str] = None  # Fallback when slot is empty
+
+    # Legacy compatibility
+    @property
+    def default_instance_id(self) -> Optional[str]:
+        """Backward compatibility."""
+        if self.default_target_type == TargetType.INSTANCE.value:
+            return self.default_target_id
+        return None
+
+
+@dataclass
+class ContentSource:
+    """
+    Represents what content should be displayed right now.
+
+    This is the output of the ContentOrchestrator - it tells us exactly
+    what instance to run, how long to show it, and where it came from.
+    """
+
+    # The plugin instance to execute (None if nothing to display)
+    instance: Optional["PluginInstance"] = None
+    # How long to display this content (seconds)
+    duration_seconds: int = 0
+    # Where this content came from
+    source_type: str = "none"  # "schedule", "playlist", "default", "none"
+    source_id: Optional[str] = None  # schedule_entry_id or playlist_id
+    source_name: Optional[str] = None  # Human-readable source name
+    # For playlist sources, track position
+    playlist_index: int = 0
+    playlist_total: int = 0
+
+    @classmethod
+    def empty(cls) -> "ContentSource":
+        """Create an empty content source (nothing to display)."""
+        return cls(
+            instance=None,
+            duration_seconds=0,
+            source_type="none",
+        )
+
+    def is_empty(self) -> bool:
+        """Check if this content source has nothing to display."""
+        return self.instance is None

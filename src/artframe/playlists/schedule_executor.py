@@ -2,7 +2,10 @@
 Schedule executor for running time-based schedules.
 
 Evaluates the current time and displays the appropriate plugin instance
-based on schedule entries.
+based on time slot assignments.
+
+Note: This is a legacy executor kept for backward compatibility.
+The ContentOrchestrator is the preferred way to handle scheduling.
 """
 
 import logging
@@ -10,6 +13,7 @@ import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from ..models import TargetType
 from ..plugins import get_plugin
 from ..plugins.instance_manager import InstanceManager
 from .schedule_manager import ScheduleManager
@@ -52,23 +56,30 @@ class ScheduleExecutor:
         Determine which instance should be displayed right now.
 
         Returns:
-            Instance ID to display, or None if using default
+            Instance ID to display, or None if nothing scheduled
         """
-        # Get matching schedule entry for current time
-        entry = self.schedule_manager.get_current_entry()
+        # Get matching slot for current time
+        slot = self.schedule_manager.get_current_slot()
 
-        if entry:
-            logger.debug(f"Current schedule entry: {entry.name} -> {entry.instance_id}")
-            return entry.instance_id
+        if slot:
+            # Only return instance IDs, not playlist IDs
+            if slot.target_type == TargetType.INSTANCE.value:
+                logger.debug(f"Current slot: {slot.key} -> {slot.target_id}")
+                return slot.target_id
+            else:
+                # It's a playlist - this executor doesn't handle playlists
+                logger.debug(f"Current slot is a playlist: {slot.target_id}")
+                return None
 
-        # Fall back to default
-        default_id = self.schedule_manager.get_default_instance_id()
-        if default_id:
-            logger.debug(f"No schedule match, using default: {default_id}")
-        else:
-            logger.debug("No schedule match and no default configured")
+        # Fall back to default (only if it's an instance)
+        default = self.schedule_manager.get_default()
+        if default and default.get("target_type") == TargetType.INSTANCE.value:
+            default_id = default.get("target_id")
+            logger.debug(f"No slot match, using default: {default_id}")
+            return default_id
 
-        return default_id
+        logger.debug("No slot match and no default instance configured")
+        return None
 
     def should_update_display(self) -> bool:
         """
@@ -149,7 +160,7 @@ class ScheduleExecutor:
         Returns:
             Dictionary with schedule info or None
         """
-        entry = self.schedule_manager.get_current_entry()
+        slot = self.schedule_manager.get_current_slot()
         instance_id = self.get_current_scheduled_instance_id()
 
         if instance_id is None:
@@ -170,36 +181,31 @@ class ScheduleExecutor:
             "instance_id": instance_id,
             "instance_name": instance.name,
             "plugin_id": instance.plugin_id,
-            "is_default": entry is None,  # True if showing default, False if from schedule
+            "is_default": slot is None,  # True if showing default, False if from slot
         }
 
-        if entry:
+        if slot:
             result.update(
                 {
-                    "entry_name": entry.name,
-                    "entry_id": entry.id,
-                    "start_time": entry.start_time,
-                    "end_time": entry.end_time,
-                    "priority": entry.priority,
+                    "slot_key": slot.key,
+                    "day": slot.day,
+                    "hour": slot.hour,
                 }
             )
 
         return result
 
-    def run_loop(self, display_controller, check_interval: Optional[int] = None) -> None:
+    def run_loop(self, display_controller, check_interval: int = 60) -> None:
         """
         Run the schedule execution loop.
 
         This loop continuously checks if the display should change based on
-        the current time and schedule entries.
+        the current time and schedule slots.
 
         Args:
             display_controller: DisplayController instance
-            check_interval: Seconds between checks (defaults to config value)
+            check_interval: Seconds between checks (default 60)
         """
-        if check_interval is None:
-            check_interval = self.schedule_manager.get_config().check_interval_seconds
-
         self.running = True
         logger.info(f"Schedule executor loop started (checking every {check_interval}s)")
 

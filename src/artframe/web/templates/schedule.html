@@ -7,18 +7,18 @@
     <!-- Header -->
     <div class="page-header">
         <div>
-            <h2>📅 Content Schedule</h2>
-            <p class="subtitle">Plan every minute of your display</p>
+            <h2>Weekly Schedule</h2>
+            <p class="subtitle">Click any slot to assign content</p>
         </div>
-        <button class="btn btn-primary btn-large" onclick="openCreateEntryModal()">
-            ➕ Add Schedule Entry
+        <button class="btn btn-danger" onclick="clearAllSlots()">
+            Clear All
         </button>
     </div>
 
     <!-- Current Display Status -->
     <div id="current-status-banner" class="current-status-banner">
         <div class="status-content">
-            <div class="status-icon">⏱️</div>
+            <div class="status-icon">Now</div>
             <div class="status-info">
                 <div class="status-label">Currently Displaying</div>
                 <div id="current-status-text" class="status-text">Loading...</div>
@@ -26,38 +26,25 @@
         </div>
     </div>
 
-    <!-- Weekly Schedule Grid - HERO FEATURE -->
-    <div class="weekly-schedule-card">
+    <!-- Weekly Timetable -->
+    <div class="timetable-card">
         <div class="card-header">
-            <h3>📊 Weekly Schedule</h3>
-            <div class="view-controls">
-                <select id="view-mode" onchange="changeViewMode(this.value)">
-                    <option value="week">Week View</option>
-                    <option value="day">Day View</option>
-                </select>
+            <h3>Weekly Timetable</h3>
+            <div class="timetable-controls">
+                <label class="compact-toggle">
+                    <input type="checkbox" id="compact-mode" onchange="toggleCompactMode(this.checked)">
+                    <span>Compact View</span>
+                </label>
+                <button class="btn btn-secondary btn-small" onclick="scrollToCurrentTime()">
+                    Now
+                </button>
             </div>
         </div>
 
-        <!-- Week View -->
-        <div id="week-view" class="week-view">
-            <div id="weekly-grid-container" class="weekly-grid-container">
-                <p class="loading">Loading schedule...</p>
-            </div>
-        </div>
-
-        <!-- Day View (Single Day Detailed) -->
-        <div id="day-view" class="day-view" style="display: none;">
-            <div class="day-tabs">
-                <button class="day-tab" onclick="changeDay(0)">Monday</button>
-                <button class="day-tab" onclick="changeDay(1)">Tuesday</button>
-                <button class="day-tab" onclick="changeDay(2)">Wednesday</button>
-                <button class="day-tab" onclick="changeDay(3)">Thursday</button>
-                <button class="day-tab" onclick="changeDay(4)">Friday</button>
-                <button class="day-tab" onclick="changeDay(5)">Saturday</button>
-                <button class="day-tab" onclick="changeDay(6)">Sunday</button>
-            </div>
-            <div id="single-day-timeline" class="single-day-timeline">
-                <p class="loading">Loading timeline...</p>
+        <!-- Timetable Grid -->
+        <div class="timetable-wrapper">
+            <div id="timetable-container" class="timetable-container">
+                <p class="loading">Loading timetable...</p>
             </div>
         </div>
 
@@ -71,8 +58,8 @@
     <div class="settings-row">
         <!-- Default Content -->
         <div class="settings-card">
-            <h4>🎨 Default Content</h4>
-            <p class="hint">Shown when nothing is scheduled</p>
+            <h4>Default Content</h4>
+            <p class="hint">Shown when no slot is assigned</p>
             <select id="default-instance-select" onchange="saveDefaultContent()">
                 <option value="">None (keep last displayed)</option>
             </select>
@@ -80,11 +67,11 @@
 
         <!-- Quick Stats -->
         <div class="settings-card">
-            <h4>📈 Schedule Stats</h4>
+            <h4>Schedule Stats</h4>
             <div id="schedule-stats" class="stats-grid">
                 <div class="stat">
                     <div class="stat-value" id="stat-entries">0</div>
-                    <div class="stat-label">Entries</div>
+                    <div class="stat-label">Slots Filled</div>
                 </div>
                 <div class="stat">
                     <div class="stat-value" id="stat-coverage">0%</div>
@@ -93,83 +80,34 @@
             </div>
         </div>
     </div>
-
-    <!-- Schedule Entries List -->
-    <div class="entries-card">
-        <div class="card-header">
-            <h3>📝 All Schedule Entries</h3>
-            <button class="btn btn-secondary btn-small" onclick="openCreateEntryModal()">
-                ➕ Add Entry
-            </button>
-        </div>
-        <div id="entries-list">
-            <p class="loading">Loading entries...</p>
-        </div>
-    </div>
 </div>
 
-<!-- Create/Edit Schedule Entry Modal -->
-<div id="entry-modal" class="modal">
-    <div class="modal-content modal-large">
+<!-- Slot Assignment Modal -->
+<div id="slot-modal" class="modal">
+    <div class="modal-content">
         <div class="modal-header">
-            <h3 id="entry-modal-title">Add Schedule Entry</h3>
-            <button class="modal-close" onclick="closeEntryModal()">&times;</button>
+            <h3 id="slot-modal-title">Assign Slot</h3>
+            <button class="modal-close" onclick="closeSlotModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <form id="entry-form" onsubmit="saveEntry(event)">
-                <input type="hidden" id="entry-id">
+            <input type="hidden" id="slot-day">
+            <input type="hidden" id="slot-hour">
 
-                <div class="form-group">
-                    <label for="entry-name">Name</label>
-                    <input type="text" id="entry-name" required placeholder="e.g., Morning Clock">
-                    <small>Give this schedule entry a descriptive name</small>
-                </div>
+            <div class="form-group">
+                <label for="slot-content-select">Content</label>
+                <select id="slot-content-select">
+                    <option value="">-- Empty (no content) --</option>
+                </select>
+                <small>Select what to display during this hour</small>
+            </div>
 
-                <div class="form-group">
-                    <label for="entry-instance">Plugin Instance</label>
-                    <select id="entry-instance" required>
-                        <option value="">Select a plugin instance...</option>
-                    </select>
-                    <small>What content to display during this time</small>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="entry-start-time">Start Time</label>
-                        <input type="time" id="entry-start-time" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="entry-end-time">End Time</label>
-                        <input type="time" id="entry-end-time" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Days of Week</label>
-                    <div class="days-checkboxes">
-                        <label><input type="checkbox" value="0" class="day-checkbox"> Monday</label>
-                        <label><input type="checkbox" value="1" class="day-checkbox"> Tuesday</label>
-                        <label><input type="checkbox" value="2" class="day-checkbox"> Wednesday</label>
-                        <label><input type="checkbox" value="3" class="day-checkbox"> Thursday</label>
-                        <label><input type="checkbox" value="4" class="day-checkbox"> Friday</label>
-                        <label><input type="checkbox" value="5" class="day-checkbox"> Saturday</label>
-                        <label><input type="checkbox" value="6" class="day-checkbox"> Sunday</label>
-                    </div>
-                    <small>Select which days this schedule should apply</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="entry-priority">Priority</label>
-                    <input type="number" id="entry-priority" value="5" min="1" max="10" required>
-                    <small>Higher number = higher priority if schedules overlap (1-10)</small>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeEntryModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Entry</button>
-                </div>
-            </form>
+            <div class="modal-actions">
+                <button type="button" id="slot-delete-btn" class="btn btn-danger" onclick="deleteCurrentSlot()" style="display: none;">
+                    Clear Slot
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeSlotModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveSlot()">Save</button>
+            </div>
         </div>
     </div>
 </div>
@@ -192,29 +130,23 @@
 
     .page-header h2 {
         margin: 0;
-        font-size: 32px;
+        font-size: 28px;
         color: #333;
     }
 
     .page-header .subtitle {
         margin: 4px 0 0 0;
-        font-size: 16px;
+        font-size: 14px;
         color: #666;
-    }
-
-    .btn-large {
-        padding: 12px 24px;
-        font-size: 16px;
-        font-weight: 600;
     }
 
     /* Current Status Banner */
     .current-status-banner {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 24px;
+        padding: 20px 24px;
         border-radius: 12px;
-        margin-bottom: 32px;
+        margin-bottom: 24px;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
     }
 
@@ -225,213 +157,33 @@
     }
 
     .status-icon {
-        font-size: 48px;
-        opacity: 0.9;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
     }
 
     .status-label {
-        font-size: 13px;
+        font-size: 12px;
         opacity: 0.85;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
 
     .status-text {
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    /* Timeline Visualizer */
-    .day-selector {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-
-    .day-selector button {
-        flex: 1;
-        min-width: 100px;
-    }
-
-    .day-selector button.active {
-        background: #667eea;
-        color: white;
-    }
-
-    .timeline-container {
-        background: #f9f9f9;
-        border-radius: 8px;
-        padding: 20px;
-        min-height: 200px;
-    }
-
-    .timeline {
-        position: relative;
-        height: 60px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 20px;
-    }
-
-    .timeline-block {
-        position: absolute;
-        height: 100%;
-        border-radius: 4px;
-        padding: 8px;
-        font-size: 12px;
-        color: white;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        cursor: pointer;
-        transition: transform 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .timeline-block:hover {
-        transform: scale(1.02);
-        z-index: 10;
-    }
-
-    .timeline-labels {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-        font-size: 12px;
-        color: #666;
-    }
-
-    .timeline-legend {
-        margin-top: 15px;
-        padding-top: 15px;
-        border-top: 1px solid #e0e0e0;
-    }
-
-    .legend-item {
-        display: inline-block;
-        margin-right: 15px;
-        margin-bottom: 8px;
-    }
-
-    .legend-color {
-        display: inline-block;
-        width: 20px;
-        height: 12px;
-        border-radius: 2px;
-        margin-right: 6px;
-        vertical-align: middle;
-    }
-
-    /* Default Content */
-    .default-content-form select {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-    }
-
-    /* Entries Table */
-    .entries-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .entries-table th,
-    .entries-table td {
-        padding: 12px;
-        text-align: left;
-        border-bottom: 1px solid #e0e0e0;
-    }
-
-    .entries-table th {
-        background: #f9f9f9;
-        font-weight: 600;
-        color: #333;
-    }
-
-    .entries-table tr:hover {
-        background: #f9f9f9;
-    }
-
-    .entry-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .entry-actions button {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    .days-badge {
-        display: inline-block;
-        padding: 2px 6px;
-        background: #f0f0f0;
-        border-radius: 3px;
-        font-size: 11px;
-        margin-right: 4px;
-    }
-
-    .priority-badge {
-        display: inline-block;
-        padding: 4px 8px;
-        background: #4CAF50;
-        color: white;
-        border-radius: 12px;
-        font-size: 11px;
+        font-size: 20px;
         font-weight: 600;
     }
 
-    /* Form Styling */
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-    }
-
-    .days-checkboxes {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 10px;
-        background: #f9f9f9;
-        border-radius: 4px;
-    }
-
-    .days-checkboxes label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .days-checkboxes input[type="checkbox"] {
-        margin-right: 8px;
-        cursor: pointer;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #999;
-    }
-
-    .empty-state h3 {
-        color: #666;
-        margin-bottom: 10px;
-    }
-
-    /* Weekly Schedule Card - HERO FEATURE */
-    .weekly-schedule-card {
+    /* Timetable Card */
+    .timetable-card {
         background: white;
         border-radius: 12px;
-        padding: 28px;
-        margin-bottom: 32px;
+        padding: 24px;
+        margin-bottom: 24px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         border: 1px solid #e8e8e8;
     }
@@ -440,145 +192,268 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
     }
 
     .card-header h3 {
         margin: 0;
-        font-size: 20px;
+        font-size: 18px;
         color: #333;
     }
 
-    .view-controls select {
-        padding: 8px 16px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
-        background: white;
-        cursor: pointer;
+    .timetable-controls {
+        display: flex;
+        gap: 16px;
+        align-items: center;
     }
 
-    /* Weekly Grid View */
-    .weekly-grid-container {
-        overflow-x: auto;
-    }
-
-    .weekly-grid {
-        display: grid;
-        grid-template-columns: 80px repeat(24, 1fr);
-        gap: 1px;
-        background: #e0e0e0;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        overflow: hidden;
-        min-width: 1200px;
-    }
-
-    .grid-cell {
-        background: white;
-        padding: 12px 8px;
-        text-align: center;
-        font-size: 13px;
-    }
-
-    .grid-header {
-        background: #f5f5f5;
-        font-weight: 600;
-        color: #555;
-        font-size: 11px;
-    }
-
-    .grid-day-label {
-        background: #f5f5f5;
-        font-weight: 600;
-        color: #333;
-        text-align: left;
-        padding-left: 16px;
-    }
-
-    .grid-content-cell {
-        padding: 4px;
-        min-height: 60px;
+    .compact-toggle {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 500;
+        gap: 8px;
         cursor: pointer;
-        transition: transform 0.2s;
+        font-size: 14px;
+        color: #666;
     }
 
-    .grid-content-cell:hover {
-        transform: scale(1.05);
+    .compact-toggle input {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    /* Timetable Grid Layout */
+    .timetable-wrapper {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 70vh;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+    }
+
+    .timetable-container {
+        min-width: 800px;
+    }
+
+    .timetable {
+        display: grid;
+        grid-template-columns: 60px repeat(7, 1fr);
+        position: relative;
+    }
+
+    /* Sticky header row */
+    .timetable-header {
+        display: contents;
+    }
+
+    .timetable-header-cell {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 8px;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 2px solid #5a6fd6;
+    }
+
+    .timetable-header-cell.time-header {
+        background: #f5f5f5;
+        color: #333;
+        border-right: 2px solid #e0e0e0;
+    }
+
+    .timetable-header-cell .day-date {
+        font-size: 10px;
+        opacity: 0.8;
+        font-weight: 400;
+        margin-top: 2px;
+    }
+
+    .timetable-header-cell.today {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    }
+
+    /* Time rows */
+    .timetable-body {
+        display: contents;
+    }
+
+    .timetable-row {
+        display: contents;
+    }
+
+    .time-label {
+        background: #fafafa;
+        padding: 0 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #555;
+        text-align: right;
+        border-right: 2px solid #e0e0e0;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: flex-end;
+        padding-top: 4px;
+        position: sticky;
+        left: 0;
         z-index: 10;
     }
 
-    .grid-content-cell.has-content {
-        color: white;
+    .time-label.hour-start {
+        border-top: 1px solid #e0e0e0;
     }
 
-    .grid-content-cell.default {
-        background: #f0f0f0;
-        color: #999;
-        font-style: italic;
-    }
-
-    /* Day Tabs */
-    .day-tabs {
-        display: flex;
-        gap: 4px;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #f0f0f0;
-    }
-
-    .day-tab {
-        padding: 12px 20px;
-        border: none;
-        background: transparent;
+    /* Day columns */
+    .day-column {
+        position: relative;
+        border-right: 1px solid #f0f0f0;
+        border-bottom: 1px solid #f0f0f0;
+        min-height: 30px;
+        background: white;
         cursor: pointer;
-        font-size: 14px;
+        transition: background-color 0.15s;
+    }
+
+    .day-column:hover {
+        background: #f0f4ff;
+    }
+
+    .day-column.hour-start {
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .day-column:last-child {
+        border-right: none;
+    }
+
+    .day-column.has-content {
+        background: transparent;
+    }
+
+    /* Slot content */
+    .slot-content {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        right: 2px;
+        bottom: 2px;
+        border-radius: 4px;
+        padding: 4px 6px;
+        color: white;
+        font-size: 10px;
         font-weight: 500;
-        color: #666;
-        border-bottom: 3px solid transparent;
-        transition: all 0.2s;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 0.1s, box-shadow 0.1s;
     }
 
-    .day-tab:hover {
-        color: #333;
-        background: #f9f9f9;
+    .slot-content:hover {
+        transform: scale(1.02);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
-    .day-tab.active {
-        color: #667eea;
-        border-bottom-color: #667eea;
+    .slot-content .slot-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
-    /* Single Day Timeline */
-    .single-day-timeline {
-        padding: 20px;
-        background: #f9f9f9;
-        border-radius: 8px;
+    .slot-content.is-playlist::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 6px;
+        height: 6px;
+        background: rgba(255,255,255,0.6);
+        border-radius: 50%;
+    }
+
+    /* Current time indicator */
+    .current-time-line {
+        position: absolute;
+        left: 60px;
+        right: 0;
+        height: 2px;
+        background: #e74c3c;
+        z-index: 15;
+        pointer-events: none;
+    }
+
+    .current-time-line::before {
+        content: '';
+        position: absolute;
+        left: -5px;
+        top: -4px;
+        width: 10px;
+        height: 10px;
+        background: #e74c3c;
+        border-radius: 50%;
+    }
+
+    /* Compact mode */
+    .timetable.compact .day-column {
+        min-height: 20px;
+    }
+
+    .timetable.compact .time-label {
+        font-size: 9px;
+        padding: 0 6px;
+    }
+
+    .timetable.compact .slot-content {
+        font-size: 8px;
+        padding: 2px 4px;
     }
 
     /* Schedule Legend */
     .schedule-legend {
-        margin-top: 24px;
-        padding-top: 20px;
-        border-top: 2px solid #f0f0f0;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid #f0f0f0;
     }
 
     .schedule-legend h4 {
-        margin: 0 0 12px 0;
-        font-size: 14px;
+        margin: 0 0 10px 0;
+        font-size: 13px;
         color: #666;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
+    .schedule-legend .hint {
+        color: #999;
+        font-size: 14px;
+        margin: 0;
+    }
+
     .legend-grid {
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
+        gap: 12px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #555;
+    }
+
+    .legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
     }
 
     /* Settings Row */
@@ -592,20 +467,20 @@
     .settings-card {
         background: white;
         border-radius: 12px;
-        padding: 24px;
+        padding: 20px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         border: 1px solid #e8e8e8;
     }
 
     .settings-card h4 {
-        margin: 0 0 8px 0;
-        font-size: 18px;
+        margin: 0 0 6px 0;
+        font-size: 16px;
         color: #333;
     }
 
     .settings-card .hint {
-        margin: 0 0 16px 0;
-        font-size: 13px;
+        margin: 0 0 12px 0;
+        font-size: 12px;
         color: #999;
     }
 
@@ -622,7 +497,7 @@
     .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 20px;
+        gap: 16px;
     }
 
     .stat {
@@ -630,27 +505,17 @@
     }
 
     .stat-value {
-        font-size: 32px;
+        font-size: 28px;
         font-weight: 700;
         color: #667eea;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
 
     .stat-label {
-        font-size: 12px;
+        font-size: 11px;
         color: #999;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-    }
-
-    /* Entries Card */
-    .entries-card {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border: 1px solid #e8e8e8;
-        margin-bottom: 40px;
     }
 
     /* Modal Styles */
@@ -675,40 +540,34 @@
     .modal-content {
         background: white;
         border-radius: 12px;
-        max-width: 600px;
+        max-width: 400px;
         width: 100%;
-        max-height: 90vh;
-        overflow-y: auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-    }
-
-    .modal-large .modal-content {
-        max-width: 800px;
     }
 
     .modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 24px;
-        border-bottom: 2px solid #f0f0f0;
+        padding: 20px 24px;
+        border-bottom: 1px solid #f0f0f0;
     }
 
     .modal-header h3 {
         margin: 0;
-        font-size: 22px;
+        font-size: 18px;
         color: #333;
     }
 
     .modal-close {
         background: none;
         border: none;
-        font-size: 32px;
+        font-size: 28px;
         color: #999;
         cursor: pointer;
         padding: 0;
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -725,31 +584,31 @@
 
     .modal-actions {
         display: flex;
-        gap: 12px;
+        gap: 10px;
         justify-content: flex-end;
-        margin-top: 24px;
-        padding-top: 20px;
+        margin-top: 20px;
+        padding-top: 16px;
         border-top: 1px solid #f0f0f0;
+    }
+
+    .modal-actions .btn-danger {
+        margin-right: auto;
     }
 
     /* Form Styles */
     .form-group {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         font-weight: 600;
         color: #333;
         font-size: 14px;
     }
 
-    .form-group input[type="text"],
-    .form-group input[type="time"],
-    .form-group input[type="number"],
-    .form-group select,
-    .form-group textarea {
+    .form-group select {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid #ddd;
@@ -758,11 +617,7 @@
         font-family: inherit;
     }
 
-    .form-group input[type="text"]:focus,
-    .form-group input[type="time"]:focus,
-    .form-group input[type="number"]:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
+    .form-group select:focus {
         outline: none;
         border-color: #667eea;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -775,34 +630,71 @@
         color: #999;
     }
 
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
-
-    .days-checkboxes {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        padding: 12px;
-        background: #f9f9f9;
+    /* Button Styles */
+    .btn {
+        padding: 8px 16px;
+        border: none;
         border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
     }
 
-    .days-checkboxes label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        font-weight: normal;
-        color: #555;
+    .btn-primary {
+        background: #667eea;
+        color: white;
     }
 
-    .days-checkboxes input[type="checkbox"] {
-        margin-right: 10px;
-        cursor: pointer;
-        width: 18px;
-        height: 18px;
+    .btn-primary:hover {
+        background: #5a6fd6;
+    }
+
+    .btn-secondary {
+        background: #f0f0f0;
+        color: #333;
+    }
+
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+
+    .btn-danger {
+        background: #e74c3c;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #c0392b;
+    }
+
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .error {
+        text-align: center;
+        padding: 40px;
+        color: #e74c3c;
+    }
+
+    @media (max-width: 768px) {
+        .settings-row {
+            grid-template-columns: 1fr;
+        }
+
+        .page-header {
+            flex-direction: column;
+            gap: 16px;
+            align-items: flex-start;
+        }
     }
 </style>
 {% endblock %}

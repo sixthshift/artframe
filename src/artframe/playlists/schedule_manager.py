@@ -1,27 +1,28 @@
 """
-Schedule manager for time-based content scheduling.
+Schedule manager for slot-based content scheduling.
 
-Manages schedule entries that define when specific plugin instances should display.
+Simple timetable model: each hour slot on each day can have
+exactly one content assignment (instance or playlist).
 """
 
 import json
 import logging
-import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from ..models import ScheduleConfig, ScheduleEntry
+from ..models import ScheduleConfig, TargetType, TimeSlot
 
 logger = logging.getLogger(__name__)
 
 
 class ScheduleManager:
     """
-    Manages time-based schedule entries.
+    Manages slot-based schedule assignments.
 
-    Unlike playlists which play sequentially, schedules are evaluated
-    based on current time to determine what should display right now.
+    Simple model: 7 days x 24 hours = 168 possible slots.
+    Each slot can have one assignment (instance or playlist).
+    No overlapping, no priorities - just direct slot assignments.
     """
 
     def __init__(self, storage_dir: Path):
@@ -35,16 +36,16 @@ class ScheduleManager:
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
         self.schedules_file = self.storage_dir / "schedules.json"
-        self._entries: Dict[str, ScheduleEntry] = {}
-        self._config: ScheduleConfig = ScheduleConfig(default_instance_id=None)
+        self._slots: Dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
+        self._config: ScheduleConfig = ScheduleConfig()
 
-        # Load existing schedules
-        self._load_schedules()
+        # Load existing schedule
+        self._load_schedule()
 
-    def _load_schedules(self) -> None:
-        """Load schedules from storage."""
+    def _load_schedule(self) -> None:
+        """Load schedule from storage."""
         if not self.schedules_file.exists():
-            logger.info("No existing schedules found")
+            logger.info("No existing schedule found")
             return
 
         try:
@@ -54,248 +55,234 @@ class ScheduleManager:
             # Load config
             config_data = data.get("config", {})
             self._config = ScheduleConfig(
-                default_instance_id=config_data.get("default_instance_id"),
-                check_interval_seconds=config_data.get("check_interval_seconds", 60),
+                default_target_type=config_data.get("default_target_type"),
+                default_target_id=config_data.get("default_target_id"),
             )
 
-            # Load entries
-            for entry_data in data.get("entries", []):
-                entry = ScheduleEntry(
-                    id=entry_data["id"],
-                    name=entry_data["name"],
-                    instance_id=entry_data["instance_id"],
-                    start_time=entry_data["start_time"],
-                    end_time=entry_data["end_time"],
-                    days_of_week=entry_data["days_of_week"],
-                    priority=entry_data["priority"],
-                    enabled=entry_data["enabled"],
-                    created_at=datetime.fromisoformat(entry_data["created_at"]),
-                    updated_at=datetime.fromisoformat(entry_data["updated_at"]),
+            # Load slots
+            slots_data = data.get("slots", {})
+            for key, slot_data in slots_data.items():
+                self._slots[key] = TimeSlot.from_key(
+                    key,
+                    target_type=slot_data["target_type"],
+                    target_id=slot_data["target_id"],
                 )
-                self._entries[entry.id] = entry
 
-            logger.info(f"Loaded {len(self._entries)} schedule entries")
+            logger.info(f"Loaded {len(self._slots)} schedule slots")
 
         except Exception as e:
-            logger.error(f"Failed to load schedules: {e}", exc_info=True)
+            logger.error(f"Failed to load schedule: {e}", exc_info=True)
 
-    def _save_schedules(self) -> None:
-        """Save schedules to storage."""
+    def _save_schedule(self) -> None:
+        """Save schedule to storage."""
         try:
             data = {
                 "config": {
-                    "default_instance_id": self._config.default_instance_id,
-                    "check_interval_seconds": self._config.check_interval_seconds,
+                    "default_target_type": self._config.default_target_type,
+                    "default_target_id": self._config.default_target_id,
                 },
-                "entries": [
-                    {
-                        "id": entry.id,
-                        "name": entry.name,
-                        "instance_id": entry.instance_id,
-                        "start_time": entry.start_time,
-                        "end_time": entry.end_time,
-                        "days_of_week": entry.days_of_week,
-                        "priority": entry.priority,
-                        "enabled": entry.enabled,
-                        "created_at": entry.created_at.isoformat(),
-                        "updated_at": entry.updated_at.isoformat(),
+                "slots": {
+                    key: {
+                        "target_type": slot.target_type,
+                        "target_id": slot.target_id,
                     }
-                    for entry in self._entries.values()
-                ],
+                    for key, slot in self._slots.items()
+                },
                 "last_updated": datetime.now().isoformat(),
             }
 
             with open(self.schedules_file, "w") as f:
                 json.dump(data, f, indent=2)
 
-            logger.debug("Saved schedules")
+            logger.debug("Saved schedule")
 
         except Exception as e:
-            logger.error(f"Failed to save schedules: {e}", exc_info=True)
+            logger.error(f"Failed to save schedule: {e}", exc_info=True)
 
-    def create_entry(
+    def set_slot(
         self,
-        name: str,
-        instance_id: str,
-        start_time: str,
-        end_time: str,
-        days_of_week: List[int],
-        priority: int = 5,
-    ) -> ScheduleEntry:
+        day: int,
+        hour: int,
+        target_type: str,
+        target_id: str,
+    ) -> TimeSlot:
         """
-        Create a new schedule entry.
+        Assign content to a specific time slot.
 
         Args:
-            name: Human-readable name for schedule entry
-            instance_id: Plugin instance to display
-            start_time: Start time in HH:MM format
-            end_time: End time in HH:MM format
-            days_of_week: List of days (0=Monday, 6=Sunday)
-            priority: Priority level (higher = more important)
+            day: Day of week (0=Monday, 6=Sunday)
+            hour: Hour of day (0-23)
+            target_type: "instance" or "playlist"
+            target_id: The ID of the instance or playlist
 
         Returns:
-            Created ScheduleEntry
+            The created/updated TimeSlot
         """
-        entry = ScheduleEntry(
-            id=str(uuid.uuid4()),
-            name=name,
-            instance_id=instance_id,
-            start_time=start_time,
-            end_time=end_time,
-            days_of_week=days_of_week,
-            priority=priority,
-            enabled=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+        slot = TimeSlot(
+            day=day,
+            hour=hour,
+            target_type=target_type,
+            target_id=target_id,
         )
 
-        self._entries[entry.id] = entry
-        self._save_schedules()
+        self._slots[slot.key] = slot
+        self._save_schedule()
 
-        logger.info(f"Created schedule entry {entry.name} ({entry.id})")
-        return entry
+        logger.info(f"Set slot {slot.key} to {target_type}:{target_id}")
+        return slot
 
-    def get_entry(self, entry_id: str) -> Optional[ScheduleEntry]:
-        """Get entry by ID."""
-        return self._entries.get(entry_id)
-
-    def list_entries(self) -> List[ScheduleEntry]:
-        """List all schedule entries."""
-        return list(self._entries.values())
-
-    def update_entry(
-        self,
-        entry_id: str,
-        name: Optional[str] = None,
-        instance_id: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
-        days_of_week: Optional[List[int]] = None,
-        priority: Optional[int] = None,
-        enabled: Optional[bool] = None,
-    ) -> bool:
-        """Update an existing schedule entry."""
-        entry = self._entries.get(entry_id)
-        if entry is None:
-            logger.error(f"Schedule entry not found: {entry_id}")
-            return False
-
-        if name is not None:
-            entry.name = name
-        if instance_id is not None:
-            entry.instance_id = instance_id
-        if start_time is not None:
-            entry.start_time = start_time
-        if end_time is not None:
-            entry.end_time = end_time
-        if days_of_week is not None:
-            entry.days_of_week = days_of_week
-        if priority is not None:
-            entry.priority = priority
-        if enabled is not None:
-            entry.enabled = enabled
-
-        entry.updated_at = datetime.now()
-        self._save_schedules()
-
-        logger.info(f"Updated schedule entry {entry.name} ({entry_id})")
-        return True
-
-    def delete_entry(self, entry_id: str) -> bool:
-        """Delete a schedule entry."""
-        entry = self._entries.get(entry_id)
-        if entry is None:
-            logger.error(f"Schedule entry not found: {entry_id}")
-            return False
-
-        del self._entries[entry_id]
-        self._save_schedules()
-
-        logger.info(f"Deleted schedule entry {entry.name} ({entry_id})")
-        return True
-
-    def get_current_entry(self, current_time: Optional[datetime] = None) -> Optional[ScheduleEntry]:
+    def clear_slot(self, day: int, hour: int) -> bool:
         """
-        Get the schedule entry that should be active right now.
-
-        Evaluates all enabled entries and returns the highest priority match
-        for the current time and day of week.
+        Clear a time slot assignment.
 
         Args:
-            current_time: Time to evaluate (defaults to now)
+            day: Day of week (0=Monday, 6=Sunday)
+            hour: Hour of day (0-23)
 
         Returns:
-            Highest priority matching ScheduleEntry, or None if no match
+            True if slot was cleared, False if it wasn't assigned
+        """
+        key = f"{day}-{hour}"
+        if key in self._slots:
+            del self._slots[key]
+            self._save_schedule()
+            logger.info(f"Cleared slot {key}")
+            return True
+        return False
+
+    def get_slot(self, day: int, hour: int) -> Optional[TimeSlot]:
+        """
+        Get the assignment for a specific time slot.
+
+        Args:
+            day: Day of week (0=Monday, 6=Sunday)
+            hour: Hour of day (0-23)
+
+        Returns:
+            TimeSlot if assigned, None otherwise
+        """
+        key = f"{day}-{hour}"
+        return self._slots.get(key)
+
+    def get_current_slot(self, current_time: Optional[datetime] = None) -> Optional[TimeSlot]:
+        """
+        Get the slot for the current time.
+
+        Args:
+            current_time: Time to check (defaults to now)
+
+        Returns:
+            TimeSlot if assigned, None otherwise
         """
         if current_time is None:
             current_time = datetime.now()
 
-        current_day = current_time.weekday()  # 0=Monday, 6=Sunday
-        current_time_str = current_time.strftime("%H:%M")
+        day = current_time.weekday()  # 0=Monday, 6=Sunday
+        hour = current_time.hour
 
-        # Find all matching entries
-        matching_entries = []
-        for entry in self._entries.values():
-            if not entry.enabled:
-                continue
+        return self.get_slot(day, hour)
 
-            # Check if current day matches
-            if current_day not in entry.days_of_week:
-                continue
+    def get_all_slots(self) -> List[TimeSlot]:
+        """Get all assigned slots."""
+        return list(self._slots.values())
 
-            # Check if current time is within range
-            if self._time_in_range(current_time_str, entry.start_time, entry.end_time):
-                matching_entries.append(entry)
+    def get_slots_for_day(self, day: int) -> List[TimeSlot]:
+        """Get all slots assigned for a specific day."""
+        return [slot for slot in self._slots.values() if slot.day == day]
 
-        if not matching_entries:
-            return None
-
-        # Return highest priority entry
-        matching_entries.sort(key=lambda e: e.priority, reverse=True)
-        return matching_entries[0]
-
-    def _time_in_range(self, current: str, start: str, end: str) -> bool:
+    def get_slots_dict(self) -> Dict[str, Dict[str, str]]:
         """
-        Check if current time is within start and end time range.
-
-        Args:
-            current: Current time in HH:MM format
-            start: Start time in HH:MM format
-            end: End time in HH:MM format
+        Get all slots as a dictionary for JSON serialization.
 
         Returns:
-            True if current is within [start, end)
+            Dict mapping "day-hour" keys to {target_type, target_id}
         """
-        try:
-            current_t = datetime.strptime(current, "%H:%M").time()
-            start_t = datetime.strptime(start, "%H:%M").time()
-            end_t = datetime.strptime(end, "%H:%M").time()
+        return {
+            key: {
+                "target_type": slot.target_type,
+                "target_id": slot.target_id,
+            }
+            for key, slot in self._slots.items()
+        }
 
-            if start_t <= end_t:
-                # Normal range (e.g., 08:00 to 17:00)
-                return start_t <= current_t < end_t
-            else:
-                # Overnight range (e.g., 22:00 to 02:00)
-                return current_t >= start_t or current_t < end_t
+    def set_default(
+        self,
+        target_type: Optional[str],
+        target_id: Optional[str],
+    ) -> None:
+        """
+        Set the default content for unassigned slots.
 
-        except ValueError as e:
-            logger.error(f"Invalid time format: {e}")
-            return False
+        Args:
+            target_type: "instance" or "playlist", or None to clear
+            target_id: The ID, or None to clear
+        """
+        self._config.default_target_type = target_type
+        self._config.default_target_id = target_id
+        self._save_schedule()
+        logger.info(f"Set default to {target_type}:{target_id}")
 
-    def set_default_instance(self, instance_id: Optional[str]) -> None:
-        """Set the default instance to show when nothing is scheduled."""
-        self._config.default_instance_id = instance_id
-        self._save_schedules()
-        logger.info(f"Set default instance to {instance_id}")
-
-    def get_default_instance_id(self) -> Optional[str]:
-        """Get the default instance ID."""
-        return self._config.default_instance_id
+    def get_default(self) -> Optional[Dict[str, str]]:
+        """Get the default content assignment."""
+        if self._config.default_target_id:
+            return {
+                "target_type": self._config.default_target_type,
+                "target_id": self._config.default_target_id,
+            }
+        return None
 
     def get_config(self) -> ScheduleConfig:
         """Get the schedule configuration."""
         return self._config
 
-    def get_entry_count(self) -> int:
-        """Get total number of schedule entries."""
-        return len(self._entries)
+    def get_slot_count(self) -> int:
+        """Get number of assigned slots."""
+        return len(self._slots)
+
+    def bulk_set_slots(
+        self,
+        slots: List[Dict[str, Any]],
+    ) -> int:
+        """
+        Set multiple slots at once.
+
+        Args:
+            slots: List of dicts with day, hour, target_type, target_id
+
+        Returns:
+            Number of slots set
+        """
+        count = 0
+        for slot_data in slots:
+            slot = TimeSlot(
+                day=slot_data["day"],
+                hour=slot_data["hour"],
+                target_type=slot_data["target_type"],
+                target_id=slot_data["target_id"],
+            )
+            self._slots[slot.key] = slot
+            count += 1
+
+        self._save_schedule()
+        logger.info(f"Bulk set {count} slots")
+        return count
+
+    def clear_all_slots(self) -> int:
+        """Clear all slot assignments."""
+        count = len(self._slots)
+        self._slots.clear()
+        self._save_schedule()
+        logger.info(f"Cleared all {count} slots")
+        return count
+
+    # Legacy compatibility methods
+    def get_default_instance_id(self) -> Optional[str]:
+        """Legacy: Get default instance ID."""
+        return self._config.default_instance_id
+
+    def set_default_instance(self, instance_id: Optional[str]) -> None:
+        """Legacy: Set default instance."""
+        if instance_id:
+            self.set_default(TargetType.INSTANCE.value, instance_id)
+        else:
+            self.set_default(None, None)

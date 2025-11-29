@@ -1,27 +1,31 @@
 /**
  * Schedule page JavaScript
- * Handles schedule entry management and timeline visualization
+ * Slot-based scheduling: each hour slot gets one content assignment
  */
 
-let currentEntries = [];
+let currentSlots = {};  // Map of "day-hour" -> {target_type, target_id}
 let currentInstances = [];
-let currentConfig = {};
-let editingEntry = null;
-let selectedDay = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1; // Convert to 0=Monday
-let currentViewMode = 'week';
-let weeklyScheduleData = {}; // Cached schedule data for all days
+let currentPlaylists = [];
+let currentDefault = {};
+let currentTimeInterval = null;
+
+// Constants for timetable
+const HOUR_HEIGHT = 30; // pixels per hour slot
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DAY_NAMES_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadSchedules();
     loadInstances();
+    loadPlaylists();
     loadCurrentStatus();
 
     // Refresh current status every 30 seconds
     setInterval(loadCurrentStatus, 30000);
 
-    // Set initial view mode
-    currentViewMode = 'week';
+    // Update current time indicator every minute
+    currentTimeInterval = setInterval(updateCurrentTimeIndicator, 60000);
 });
 
 // ===== Load Data =====
@@ -35,25 +39,16 @@ async function loadSchedules() {
             throw new Error(result.error);
         }
 
-        currentEntries = result.data;
-        currentConfig = result.config;
+        currentSlots = result.slots || {};
+        currentDefault = result.default || {};
 
-        renderEntries(currentEntries);
+        renderTimetable();
         renderDefaultContent();
-
-        // Render based on current view mode
-        if (currentViewMode === 'week') {
-            await renderWeeklyView();
-        } else {
-            await renderTimeline(selectedDay);
-        }
-
-        // Update stats
         updateStats();
 
     } catch (error) {
         console.error('Failed to load schedules:', error);
-        document.getElementById('entries-list').innerHTML = `
+        document.getElementById('timetable-container').innerHTML = `
             <div class="error">
                 <p>Failed to load schedules: ${error.message}</p>
             </div>
@@ -74,6 +69,22 @@ async function loadInstances() {
 
     } catch (error) {
         console.error('Failed to load instances:', error);
+    }
+}
+
+async function loadPlaylists() {
+    try {
+        const response = await fetch('/api/playlists');
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
+        currentPlaylists = result.data.filter(pl => pl.enabled);
+
+    } catch (error) {
+        console.error('Failed to load playlists:', error);
     }
 }
 
@@ -98,370 +109,346 @@ async function loadCurrentStatus() {
 function renderCurrentStatus(status) {
     const textElement = document.getElementById('current-status-text');
 
-    if (status.status === 'no_schedule') {
-        textElement.textContent = status.message;
-    } else if (status.status === 'error') {
-        textElement.textContent = '⚠️ ' + status.message;
-    } else {
-        let text = status.instance_name;
-        if (status.is_default) {
-            text += ' (default)';
-        } else if (status.entry_name) {
-            text += ` - ${status.entry_name} (${status.start_time} - ${status.end_time})`;
-        }
-        textElement.textContent = text;
+    if (!status || !status.has_content) {
+        textElement.textContent = 'No content scheduled for this slot';
+        return;
     }
+
+    const icon = status.target_type === 'playlist' ? '📋' : '📷';
+    let text = `${icon} ${status.target_name}`;
+
+    if (status.source_type === 'default') {
+        text += ' (default)';
+    } else if (status.day !== undefined && status.hour !== undefined) {
+        const dayName = DAY_NAMES[status.day];
+        const hour = status.hour.toString().padStart(2, '0');
+        text += ` (${dayName} ${hour}:00)`;
+    }
+
+    textElement.textContent = text;
 }
 
 function renderDefaultContent() {
     const select = document.getElementById('default-instance-select');
 
-    const options = currentInstances.map(instance => {
-        const selected = instance.id === currentConfig.default_instance_id ? 'selected' : '';
-        return `<option value="${instance.id}" ${selected}>${instance.name}</option>`;
+    // Build options: instances and playlists
+    let options = '<option value="">None (keep last displayed)</option>';
+    options += '<optgroup label="Instances">';
+    options += currentInstances.map(instance => {
+        const selected = currentDefault.target_type === 'instance' &&
+                        currentDefault.target_id === instance.id ? 'selected' : '';
+        return `<option value="instance:${instance.id}" ${selected}>📷 ${instance.name}</option>`;
     }).join('');
+    options += '</optgroup>';
 
-    select.innerHTML = `<option value="">None (keep last displayed)</option>` + options;
-}
-
-function renderEntries(entries) {
-    const container = document.getElementById('entries-list');
-
-    if (entries.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <h3>No schedule entries yet</h3>
-                <p>Add your first entry to start scheduling content!</p>
-                <button class="btn btn-primary" onclick="openCreateEntryModal()">
-                    ➕ Add Schedule Entry
-                </button>
-            </div>
-        `;
-        return;
-    }
-
-    // Sort by start time
-    entries.sort((a, b) => a.start_time.localeCompare(b.start_time));
-
-    const entriesHTML = `
-        <table class="entries-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Time</th>
-                    <th>Days</th>
-                    <th>Content</th>
-                    <th>Priority</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${entries.map(entry => {
-                    const instance = currentInstances.find(i => i.id === entry.instance_id);
-                    const instanceName = instance ? instance.name : 'Unknown';
-                    const daysDisplay = formatDays(entry.days_of_week);
-
-                    return `
-                        <tr class="${!entry.enabled ? 'disabled' : ''}">
-                            <td><strong>${entry.name}</strong></td>
-                            <td>${entry.start_time} - ${entry.end_time}</td>
-                            <td>${daysDisplay}</td>
-                            <td>${instanceName}</td>
-                            <td><span class="priority-badge">${entry.priority}</span></td>
-                            <td>
-                                <div class="entry-actions">
-                                    <button class="btn btn-small btn-secondary" onclick="editEntry('${entry.id}')">
-                                        Edit
-                                    </button>
-                                    <button class="btn btn-small btn-danger" onclick="deleteEntry('${entry.id}', '${entry.name}')">
-                                        Delete
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
-
-    container.innerHTML = entriesHTML;
-}
-
-async function renderTimeline(day) {
-    selectedDay = day;
-
-    // Update day selector buttons
-    const buttons = document.querySelectorAll('.day-selector button');
-    buttons.forEach((btn, index) => {
-        if (index === day) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-
-    try {
-        const response = await fetch(`/api/schedules/timeline?day=${day}`);
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        renderTimelineView(result.data);
-
-    } catch (error) {
-        console.error('Failed to load timeline:', error);
-    }
-}
-
-function renderTimelineView(data) {
-    const container = document.getElementById('timeline-container');
-
-    if (data.entries.length === 0 && !data.default) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No schedule entries for this day</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Build timeline visualization
-    let timelineHTML = '<div class="timeline">';
-
-    // Add blocks for each entry
-    data.entries.forEach((entry, index) => {
-        const startMinutes = timeToMinutes(entry.start_time);
-        const endMinutes = timeToMinutes(entry.end_time);
-
-        // Calculate position and width (24 hours = 100%)
-        const left = (startMinutes / 1440) * 100;
-        const width = ((endMinutes - startMinutes) / 1440) * 100;
-
-        const color = getColorForIndex(index);
-
-        timelineHTML += `
-            <div class="timeline-block"
-                 style="left: ${left}%; width: ${width}%; background-color: ${color};"
-                 onclick="editEntry('${entry.entry_id}')"
-                 title="${entry.entry_name}: ${entry.instance_name} (${entry.start_time} - ${entry.end_time})">
-                ${entry.entry_name}
-            </div>
-        `;
-    });
-
-    timelineHTML += '</div>';
-
-    // Add time labels
-    timelineHTML += `
-        <div class="timeline-labels">
-            <span>00:00</span>
-            <span>04:00</span>
-            <span>08:00</span>
-            <span>12:00</span>
-            <span>16:00</span>
-            <span>20:00</span>
-            <span>24:00</span>
-        </div>
-    `;
-
-    // Add legend
-    timelineHTML += '<div class="timeline-legend">';
-    data.entries.forEach((entry, index) => {
-        const color = getColorForIndex(index);
-        timelineHTML += `
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: ${color};"></span>
-                <span>${entry.entry_name}</span>
-            </div>
-        `;
-    });
-
-    if (data.default) {
-        timelineHTML += `
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: #cccccc;"></span>
-                <span>Default: ${data.default.instance_name}</span>
-            </div>
-        `;
-    }
-
-    timelineHTML += '</div>';
-
-    container.innerHTML = timelineHTML;
-}
-
-// ===== Create/Edit Entry =====
-
-function openCreateEntryModal() {
-    editingEntry = null;
-
-    document.getElementById('entry-modal-title').textContent = 'Add Schedule Entry';
-    document.getElementById('entry-form').reset();
-    document.getElementById('entry-id').value = '';
-    document.getElementById('entry-priority').value = '5';
-
-    // Uncheck all day checkboxes
-    document.querySelectorAll('.day-checkbox').forEach(cb => cb.checked = false);
-
-    populateInstanceSelect();
-    document.getElementById('entry-modal').classList.add('active');
-}
-
-function editEntry(entryId) {
-    const entry = currentEntries.find(e => e.id === entryId);
-    if (!entry) {
-        alert('Schedule entry not found');
-        return;
-    }
-
-    editingEntry = entry;
-
-    document.getElementById('entry-modal-title').textContent = `Edit ${entry.name}`;
-    document.getElementById('entry-id').value = entry.id;
-    document.getElementById('entry-name').value = entry.name;
-    document.getElementById('entry-instance').value = entry.instance_id;
-    document.getElementById('entry-start-time').value = entry.start_time;
-    document.getElementById('entry-end-time').value = entry.end_time;
-    document.getElementById('entry-priority').value = entry.priority;
-
-    // Set day checkboxes
-    document.querySelectorAll('.day-checkbox').forEach(cb => {
-        cb.checked = entry.days_of_week.includes(parseInt(cb.value));
-    });
-
-    populateInstanceSelect();
-    document.getElementById('entry-modal').classList.add('active');
-}
-
-function closeEntryModal() {
-    document.getElementById('entry-modal').classList.remove('active');
-    editingEntry = null;
-}
-
-function populateInstanceSelect() {
-    const select = document.getElementById('entry-instance');
-
-    const options = currentInstances.map(instance => {
-        return `<option value="${instance.id}">${instance.name}</option>`;
+    options += '<optgroup label="Playlists">';
+    options += currentPlaylists.map(playlist => {
+        const selected = currentDefault.target_type === 'playlist' &&
+                        currentDefault.target_id === playlist.id ? 'selected' : '';
+        return `<option value="playlist:${playlist.id}" ${selected}>📋 ${playlist.name}</option>`;
     }).join('');
+    options += '</optgroup>';
 
-    select.innerHTML = `<option value="">Select a plugin instance...</option>` + options;
+    select.innerHTML = options;
 }
 
-async function saveEntry(event) {
-    event.preventDefault();
+// ===== Timetable Rendering =====
 
-    const entryId = document.getElementById('entry-id').value;
-    const name = document.getElementById('entry-name').value;
-    const instanceId = document.getElementById('entry-instance').value;
-    const startTime = document.getElementById('entry-start-time').value;
-    const endTime = document.getElementById('entry-end-time').value;
-    const priority = parseInt(document.getElementById('entry-priority').value);
+function renderTimetable() {
+    const container = document.getElementById('timetable-container');
 
-    // Get selected days
-    const daysOfWeek = [];
-    document.querySelectorAll('.day-checkbox:checked').forEach(cb => {
-        daysOfWeek.push(parseInt(cb.value));
-    });
+    // Build the timetable grid
+    let html = '<div class="timetable">';
 
-    if (daysOfWeek.length === 0) {
-        alert('Please select at least one day');
-        return;
+    // Header row
+    html += '<div class="timetable-header">';
+    html += '<div class="timetable-header-cell time-header">Time</div>';
+    for (let day = 0; day < 7; day++) {
+        const isToday = day === getCurrentDayIndex();
+        html += `
+            <div class="timetable-header-cell ${isToday ? 'today' : ''}">
+                ${DAY_NAMES[day]}
+                ${isToday ? '<div class="day-date">Today</div>' : ''}
+            </div>
+        `;
     }
+    html += '</div>';
 
-    try {
-        let response;
-        if (entryId) {
-            // Update existing entry
-            response = await fetch(`/api/schedules/${entryId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    instance_id: instanceId,
-                    start_time: startTime,
-                    end_time: endTime,
-                    days_of_week: daysOfWeek,
-                    priority
-                })
-            });
-        } else {
-            // Create new entry
-            response = await fetch('/api/schedules', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name,
-                    instance_id: instanceId,
-                    start_time: startTime,
-                    end_time: endTime,
-                    days_of_week: daysOfWeek,
-                    priority
-                })
-            });
+    // Body with time rows
+    html += '<div class="timetable-body">';
+    for (let hour = 0; hour < 24; hour++) {
+        html += '<div class="timetable-row">';
+
+        // Time label
+        const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+        html += `<div class="time-label hour-start" data-hour="${hour}">${timeStr}</div>`;
+
+        // Day cells for this hour
+        for (let day = 0; day < 7; day++) {
+            const slotKey = `${day}-${hour}`;
+            const slot = currentSlots[slotKey];
+            const hasContent = !!slot;
+
+            html += `
+                <div class="day-column hour-start ${hasContent ? 'has-content' : ''}"
+                     data-day="${day}"
+                     data-hour="${hour}"
+                     data-slot-key="${slotKey}"
+                     onclick="onSlotClick(${day}, ${hour})">
+            `;
+
+            if (hasContent) {
+                const info = getSlotInfo(slot);
+                html += `
+                    <div class="slot-content ${slot.target_type === 'playlist' ? 'is-playlist' : ''}"
+                         style="background-color: ${getColorForSlot(slotKey)};">
+                        <span class="slot-name">${info.name}</span>
+                    </div>
+                `;
+            }
+
+            html += '</div>';
         }
 
-        const result = await response.json();
+        html += '</div>';
+    }
+    html += '</div>';
 
-        if (!result.success) {
-            throw new Error(result.error);
-        }
+    html += '</div>';
 
-        closeEntryModal();
-        await loadSchedules();
+    container.innerHTML = html;
 
-        showNotification(entryId ? 'Schedule entry updated' : 'Schedule entry created', 'success');
+    // Add current time indicator
+    updateCurrentTimeIndicator();
 
-    } catch (error) {
-        console.error('Failed to save entry:', error);
-        showNotification('Failed to save entry: ' + error.message, 'error');
+    // Render legend
+    renderLegend();
+
+    // Scroll to current time after a short delay
+    setTimeout(() => scrollToCurrentTime(), 100);
+}
+
+function getSlotInfo(slot) {
+    if (!slot) return { name: '', icon: '' };
+
+    if (slot.target_type === 'playlist') {
+        const playlist = currentPlaylists.find(p => p.id === slot.target_id);
+        return {
+            name: playlist ? playlist.name : 'Unknown',
+            icon: '📋'
+        };
+    } else {
+        const instance = currentInstances.find(i => i.id === slot.target_id);
+        return {
+            name: instance ? instance.name : 'Unknown',
+            icon: '📷'
+        };
     }
 }
 
-async function deleteEntry(entryId, entryName) {
-    if (!confirm(`Are you sure you want to delete "${entryName}"?`)) {
-        return;
-    }
+function getCurrentDayIndex() {
+    const jsDay = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
+    return jsDay === 0 ? 6 : jsDay - 1; // Convert to 0=Monday
+}
 
-    try {
-        const response = await fetch(`/api/schedules/${entryId}`, {
-            method: 'DELETE'
+function updateCurrentTimeIndicator() {
+    // Remove existing indicator
+    const existing = document.querySelector('.current-time-line');
+    if (existing) existing.remove();
+
+    const now = new Date();
+    const currentDay = getCurrentDayIndex();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Find the cell for current day and hour
+    const cell = document.querySelector(`.day-column[data-day="${currentDay}"][data-hour="${currentHour}"]`);
+    if (!cell) return;
+
+    // Create indicator line
+    const indicator = document.createElement('div');
+    indicator.className = 'current-time-line';
+
+    // Position based on minute within the hour
+    const topOffset = (currentMinute / 60) * HOUR_HEIGHT;
+
+    // Get the position of the cell relative to the timetable
+    const timetable = document.querySelector('.timetable');
+    if (!timetable) return;
+
+    const cellRect = cell.getBoundingClientRect();
+    const timetableRect = timetable.getBoundingClientRect();
+
+    indicator.style.top = `${cellRect.top - timetableRect.top + topOffset}px`;
+
+    timetable.appendChild(indicator);
+}
+
+function scrollToCurrentTime() {
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Scroll to show current time in view (centered if possible)
+    const wrapper = document.querySelector('.timetable-wrapper');
+    const targetCell = document.querySelector(`.time-label[data-hour="${currentHour}"]`);
+
+    if (wrapper && targetCell) {
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const targetRect = targetCell.getBoundingClientRect();
+
+        // Scroll to center the current hour
+        const scrollTarget = targetRect.top - wrapperRect.top + wrapper.scrollTop - (wrapperRect.height / 3);
+        wrapper.scrollTo({
+            top: Math.max(0, scrollTarget),
+            behavior: 'smooth'
         });
+    }
+}
 
-        const result = await response.json();
+function toggleCompactMode(enabled) {
+    const timetable = document.querySelector('.timetable');
+    if (timetable) {
+        timetable.classList.toggle('compact', enabled);
+    }
+}
 
-        if (!result.success) {
-            throw new Error(result.error);
+// ===== Slot Click Handler =====
+
+function onSlotClick(day, hour) {
+    const slotKey = `${day}-${hour}`;
+    const existingSlot = currentSlots[slotKey];
+
+    // Open the slot assignment modal
+    openSlotModal(day, hour, existingSlot);
+}
+
+function openSlotModal(day, hour, existingSlot) {
+    document.getElementById('slot-modal-title').textContent =
+        `${DAY_NAMES[day]} ${hour.toString().padStart(2, '0')}:00`;
+    document.getElementById('slot-day').value = day;
+    document.getElementById('slot-hour').value = hour;
+
+    // Populate content selector
+    const select = document.getElementById('slot-content-select');
+    let options = '<option value="">-- Empty (no content) --</option>';
+
+    options += '<optgroup label="Plugin Instances">';
+    options += currentInstances.map(instance => {
+        const selected = existingSlot &&
+                        existingSlot.target_type === 'instance' &&
+                        existingSlot.target_id === instance.id ? 'selected' : '';
+        return `<option value="instance:${instance.id}" ${selected}>📷 ${instance.name}</option>`;
+    }).join('');
+    options += '</optgroup>';
+
+    options += '<optgroup label="Playlists">';
+    options += currentPlaylists.map(playlist => {
+        const selected = existingSlot &&
+                        existingSlot.target_type === 'playlist' &&
+                        existingSlot.target_id === playlist.id ? 'selected' : '';
+        return `<option value="playlist:${playlist.id}" ${selected}>📋 ${playlist.name} (${playlist.items?.length || 0} items)</option>`;
+    }).join('');
+    options += '</optgroup>';
+
+    select.innerHTML = options;
+
+    // Show/hide delete button
+    document.getElementById('slot-delete-btn').style.display = existingSlot ? 'inline-block' : 'none';
+
+    document.getElementById('slot-modal').classList.add('active');
+}
+
+function closeSlotModal() {
+    document.getElementById('slot-modal').classList.remove('active');
+}
+
+async function saveSlot() {
+    const day = parseInt(document.getElementById('slot-day').value);
+    const hour = parseInt(document.getElementById('slot-hour').value);
+    const contentValue = document.getElementById('slot-content-select').value;
+
+    try {
+        if (!contentValue) {
+            // Clear the slot
+            await clearSlot(day, hour);
+        } else {
+            // Set the slot
+            const [targetType, targetId] = contentValue.split(':');
+
+            const response = await fetch('/api/schedules/slot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    day,
+                    hour,
+                    target_type: targetType,
+                    target_id: targetId
+                })
+            });
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error);
+            }
         }
 
+        closeSlotModal();
         await loadSchedules();
-        showNotification('Schedule entry deleted', 'success');
+        showNotification('Slot updated', 'success');
 
     } catch (error) {
-        console.error('Failed to delete entry:', error);
-        showNotification('Failed to delete entry: ' + error.message, 'error');
+        console.error('Failed to save slot:', error);
+        showNotification('Failed to save slot: ' + error.message, 'error');
+    }
+}
+
+async function deleteCurrentSlot() {
+    const day = parseInt(document.getElementById('slot-day').value);
+    const hour = parseInt(document.getElementById('slot-hour').value);
+
+    try {
+        await clearSlot(day, hour);
+        closeSlotModal();
+        await loadSchedules();
+        showNotification('Slot cleared', 'success');
+
+    } catch (error) {
+        console.error('Failed to clear slot:', error);
+        showNotification('Failed to clear slot: ' + error.message, 'error');
+    }
+}
+
+async function clearSlot(day, hour) {
+    const response = await fetch('/api/schedules/slot', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ day, hour })
+    });
+
+    const result = await response.json();
+    if (!result.success) {
+        throw new Error(result.error);
     }
 }
 
 async function saveDefaultContent() {
-    const instanceId = document.getElementById('default-instance-select').value;
+    const select = document.getElementById('default-instance-select');
+    const value = select.value;
 
     try {
-        const response = await fetch('/api/schedules/config', {
+        let payload = {};
+        if (value) {
+            const [targetType, targetId] = value.split(':');
+            payload = {
+                target_type: targetType,
+                target_id: targetId
+            };
+        }
+
+        const response = await fetch('/api/schedules/default', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                default_instance_id: instanceId || null
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
@@ -478,38 +465,39 @@ async function saveDefaultContent() {
     }
 }
 
-// ===== Timeline Controls =====
+async function clearAllSlots() {
+    if (!confirm('Are you sure you want to clear ALL scheduled slots? This cannot be undone.')) {
+        return;
+    }
 
-function changeDay(day) {
-    renderTimeline(day);
+    try {
+        const response = await fetch('/api/schedules/clear', {
+            method: 'POST'
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
+        await loadSchedules();
+        showNotification('All slots cleared', 'success');
+
+    } catch (error) {
+        console.error('Failed to clear slots:', error);
+        showNotification('Failed to clear slots: ' + error.message, 'error');
+    }
 }
 
 // ===== Utility Functions =====
 
-function formatDays(daysArray) {
-    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function getColorForSlot(slotKey) {
+    const slot = currentSlots[slotKey];
+    if (!slot) return '#f0f0f0';
 
-    if (daysArray.length === 7) {
-        return '<span class="days-badge">Every day</span>';
-    }
-
-    if (daysArray.length === 5 && !daysArray.includes(5) && !daysArray.includes(6)) {
-        return '<span class="days-badge">Weekdays</span>';
-    }
-
-    if (daysArray.length === 2 && daysArray.includes(5) && daysArray.includes(6)) {
-        return '<span class="days-badge">Weekends</span>';
-    }
-
-    return daysArray.sort().map(d => `<span class="days-badge">${dayNames[d]}</span>`).join(' ');
-}
-
-function timeToMinutes(timeStr) {
-    const [hours, minutes] = timeStr.split(':').map(Number);
-    return hours * 60 + minutes;
-}
-
-function getColorForIndex(index) {
+    // Use target_id for consistent coloring
+    const id = slot.target_id;
     const colors = [
         '#667eea',
         '#f093fb',
@@ -521,7 +509,13 @@ function getColorForIndex(index) {
         '#fbc2eb',
         '#fa8bff'
     ];
-    return colors[index % colors.length];
+
+    // Simple hash of ID to pick a color
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+        hash = id.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
 }
 
 function showNotification(message, type = 'info') {
@@ -529,238 +523,69 @@ function showNotification(message, type = 'info') {
     alert(message);
 }
 
-// ===== Weekly View Functions =====
-
-async function renderWeeklyView() {
-    const container = document.getElementById('weekly-grid-container');
-
-    try {
-        // Load schedule for all 7 days
-        const promises = [];
-        for (let day = 0; day < 7; day++) {
-            promises.push(fetch(`/api/schedules/timeline?day=${day}`).then(r => r.json()));
-        }
-
-        const results = await Promise.all(promises);
-        weeklyScheduleData = {};
-        results.forEach((result, index) => {
-            if (result.success) {
-                weeklyScheduleData[index] = result.data;
-            }
-        });
-
-        // Render the grid
-        renderWeeklyGrid();
-
-    } catch (error) {
-        console.error('Failed to load weekly view:', error);
-        container.innerHTML = `<div class="error">Failed to load weekly schedule</div>`;
-    }
-}
-
-function renderWeeklyGrid() {
-    const container = document.getElementById('weekly-grid-container');
-    const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-    // Build grid HTML
-    let gridHTML = '<div class="weekly-grid">';
-
-    // Header row - empty cell + hours
-    gridHTML += '<div class="grid-cell grid-header"></div>';
-    for (let hour = 0; hour < 24; hour++) {
-        gridHTML += `<div class="grid-cell grid-header">${hour}:00</div>`;
-    }
-
-    // Day rows
-    for (let day = 0; day < 7; day++) {
-        // Day label
-        gridHTML += `<div class="grid-cell grid-day-label">${dayNames[day]}</div>`;
-
-        // Hour cells
-        const dayData = weeklyScheduleData[day];
-        for (let hour = 0; hour < 24; hour++) {
-            const content = getContentForHour(dayData, hour);
-            const color = content.entry ? getColorForEntry(content.entry.entry_id) : '';
-            const bgStyle = content.entry ? `background-color: ${color};` : '';
-            const className = content.entry ? 'grid-content-cell has-content' : 'grid-content-cell default';
-            const title = content.entry ?
-                `${content.entry.entry_name}: ${content.entry.instance_name}` :
-                (content.default ? `Default: ${content.default}` : 'Unscheduled');
-
-            gridHTML += `
-                <div class="${className}"
-                     style="${bgStyle}"
-                     title="${title}"
-                     onclick="${content.entry ? `editEntry('${content.entry.entry_id}')` : ''}">
-                    ${content.label}
-                </div>
-            `;
-        }
-    }
-
-    gridHTML += '</div>';
-
-    container.innerHTML = gridHTML;
-
-    // Render legend
-    renderLegend();
-}
-
-function getContentForHour(dayData, hour) {
-    if (!dayData || !dayData.entries) {
-        return {label: '', entry: null, default: null};
-    }
-
-    // Check if any entry covers this hour
-    const hourStr = `${hour.toString().padStart(2, '0')}:00`;
-    const nextHourStr = `${((hour + 1) % 24).toString().padStart(2, '0')}:00`;
-
-    for (const entry of dayData.entries) {
-        if (timeInHourRange(hourStr, entry.start_time, entry.end_time)) {
-            return {
-                label: entry.instance_name,
-                entry: entry,
-                default: null
-            };
-        }
-    }
-
-    // No entry, check for default
-    if (dayData.default) {
-        return {
-            label: dayData.default.instance_name,
-            entry: null,
-            default: dayData.default.instance_name
-        };
-    }
-
-    return {label: '-', entry: null, default: null};
-}
-
-function timeInHourRange(hourStr, startTime, endTime) {
-    const hour = parseInt(hourStr.split(':')[0]);
-    const startHour = parseInt(startTime.split(':')[0]);
-    const startMin = parseInt(startTime.split(':')[1]);
-    const endHour = parseInt(endTime.split(':')[0]);
-    const endMin = parseInt(endTime.split(':')[1]);
-
-    // Hour falls within the range
-    if (startHour <= endHour) {
-        // Normal range (e.g., 08:00 - 17:00)
-        if (hour > startHour && hour < endHour) return true;
-        if (hour === startHour && startMin === 0) return true;
-        if (hour === startHour && startMin > 0 && hour < endHour) return true;
-        return false;
-    } else {
-        // Overnight range (e.g., 22:00 - 02:00)
-        return hour >= startHour || hour < endHour;
-    }
-}
-
-function getColorForEntry(entryId) {
-    // Get consistent color for an entry ID
-    const colors = [
-        '#667eea',
-        '#f093fb',
-        '#4facfe',
-        '#43e97b',
-        '#fa709a',
-        '#30cfd0',
-        '#a8edea',
-        '#fbc2eb',
-        '#fa8bff'
-    ];
-
-    // Simple hash of entry ID to pick a color
-    let hash = 0;
-    for (let i = 0; i < entryId.length; i++) {
-        hash = entryId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-}
-
 function renderLegend() {
     const legendContainer = document.getElementById('schedule-legend');
 
-    if (currentEntries.length === 0) {
-        legendContainer.innerHTML = '';
+    // Collect unique content items
+    const contentMap = {};
+    Object.values(currentSlots).forEach(slot => {
+        const key = `${slot.target_type}:${slot.target_id}`;
+        if (!contentMap[key]) {
+            contentMap[key] = slot;
+        }
+    });
+
+    const items = Object.entries(contentMap);
+
+    if (items.length === 0) {
+        legendContainer.innerHTML = '<p class="hint">Click on any slot to assign content</p>';
         return;
     }
 
     let legendHTML = '<h4>Legend</h4><div class="legend-grid">';
 
-    // Add entry legends
-    currentEntries.forEach(entry => {
-        const instance = currentInstances.find(i => i.id === entry.instance_id);
-        if (instance && entry.enabled) {
-            const color = getColorForEntry(entry.id);
-            legendHTML += `
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: ${color};"></span>
-                    <span>${entry.name}</span>
-                </div>
-            `;
-        }
+    items.forEach(([key, slot]) => {
+        const info = getSlotInfo(slot);
+        // Find a slot with this content to get the color
+        const slotKey = Object.keys(currentSlots).find(k =>
+            currentSlots[k].target_type === slot.target_type &&
+            currentSlots[k].target_id === slot.target_id
+        );
+        const color = getColorForSlot(slotKey);
+        const icon = slot.target_type === 'playlist' ? '📋' : '📷';
+
+        legendHTML += `
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: ${color};"></span>
+                <span>${icon} ${info.name}</span>
+            </div>
+        `;
     });
 
-    // Add default legend
-    if (currentConfig.default_instance_id) {
-        const defaultInstance = currentInstances.find(i => i.id === currentConfig.default_instance_id);
-        if (defaultInstance) {
-            legendHTML += `
-                <div class="legend-item">
-                    <span class="legend-color" style="background-color: #f0f0f0; border: 1px solid #ddd;"></span>
-                    <span>Default: ${defaultInstance.name}</span>
-                </div>
-            `;
-        }
+    // Add default legend if set
+    if (currentDefault.target_id) {
+        const defaultInfo = getSlotInfo(currentDefault);
+        const icon = currentDefault.target_type === 'playlist' ? '📋' : '📷';
+        legendHTML += `
+            <div class="legend-item">
+                <span class="legend-color" style="background-color: #f0f0f0; border: 1px solid #ddd;"></span>
+                <span>Default: ${icon} ${defaultInfo.name}</span>
+            </div>
+        `;
     }
 
     legendHTML += '</div>';
     legendContainer.innerHTML = legendHTML;
 }
 
-// ===== View Mode Switching =====
-
-function changeViewMode(mode) {
-    currentViewMode = mode;
-
-    if (mode === 'week') {
-        document.getElementById('week-view').style.display = 'block';
-        document.getElementById('day-view').style.display = 'none';
-        renderWeeklyView();
-    } else {
-        document.getElementById('week-view').style.display = 'none';
-        document.getElementById('day-view').style.display = 'block';
-        renderTimeline(selectedDay);
-    }
-}
-
 // ===== Stats =====
 
 function updateStats() {
-    document.getElementById('stat-entries').textContent = currentEntries.length;
-
-    // Calculate coverage (rough estimate)
+    const filledSlots = Object.keys(currentSlots).length;
     const totalSlots = 7 * 24; // 7 days * 24 hours
-    let coveredSlots = 0;
 
-    // Count unique hour slots covered
-    for (let day = 0; day < 7; day++) {
-        for (let hour = 0; hour < 24; hour++) {
-            const dayData = weeklyScheduleData[day];
-            if (dayData && dayData.entries) {
-                const hourStr = `${hour.toString().padStart(2, '0')}:00`;
-                for (const entry of dayData.entries) {
-                    if (timeInHourRange(hourStr, entry.start_time, entry.end_time)) {
-                        coveredSlots++;
-                        break;
-                    }
-                }
-            }
-        }
-    }
+    document.getElementById('stat-entries').textContent = filledSlots;
 
-    const coveragePercent = Math.round((coveredSlots / totalSlots) * 100);
+    const coveragePercent = Math.round((filledSlots / totalSlots) * 100);
     document.getElementById('stat-coverage').textContent = coveragePercent + '%';
 }
