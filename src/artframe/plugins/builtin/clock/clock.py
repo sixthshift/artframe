@@ -6,6 +6,7 @@ Displays current time and date with customizable formats.
 
 from datetime import datetime
 from typing import Any, Dict
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -49,6 +50,14 @@ class Clock(BasePlugin):
         if font_size not in ["small", "medium", "large", "xlarge"]:
             return False, "Font size must be 'small', 'medium', 'large', or 'xlarge'"
 
+        # Validate timezone if provided
+        timezone = settings.get("timezone")
+        if timezone:
+            try:
+                ZoneInfo(timezone)
+            except Exception:
+                return False, f"Invalid timezone: '{timezone}'"
+
         return True, ""
 
     def generate_image(
@@ -78,13 +87,21 @@ class Clock(BasePlugin):
             font_size = settings.get("font_size", "large")
             background_color = settings.get("background_color", "#FFFFFF")
             text_color = settings.get("text_color", "#000000")
+            timezone = settings.get("timezone")  # e.g., "America/New_York", "Europe/London"
 
             # Create image
             image = Image.new("RGB", (width, height), background_color)
             draw = ImageDraw.Draw(image)
 
-            # Get current time
-            now = datetime.now()
+            # Get current time (with timezone if specified)
+            if timezone:
+                try:
+                    tz = ZoneInfo(timezone)
+                    now = datetime.now(tz)
+                except Exception:
+                    now = datetime.now()
+            else:
+                now = datetime.now()
 
             # Format time string
             if time_format == "12h":
@@ -211,15 +228,25 @@ class Clock(BasePlugin):
 
         Cache per minute so the clock updates every minute.
         """
-        now = datetime.now()
+        timezone = settings.get("timezone")
+        if timezone:
+            try:
+                tz = ZoneInfo(timezone)
+                now = datetime.now(tz)
+            except Exception:
+                now = datetime.now()
+        else:
+            now = datetime.now()
+
         show_seconds = settings.get("show_seconds", True)
+        tz_suffix = f"_{timezone}" if timezone else ""
 
         if show_seconds:
             # Cache per second
-            return f"clock_{now.strftime('%Y%m%d_%H%M%S')}"
+            return f"clock_{now.strftime('%Y%m%d_%H%M%S')}{tz_suffix}"
         else:
             # Cache per minute
-            return f"clock_{now.strftime('%Y%m%d_%H%M')}"
+            return f"clock_{now.strftime('%Y%m%d_%H%M')}{tz_suffix}"
 
     def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
         """
@@ -230,3 +257,34 @@ class Clock(BasePlugin):
         """
         show_seconds = settings.get("show_seconds", True)
         return 1 if show_seconds else 60
+
+    def run_active(
+        self,
+        display_controller,
+        settings: Dict[str, Any],
+        device_config: Dict[str, Any],
+        stop_event,
+    ) -> None:
+        """
+        Run the clock's own refresh loop.
+
+        The clock manages its own updates - refreshing every minute
+        (or every second if show_seconds is enabled).
+        """
+        refresh_interval = self.get_cache_ttl(settings)
+        self.logger.info(f"Clock starting with {refresh_interval}s refresh interval")
+
+        while not stop_event.is_set():
+            try:
+                # Generate and display the clock
+                image = self.generate_image(settings, device_config)
+                if image:
+                    display_controller.display_image(image)
+                    self.logger.debug("Clock display updated")
+            except Exception as e:
+                self.logger.error(f"Failed to update clock display: {e}")
+
+            # Wait for the refresh interval or until stopped
+            stop_event.wait(timeout=refresh_interval)
+
+        self.logger.info("Clock stopped")

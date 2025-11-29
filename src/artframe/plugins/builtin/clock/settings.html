@@ -27,6 +27,55 @@
         </div>
     </div>
 
+    <!-- Timezone Settings -->
+    <div class="settings-section">
+        <h4>Timezone</h4>
+
+        <div class="form-group">
+            <label for="timezone">Timezone</label>
+            <select id="timezone" name="timezone">
+                <option value="" {% if not settings.timezone %}selected{% endif %}>System Default</option>
+                <optgroup label="Americas">
+                    <option value="America/New_York" {% if settings.timezone == 'America/New_York' %}selected{% endif %}>New York (Eastern)</option>
+                    <option value="America/Chicago" {% if settings.timezone == 'America/Chicago' %}selected{% endif %}>Chicago (Central)</option>
+                    <option value="America/Denver" {% if settings.timezone == 'America/Denver' %}selected{% endif %}>Denver (Mountain)</option>
+                    <option value="America/Los_Angeles" {% if settings.timezone == 'America/Los_Angeles' %}selected{% endif %}>Los Angeles (Pacific)</option>
+                    <option value="America/Anchorage" {% if settings.timezone == 'America/Anchorage' %}selected{% endif %}>Anchorage (Alaska)</option>
+                    <option value="Pacific/Honolulu" {% if settings.timezone == 'Pacific/Honolulu' %}selected{% endif %}>Honolulu (Hawaii)</option>
+                    <option value="America/Toronto" {% if settings.timezone == 'America/Toronto' %}selected{% endif %}>Toronto</option>
+                    <option value="America/Vancouver" {% if settings.timezone == 'America/Vancouver' %}selected{% endif %}>Vancouver</option>
+                    <option value="America/Mexico_City" {% if settings.timezone == 'America/Mexico_City' %}selected{% endif %}>Mexico City</option>
+                    <option value="America/Sao_Paulo" {% if settings.timezone == 'America/Sao_Paulo' %}selected{% endif %}>São Paulo</option>
+                </optgroup>
+                <optgroup label="Europe">
+                    <option value="Europe/London" {% if settings.timezone == 'Europe/London' %}selected{% endif %}>London (GMT/BST)</option>
+                    <option value="Europe/Paris" {% if settings.timezone == 'Europe/Paris' %}selected{% endif %}>Paris (CET)</option>
+                    <option value="Europe/Berlin" {% if settings.timezone == 'Europe/Berlin' %}selected{% endif %}>Berlin (CET)</option>
+                    <option value="Europe/Amsterdam" {% if settings.timezone == 'Europe/Amsterdam' %}selected{% endif %}>Amsterdam (CET)</option>
+                    <option value="Europe/Rome" {% if settings.timezone == 'Europe/Rome' %}selected{% endif %}>Rome (CET)</option>
+                    <option value="Europe/Madrid" {% if settings.timezone == 'Europe/Madrid' %}selected{% endif %}>Madrid (CET)</option>
+                    <option value="Europe/Moscow" {% if settings.timezone == 'Europe/Moscow' %}selected{% endif %}>Moscow</option>
+                </optgroup>
+                <optgroup label="Asia & Pacific">
+                    <option value="Asia/Tokyo" {% if settings.timezone == 'Asia/Tokyo' %}selected{% endif %}>Tokyo</option>
+                    <option value="Asia/Shanghai" {% if settings.timezone == 'Asia/Shanghai' %}selected{% endif %}>Shanghai</option>
+                    <option value="Asia/Hong_Kong" {% if settings.timezone == 'Asia/Hong_Kong' %}selected{% endif %}>Hong Kong</option>
+                    <option value="Asia/Singapore" {% if settings.timezone == 'Asia/Singapore' %}selected{% endif %}>Singapore</option>
+                    <option value="Asia/Seoul" {% if settings.timezone == 'Asia/Seoul' %}selected{% endif %}>Seoul</option>
+                    <option value="Asia/Dubai" {% if settings.timezone == 'Asia/Dubai' %}selected{% endif %}>Dubai</option>
+                    <option value="Asia/Kolkata" {% if settings.timezone == 'Asia/Kolkata' %}selected{% endif %}>Mumbai/Kolkata (IST)</option>
+                    <option value="Australia/Sydney" {% if settings.timezone == 'Australia/Sydney' %}selected{% endif %}>Sydney</option>
+                    <option value="Australia/Melbourne" {% if settings.timezone == 'Australia/Melbourne' %}selected{% endif %}>Melbourne</option>
+                    <option value="Pacific/Auckland" {% if settings.timezone == 'Pacific/Auckland' %}selected{% endif %}>Auckland</option>
+                </optgroup>
+                <optgroup label="Other">
+                    <option value="UTC" {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC</option>
+                </optgroup>
+            </select>
+            <small>Timezone for the clock display</small>
+        </div>
+    </div>
+
     <!-- Date Settings -->
     <div class="settings-section">
         <h4>Date Display</h4>

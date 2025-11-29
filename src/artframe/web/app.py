@@ -60,9 +60,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         app.schedule_manager, app.instance_manager, device_config
     )
 
-    from . import routes
+    from .routes import bp
 
-    app.register_blueprint(routes.bp)
+    app.register_blueprint(bp)
 
     @app.before_request
     def start_scheduler_once():
