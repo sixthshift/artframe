@@ -1,210 +1,209 @@
 """
 Configuration validator for Artframe.
+
+Validates system-level configuration only. Plugin-specific settings
+are validated by the plugins themselves.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List, Tuple
 
 
 class ConfigValidator:
-    """Validates Artframe configuration."""
+    """Validates Artframe system configuration."""
 
-    REQUIRED_KEYS = [
-        "artframe.source.provider",
-        "artframe.style.provider",
-        "artframe.display.driver",
-        "artframe.storage.directory",
-    ]
-
-    VALID_SOURCE_PROVIDERS = ["immich", "none"]
-    VALID_STYLE_PROVIDERS = ["nanobanana", "none"]
-    VALID_DISPLAY_DRIVERS = ["spectra6", "mock"]
+    VALID_DISPLAY_DRIVERS = ["waveshare", "mock"]
+    VALID_LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    VALID_ROTATIONS = [0, 90, 180, 270]
 
     def validate(self, config: Dict[str, Any]) -> None:
         """
-        Validate configuration dictionary.
+        Validate system configuration.
 
         Args:
-            config: Configuration to validate
+            config: Configuration dictionary to validate
 
         Raises:
             ValueError: If configuration is invalid
         """
-        self._validate_structure(config)
-        self._validate_source_config(config)
-        self._validate_style_config(config)
-        self._validate_display_config(config)
-        self._validate_storage_config(config)
-        self._validate_schedule_config(config)
+        errors: List[str] = []
 
-    def _validate_structure(self, config: Dict[str, Any]) -> None:
-        """Validate basic configuration structure."""
+        # Root structure
         if "artframe" not in config:
             raise ValueError("Configuration must have 'artframe' root key")
 
-        artframe_config = config["artframe"]
+        artframe = config["artframe"]
 
-        # Check required sections exist
-        required_sections = ["source", "style", "display", "storage"]
-        for section in required_sections:
-            if section not in artframe_config:
-                raise ValueError(f"Required section 'artframe.{section}' missing")
+        # Validate each section
+        errors.extend(self._validate_display(artframe))
+        errors.extend(self._validate_storage(artframe))
+        errors.extend(self._validate_logging(artframe))
+        errors.extend(self._validate_web(artframe))
+        errors.extend(self._validate_scheduler(artframe))
 
-    def _validate_source_config(self, config: Dict[str, Any]) -> None:
-        """Validate source configuration."""
-        source_config = config["artframe"]["source"]
+        if errors:
+            raise ValueError("Invalid configuration:\n  - " + "\n  - ".join(errors))
 
-        if "provider" not in source_config:
-            raise ValueError("Source provider must be specified")
+    def _validate_display(self, artframe: Dict[str, Any]) -> List[str]:
+        """Validate display configuration."""
+        errors = []
 
-        provider = source_config["provider"]
-        if provider not in self.VALID_SOURCE_PROVIDERS:
-            raise ValueError(
-                f"Invalid source provider '{provider}'. Valid options: {self.VALID_SOURCE_PROVIDERS}"
+        if "display" not in artframe:
+            return ["Required section 'display' is missing"]
+
+        display = artframe["display"]
+
+        # Driver is required
+        if "driver" not in display:
+            errors.append("display.driver is required")
+        elif display["driver"] not in self.VALID_DISPLAY_DRIVERS:
+            errors.append(
+                f"display.driver must be one of: {self.VALID_DISPLAY_DRIVERS}"
             )
 
-        if "config" not in source_config:
-            raise ValueError("Source config section is required")
+        # Config section is required
+        if "config" not in display:
+            errors.append("display.config is required")
+        else:
+            config = display["config"]
 
-        # Provider-specific validation
-        if provider == "immich":
-            self._validate_immich_config(source_config["config"])
+            # Width and height
+            if "width" in config:
+                if not isinstance(config["width"], int) or config["width"] <= 0:
+                    errors.append("display.config.width must be a positive integer")
 
-    def _validate_immich_config(self, config: Dict[str, Any]) -> None:
-        """Validate Immich-specific configuration."""
-        required_keys = ["server_url"]
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"Immich config missing required key: {key}")
+            if "height" in config:
+                if not isinstance(config["height"], int) or config["height"] <= 0:
+                    errors.append("display.config.height must be a positive integer")
 
-        # Validate URL format
-        server_url = config["server_url"]
-        if server_url and not server_url.startswith(("http://", "https://")):
-            raise ValueError("Immich server_url must start with http:// or https://")
+            # Rotation
+            if "rotation" in config:
+                if config["rotation"] not in self.VALID_ROTATIONS:
+                    errors.append(
+                        f"display.config.rotation must be one of: {self.VALID_ROTATIONS}"
+                    )
 
-    def _validate_style_config(self, config: Dict[str, Any]) -> None:
-        """Validate style configuration."""
-        style_config = config["artframe"]["style"]
+            # GPIO pins (for waveshare)
+            if "gpio_pins" in config:
+                errors.extend(self._validate_gpio_pins(config["gpio_pins"]))
 
-        if "provider" not in style_config:
-            raise ValueError("Style provider must be specified")
+        return errors
 
-        provider = style_config["provider"]
-        if provider not in self.VALID_STYLE_PROVIDERS:
-            raise ValueError(
-                f"Invalid style provider '{provider}'. Valid options: {self.VALID_STYLE_PROVIDERS}"
-            )
+    def _validate_gpio_pins(self, gpio_pins: Dict[str, Any]) -> List[str]:
+        """Validate GPIO pin configuration."""
+        errors = []
+        required_pins = ["busy", "reset", "dc", "cs"]
 
-        if "config" not in style_config:
-            raise ValueError("Style config section is required")
-
-        # Provider-specific validation
-        if provider == "nanobanana":
-            self._validate_nanobanana_config(style_config["config"])
-
-    def _validate_nanobanana_config(self, config: Dict[str, Any]) -> None:
-        """Validate NanoBanana-specific configuration."""
-        required_keys = ["api_url", "styles"]
-        for key in required_keys:
-            if key not in config:
-                raise ValueError(f"NanoBanana config missing required key: {key}")
-
-        # Validate styles list
-        styles = config["styles"]
-        if not isinstance(styles, list) or not styles:
-            raise ValueError("NanoBanana styles must be a non-empty list")
-
-        # Validate each style entry
-        for i, style in enumerate(styles):
-            # Support both old format (string) and new format (dict with name and prompt)
-            if isinstance(style, str):
-                # Old format - just a style name
-                continue
-            elif isinstance(style, dict):
-                # New format - object with name and prompt
-                if "name" not in style:
-                    raise ValueError(f"Style {i} missing 'name' field")
-                if "prompt" not in style:
-                    raise ValueError(f"Style {i} missing 'prompt' field")
-                if not isinstance(style["name"], str) or not style["name"].strip():
-                    raise ValueError(f"Style {i} has invalid name")
-                if not isinstance(style["prompt"], str) or not style["prompt"].strip():
-                    raise ValueError(f"Style {i} has invalid prompt")
+        for pin_name in required_pins:
+            if pin_name not in gpio_pins:
+                errors.append(f"display.config.gpio_pins.{pin_name} is required")
             else:
-                raise ValueError(
-                    f"Invalid style format at index {i}. Must be string or object with name/prompt"
+                pin_value = gpio_pins[pin_name]
+                if not isinstance(pin_value, int) or pin_value < 0 or pin_value > 40:
+                    errors.append(
+                        f"display.config.gpio_pins.{pin_name} must be 0-40"
+                    )
+
+        return errors
+
+    def _validate_storage(self, artframe: Dict[str, Any]) -> List[str]:
+        """Validate storage configuration."""
+        errors = []
+
+        if "storage" not in artframe:
+            return ["Required section 'storage' is missing"]
+
+        storage = artframe["storage"]
+
+        # data_dir is required
+        if "data_dir" not in storage:
+            errors.append("storage.data_dir is required")
+        elif not isinstance(storage["data_dir"], str) or not storage["data_dir"].strip():
+            errors.append("storage.data_dir must be a non-empty string")
+
+        # cache_dir is optional but must be valid if present
+        if "cache_dir" in storage:
+            if not isinstance(storage["cache_dir"], str) or not storage["cache_dir"].strip():
+                errors.append("storage.cache_dir must be a non-empty string")
+
+        # cache_max_mb
+        if "cache_max_mb" in storage:
+            if not isinstance(storage["cache_max_mb"], int) or storage["cache_max_mb"] <= 0:
+                errors.append("storage.cache_max_mb must be a positive integer")
+
+        # cache_retention_days
+        if "cache_retention_days" in storage:
+            if not isinstance(storage["cache_retention_days"], int) or storage["cache_retention_days"] <= 0:
+                errors.append("storage.cache_retention_days must be a positive integer")
+
+        return errors
+
+    def _validate_logging(self, artframe: Dict[str, Any]) -> List[str]:
+        """Validate logging configuration (optional section)."""
+        errors = []
+
+        if "logging" not in artframe:
+            return []  # Logging is optional
+
+        logging_config = artframe["logging"]
+
+        # Level
+        if "level" in logging_config:
+            if logging_config["level"] not in self.VALID_LOG_LEVELS:
+                errors.append(
+                    f"logging.level must be one of: {self.VALID_LOG_LEVELS}"
                 )
 
-        # Validate rotation strategy
-        if "rotation" in config:
-            valid_rotations = ["daily", "random", "sequential"]
-            if config["rotation"] not in valid_rotations:
-                raise ValueError(f"Invalid rotation strategy. Valid options: {valid_rotations}")
+        # Dir
+        if "dir" in logging_config:
+            if not isinstance(logging_config["dir"], str) or not logging_config["dir"].strip():
+                errors.append("logging.dir must be a non-empty string")
 
-    def _validate_display_config(self, config: Dict[str, Any]) -> None:
-        """Validate display configuration."""
-        display_config = config["artframe"]["display"]
+        # max_size_mb
+        if "max_size_mb" in logging_config:
+            if not isinstance(logging_config["max_size_mb"], int) or logging_config["max_size_mb"] <= 0:
+                errors.append("logging.max_size_mb must be a positive integer")
 
-        if "driver" not in display_config:
-            raise ValueError("Display driver must be specified")
+        # backup_count
+        if "backup_count" in logging_config:
+            if not isinstance(logging_config["backup_count"], int) or logging_config["backup_count"] < 0:
+                errors.append("logging.backup_count must be a non-negative integer")
 
-        driver = display_config["driver"]
-        if driver not in self.VALID_DISPLAY_DRIVERS:
-            raise ValueError(
-                f"Invalid display driver '{driver}'. Valid options: {self.VALID_DISPLAY_DRIVERS}"
-            )
+        return errors
 
-        if "config" not in display_config:
-            raise ValueError("Display config section is required")
+    def _validate_web(self, artframe: Dict[str, Any]) -> List[str]:
+        """Validate web server configuration (optional section)."""
+        errors = []
 
-        # Driver-specific validation
-        if driver == "spectra6":
-            self._validate_spectra6_config(display_config["config"])
+        if "web" not in artframe:
+            return []  # Web config is optional
 
-    def _validate_spectra6_config(self, config: Dict[str, Any]) -> None:
-        """Validate Spectra6-specific configuration."""
-        if "gpio_pins" in config:
-            gpio_config = config["gpio_pins"]
-            required_pins = ["busy", "reset", "dc", "cs"]
-            for pin in required_pins:
-                if pin not in gpio_config:
-                    raise ValueError(f"Spectra6 GPIO config missing pin: {pin}")
+        web = artframe["web"]
 
-                pin_value = gpio_config[pin]
-                if not isinstance(pin_value, int) or pin_value < 0 or pin_value > 40:
-                    raise ValueError(f"Invalid GPIO pin number for {pin}: {pin_value}")
+        # Port
+        if "port" in web:
+            port = web["port"]
+            if not isinstance(port, int) or port < 1 or port > 65535:
+                errors.append("web.port must be an integer between 1 and 65535")
 
-        if "rotation" in config:
-            valid_rotations = [0, 90, 180, 270]
-            if config["rotation"] not in valid_rotations:
-                raise ValueError(f"Invalid display rotation. Valid options: {valid_rotations}")
+        # Debug
+        if "debug" in web:
+            if not isinstance(web["debug"], bool):
+                errors.append("web.debug must be a boolean")
 
-    def _validate_storage_config(self, config: Dict[str, Any]) -> None:
-        """Validate storage configuration."""
-        storage_config = config["artframe"]["storage"]
+        return errors
 
-        if "directory" not in storage_config:
-            raise ValueError("Storage directory must be specified")
+    def _validate_scheduler(self, artframe: Dict[str, Any]) -> List[str]:
+        """Validate scheduler configuration (optional section)."""
+        errors = []
 
-    def _validate_schedule_config(self, config: Dict[str, Any]) -> None:
-        """Validate schedule configuration."""
-        if "schedule" not in config["artframe"]:
-            return  # Schedule is optional
+        if "scheduler" not in artframe:
+            return []  # Scheduler config is optional
 
-        schedule_config = config["artframe"]["schedule"]
+        scheduler = artframe["scheduler"]
 
-        if "update_time" in schedule_config:
-            time_str = schedule_config["update_time"]
-            if not self._is_valid_time_format(time_str):
-                raise ValueError(f"Invalid update_time format: {time_str}. Use HH:MM format")
+        # Timezone
+        if "timezone" in scheduler:
+            if not isinstance(scheduler["timezone"], str) or not scheduler["timezone"].strip():
+                errors.append("scheduler.timezone must be a non-empty string")
 
-    def _is_valid_time_format(self, time_str: str) -> bool:
-        """Check if time string is in HH:MM format."""
-        try:
-            parts = time_str.split(":")
-            if len(parts) != 2:
-                return False
-
-            hour, minute = int(parts[0]), int(parts[1])
-            return 0 <= hour <= 23 and 0 <= minute <= 59
-        except (ValueError, AttributeError):
-            return False
+        return errors

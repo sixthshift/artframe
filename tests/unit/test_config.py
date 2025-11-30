@@ -2,6 +2,7 @@
 Unit tests for configuration management.
 """
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -16,81 +17,137 @@ class TestConfigValidator:
     def test_valid_config(self, sample_config):
         """Test validation of valid configuration."""
         validator = ConfigValidator()
-        # Should not raise exception
-        validator.validate(sample_config)
+        validator.validate(sample_config)  # Should not raise
 
     def test_missing_artframe_section(self):
         """Test validation fails when artframe section is missing."""
         validator = ConfigValidator()
         config = {"other": "value"}
 
-        with pytest.raises(ValueError, match="Configuration must have 'artframe' root key"):
+        with pytest.raises(ValueError, match="must have 'artframe' root key"):
             validator.validate(config)
 
-    def test_missing_required_sections(self):
-        """Test validation fails when required sections are missing."""
+    def test_missing_display_section(self):
+        """Test validation fails when display section is missing."""
         validator = ConfigValidator()
-        config = {"artframe": {"source": {}}}  # Missing style, display, cache
+        config = {"artframe": {"storage": {"data_dir": "/tmp"}}}
 
-        with pytest.raises(ValueError, match="Required section 'artframe.style' missing"):
+        with pytest.raises(ValueError, match="display.*missing"):
             validator.validate(config)
 
-    def test_invalid_source_provider(self):
-        """Test validation fails with invalid source provider."""
+    def test_missing_storage_section(self):
+        """Test validation fails when storage section is missing."""
         validator = ConfigValidator()
-        config = {
-            "artframe": {
-                "source": {"provider": "invalid", "config": {}},
-                "style": {
-                    "provider": "nanobanana",
-                    "config": {"api_url": "http://test", "styles": ["test"]},
-                },
-                "display": {"driver": "mock", "config": {}},
-                "storage": {"directory": "/tmp"},
-            }
-        }
+        config = {"artframe": {"display": {"driver": "mock", "config": {}}}}
 
-        with pytest.raises(ValueError, match=r"Invalid source provider 'invalid'\."):
+        with pytest.raises(ValueError, match="storage.*missing"):
             validator.validate(config)
 
-    def test_invalid_immich_config(self):
-        """Test validation fails with invalid Immich configuration."""
+    def test_missing_data_dir(self):
+        """Test validation fails when data_dir is missing."""
         validator = ConfigValidator()
         config = {
             "artframe": {
-                "source": {"provider": "immich", "config": {}},  # Missing required keys
-                "style": {
-                    "provider": "nanobanana",
-                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
-                },
                 "display": {"driver": "mock", "config": {}},
-                "storage": {"directory": "/tmp"},
+                "storage": {"cache_dir": "/tmp"},  # Missing data_dir
             }
         }
 
-        with pytest.raises(ValueError, match=r"Immich config missing required key:"):
+        with pytest.raises(ValueError, match="data_dir is required"):
             validator.validate(config)
 
-    def test_invalid_url_format(self):
-        """Test validation fails with invalid URL format."""
+    def test_invalid_display_driver(self):
+        """Test validation fails with invalid display driver."""
         validator = ConfigValidator()
         config = {
             "artframe": {
-                "source": {
-                    "provider": "immich",
-                    "config": {"server_url": "invalid-url", "api_key": "test"},  # Invalid URL
-                },
-                "style": {
-                    "provider": "nanobanana",
-                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
-                },
-                "display": {"driver": "mock", "config": {}},
-                "storage": {"directory": "/tmp"},
+                "display": {"driver": "invalid", "config": {}},
+                "storage": {"data_dir": "/tmp"},
             }
         }
 
-        with pytest.raises(ValueError, match=r"server_url must start with http:// or https://"):
+        with pytest.raises(ValueError, match="display.driver must be one of"):
             validator.validate(config)
+
+    def test_valid_display_drivers(self):
+        """Test all valid display drivers are accepted."""
+        validator = ConfigValidator()
+        for driver in ["mock", "waveshare"]:
+            config = {
+                "artframe": {
+                    "display": {"driver": driver, "config": {}},
+                    "storage": {"data_dir": "/tmp"},
+                }
+            }
+            validator.validate(config)  # Should not raise
+
+    def test_invalid_rotation(self):
+        """Test validation fails with invalid rotation."""
+        validator = ConfigValidator()
+        config = {
+            "artframe": {
+                "display": {"driver": "mock", "config": {"rotation": 45}},
+                "storage": {"data_dir": "/tmp"},
+            }
+        }
+
+        with pytest.raises(ValueError, match="rotation must be one of"):
+            validator.validate(config)
+
+    def test_invalid_gpio_pin(self):
+        """Test validation fails with invalid GPIO pin."""
+        validator = ConfigValidator()
+        config = {
+            "artframe": {
+                "display": {
+                    "driver": "waveshare",
+                    "config": {"gpio_pins": {"busy": 100, "reset": 17, "dc": 25, "cs": 8}},
+                },
+                "storage": {"data_dir": "/tmp"},
+            }
+        }
+
+        with pytest.raises(ValueError, match="gpio_pins.busy must be 0-40"):
+            validator.validate(config)
+
+    def test_invalid_log_level(self):
+        """Test validation fails with invalid log level."""
+        validator = ConfigValidator()
+        config = {
+            "artframe": {
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"data_dir": "/tmp"},
+                "logging": {"level": "INVALID"},
+            }
+        }
+
+        with pytest.raises(ValueError, match="logging.level must be one of"):
+            validator.validate(config)
+
+    def test_invalid_port(self):
+        """Test validation fails with invalid port."""
+        validator = ConfigValidator()
+        config = {
+            "artframe": {
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"data_dir": "/tmp"},
+                "web": {"port": 99999},
+            }
+        }
+
+        with pytest.raises(ValueError, match="port must be an integer between 1 and 65535"):
+            validator.validate(config)
+
+    def test_minimal_valid_config(self):
+        """Test minimal valid configuration."""
+        validator = ConfigValidator()
+        config = {
+            "artframe": {
+                "display": {"driver": "mock", "config": {}},
+                "storage": {"data_dir": "/tmp"},
+            }
+        }
+        validator.validate(config)  # Should not raise
 
 
 class TestConfigManager:
@@ -100,8 +157,8 @@ class TestConfigManager:
         """Test loading valid configuration file."""
         config_manager = ConfigManager(test_config_file)
 
-        assert config_manager.get("artframe.source.provider") == "immich"
-        assert config_manager.get("artframe.display.driver") == "mock"
+        assert config_manager.get_display_driver() == "mock"
+        assert config_manager.get("artframe.storage.data_dir") == "/tmp/test_data"
 
     def test_config_file_not_found(self, temp_dir):
         """Test error when configuration file doesn't exist."""
@@ -114,16 +171,8 @@ class TestConfigManager:
         """Test environment variable expansion in configuration."""
         config_data = {
             "artframe": {
-                "source": {
-                    "provider": "immich",
-                    "config": {"server_url": "http://localhost", "api_key": "${TEST_API_KEY}"},
-                },
-                "style": {
-                    "provider": "nanobanana",
-                    "config": {"api_url": "http://test", "api_key": "key", "styles": ["test"]},
-                },
                 "display": {"driver": "mock", "config": {}},
-                "storage": {"directory": "/tmp"},
+                "storage": {"data_dir": "${TEST_DATA_DIR}"},
             }
         }
 
@@ -131,16 +180,16 @@ class TestConfigManager:
         with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        with patch.dict("os.environ", {"TEST_API_KEY": "expanded_key"}):
+        with patch.dict("os.environ", {"TEST_DATA_DIR": "/expanded/path"}):
             config_manager = ConfigManager(config_file)
-            assert config_manager.get("artframe.source.config.api_key") == "expanded_key"
+            assert config_manager.get("artframe.storage.data_dir") == "/expanded/path"
 
     def test_get_with_default(self, test_config_file):
         """Test get method with default value."""
         config_manager = ConfigManager(test_config_file)
 
         # Existing key
-        assert config_manager.get("artframe.source.provider") == "immich"
+        assert config_manager.get("artframe.display.driver") == "mock"
 
         # Non-existing key with default
         assert config_manager.get("artframe.non.existent", "default") == "default"
@@ -148,21 +197,34 @@ class TestConfigManager:
         # Non-existing key without default
         assert config_manager.get("artframe.non.existent") is None
 
-    def test_get_source_config(self, test_config_file):
-        """Test getting source configuration."""
+    def test_get_data_dir(self, test_config_file):
+        """Test getting data directory path."""
         config_manager = ConfigManager(test_config_file)
-        source_config = config_manager.get_source_config()
+        data_dir = config_manager.get_data_dir()
 
-        assert source_config["provider"] == "immich"
-        assert "config" in source_config
+        assert isinstance(data_dir, Path)
+        assert str(data_dir) == "/tmp/test_data"
 
-    def test_get_style_config(self, test_config_file):
-        """Test getting style configuration."""
+    def test_get_cache_dir(self, test_config_file):
+        """Test getting cache directory path."""
         config_manager = ConfigManager(test_config_file)
-        style_config = config_manager.get_style_config()
+        cache_dir = config_manager.get_cache_dir()
 
-        assert style_config["provider"] == "nanobanana"
-        assert "config" in style_config
+        assert isinstance(cache_dir, Path)
+        assert str(cache_dir) == "/tmp/test_cache"
+
+    def test_get_display_dimensions(self, test_config_file):
+        """Test getting display dimensions."""
+        config_manager = ConfigManager(test_config_file)
+        width, height = config_manager.get_display_dimensions()
+
+        assert width == 800
+        assert height == 480
+
+    def test_get_timezone(self, test_config_file):
+        """Test getting timezone."""
+        config_manager = ConfigManager(test_config_file)
+        assert config_manager.get_timezone() == "UTC"
 
     def test_config_validation_on_load(self, temp_dir):
         """Test that configuration is validated on load."""
@@ -186,21 +248,11 @@ class TestConfigManager:
 
         config_manager.add_observer(observer)
 
-        # Simulate config reload with changes
-        with patch.object(config_manager, "_load_config") as mock_load:
-            # Mock a configuration change
-            new_config = config_manager._config.copy()
-            new_config["artframe"]["source"]["provider"] = "new_provider"
+        # Simulate config change notification
+        config_manager._notify_changes(
+            {"artframe": {"display": {"driver": "mock"}}},
+            {"artframe": {"display": {"driver": "waveshare"}}},
+        )
 
-            mock_load.return_value = None
-            config_manager._config = new_config
-
-            # Manually trigger change notification for testing
-            config_manager._notify_changes(
-                {"artframe": {"source": {"provider": "immich"}}},
-                {"artframe": {"source": {"provider": "new_provider"}}},
-            )
-
-        # Check that observer was called
         assert len(observed_changes) > 0
-        assert ("artframe.source.provider", "new_provider") in observed_changes
+        assert ("artframe.display.driver", "waveshare") in observed_changes

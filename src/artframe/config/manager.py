@@ -13,7 +13,12 @@ from .validator import ConfigValidator
 
 
 class ConfigManager:
-    """Manages configuration loading, validation, and change notifications."""
+    """Manages configuration loading, validation, and access."""
+
+    # Default paths (used when not specified in config)
+    DEFAULT_DATA_DIR = "~/.artframe/data"
+    DEFAULT_CACHE_DIR = "~/.artframe/cache"
+    DEFAULT_LOG_DIR = "~/.artframe/logs"
 
     def __init__(self, config_path: Optional[Path] = None):
         """
@@ -49,27 +54,15 @@ class ConfigManager:
             raise ValueError(f"Failed to load configuration: {e}")
 
     def _expand_env_vars(self, config: Any) -> Any:
-        """
-        Recursively expand environment variables in configuration.
-
-        Supports ${VAR_NAME} syntax for environment variable expansion.
-
-        Args:
-            config: Configuration value (dict, list, str, or other)
-
-        Returns:
-            Configuration with environment variables expanded
-        """
+        """Recursively expand environment variables in configuration."""
         if isinstance(config, dict):
             return {key: self._expand_env_vars(value) for key, value in config.items()}
         elif isinstance(config, list):
             return [self._expand_env_vars(item) for item in config]
         elif isinstance(config, str):
-            # Match ${VAR_NAME} pattern
             def replace_env_var(match):
                 var_name = match.group(1)
                 return os.environ.get(var_name, match.group(0))
-
             return re.sub(r"\$\{([^}]+)\}", replace_env_var, config)
         else:
             return config
@@ -79,7 +72,7 @@ class ConfigManager:
         Get configuration value by dot-separated key.
 
         Args:
-            key: Configuration key (e.g., 'artframe.source.provider')
+            key: Configuration key (e.g., 'artframe.display.driver')
             default: Default value if key not found
 
         Returns:
@@ -96,37 +89,87 @@ class ConfigManager:
 
         return value
 
-    def get_source_config(self) -> Dict[str, Any]:
-        """Get source plugin configuration."""
-        return cast(Dict[str, Any], self.get("artframe.source", {}))
-
-    def get_style_config(self) -> Dict[str, Any]:
-        """Get style plugin configuration."""
-        return cast(Dict[str, Any], self.get("artframe.style", {}))
+    # ================================================================
+    # Section getters - return raw config sections
+    # ================================================================
 
     def get_display_config(self) -> Dict[str, Any]:
-        """Get display configuration."""
+        """Get display configuration section."""
         return cast(Dict[str, Any], self.get("artframe.display", {}))
 
     def get_storage_config(self) -> Dict[str, Any]:
-        """Get storage configuration."""
+        """Get storage configuration section."""
         return cast(Dict[str, Any], self.get("artframe.storage", {}))
 
-    def get_schedule_config(self) -> Dict[str, Any]:
-        """Get schedule configuration."""
-        return cast(Dict[str, Any], self.get("artframe.schedule", {}))
-
     def get_logging_config(self) -> Dict[str, Any]:
-        """Get logging configuration."""
+        """Get logging configuration section."""
         return cast(Dict[str, Any], self.get("artframe.logging", {}))
 
-    def add_observer(self, callback: Callable[[str, Any], None]) -> None:
-        """
-        Add configuration change observer.
+    def get_web_config(self) -> Dict[str, Any]:
+        """Get web server configuration section."""
+        return cast(Dict[str, Any], self.get("artframe.web", {}))
 
-        Args:
-            callback: Function called when config changes (key, new_value)
-        """
+    def get_scheduler_config(self) -> Dict[str, Any]:
+        """Get scheduler configuration section."""
+        return cast(Dict[str, Any], self.get("artframe.scheduler", {}))
+
+    # ================================================================
+    # Path getters - return expanded Path objects
+    # ================================================================
+
+    def get_data_dir(self) -> Path:
+        """Get data directory path (expanded)."""
+        storage = self.get_storage_config()
+        data_dir = storage.get("data_dir", self.DEFAULT_DATA_DIR)
+        return Path(data_dir).expanduser()
+
+    def get_cache_dir(self) -> Path:
+        """Get cache directory path (expanded)."""
+        storage = self.get_storage_config()
+        cache_dir = storage.get("cache_dir", self.DEFAULT_CACHE_DIR)
+        return Path(cache_dir).expanduser()
+
+    def get_log_dir(self) -> Path:
+        """Get log directory path (expanded)."""
+        logging_config = self.get_logging_config()
+        log_dir = logging_config.get("dir", self.DEFAULT_LOG_DIR)
+        return Path(log_dir).expanduser()
+
+    # ================================================================
+    # Convenience getters
+    # ================================================================
+
+    def get_display_driver(self) -> str:
+        """Get display driver name."""
+        return self.get_display_config().get("driver", "mock")
+
+    def get_display_dimensions(self) -> tuple:
+        """Get display dimensions as (width, height) tuple."""
+        config = self.get_display_config().get("config", {})
+        return (config.get("width", 800), config.get("height", 480))
+
+    def get_timezone(self) -> str:
+        """Get scheduler timezone."""
+        return self.get_scheduler_config().get("timezone", "UTC")
+
+    def get_log_level(self) -> str:
+        """Get logging level."""
+        return self.get_logging_config().get("level", "INFO")
+
+    def get_web_port(self) -> int:
+        """Get web server port."""
+        return self.get_web_config().get("port", 8000)
+
+    def get_web_host(self) -> str:
+        """Get web server host."""
+        return self.get_web_config().get("host", "0.0.0.0")
+
+    # ================================================================
+    # Observer pattern for config changes
+    # ================================================================
+
+    def add_observer(self, callback: Callable[[str, Any], None]) -> None:
+        """Add configuration change observer."""
         self._observers.append(callback)
 
     def remove_observer(self, callback: Callable[[str, Any], None]) -> None:
@@ -138,9 +181,64 @@ class ConfigManager:
         """Reload configuration from file."""
         old_config = self._config.copy()
         self._load_config()
-
-        # Notify observers of changes
         self._notify_changes(old_config, self._config)
+
+    def revert_to_file(self) -> None:
+        """Revert in-memory configuration to what's saved on disk."""
+        self._load_config()
+
+    def update_config(self, new_config: Dict[str, Any]) -> None:
+        """
+        Update in-memory configuration (validates but does not save to file).
+
+        Args:
+            new_config: New configuration dictionary to merge
+
+        Raises:
+            ValueError: If new configuration is invalid
+        """
+        # Merge new config with existing
+        merged = self._deep_merge(self._config.copy(), new_config)
+
+        # Validate merged config
+        self.validator.validate(merged)
+
+        # Apply changes
+        old_config = self._config.copy()
+        self._config = merged
+        self._notify_changes(old_config, self._config)
+
+    def save_to_file(self, backup: bool = True) -> None:
+        """
+        Save current in-memory configuration to file.
+
+        Args:
+            backup: If True, create a backup of existing file before saving
+
+        Raises:
+            IOError: If file cannot be written
+        """
+        import shutil
+        from datetime import datetime
+
+        if backup and self.config_path.exists():
+            # Create backup with timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = self.config_path.with_suffix(f".{timestamp}.bak")
+            shutil.copy2(self.config_path, backup_path)
+
+        with open(self.config_path, "w") as f:
+            yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
+
+    def _deep_merge(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+        """Deep merge two dictionaries."""
+        result = base.copy()
+        for key, value in override.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+        return result
 
     def _notify_changes(
         self, old_config: Dict[str, Any], new_config: Dict[str, Any], prefix: str = ""
@@ -150,78 +248,14 @@ class ConfigManager:
             full_key = f"{prefix}.{key}" if prefix else key
 
             if key not in old_config:
-                # New key
                 for observer in self._observers:
                     observer(full_key, value)
             elif old_config[key] != value:
                 if isinstance(value, dict) and isinstance(old_config[key], dict):
-                    # Recursive check for nested dictionaries
                     self._notify_changes(old_config[key], value, full_key)
                 else:
-                    # Value changed
                     for observer in self._observers:
                         observer(full_key, value)
-
-    def validate_current_config(self) -> bool:
-        """
-        Validate current configuration.
-
-        Returns:
-            bool: True if configuration is valid
-        """
-        try:
-            self.validator.validate(self._config)
-            return True
-        except ValueError:
-            return False
-
-    def update_config(self, new_config: Dict[str, Any]) -> None:
-        """
-        Update in-memory configuration.
-
-        Args:
-            new_config: New configuration dictionary
-
-        Raises:
-            ValueError: If configuration is invalid
-        """
-        # Validate before updating
-        self.validator.validate(new_config)
-
-        # Update in-memory config
-        old_config = self._config.copy()
-        self._config = new_config
-
-        # Notify observers
-        self._notify_changes(old_config, self._config)
-
-    def save_to_file(self, backup: bool = True) -> None:
-        """
-        Save current in-memory configuration to YAML file.
-
-        Args:
-            backup: If True, create backup of existing file
-
-        Raises:
-            IOError: If file cannot be written
-        """
-        # Create backup if requested
-        if backup and self.config_path.exists():
-            backup_path = self.config_path.with_suffix(".yaml.backup")
-            import shutil
-
-            shutil.copy2(self.config_path, backup_path)
-
-        # Write to file
-        try:
-            with open(self.config_path, "w") as f:
-                yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
-        except Exception as e:
-            raise IOError(f"Failed to save configuration: {e}")
-
-    def revert_to_file(self) -> None:
-        """Revert in-memory config to what's on disk."""
-        self._load_config()
 
     @property
     def config(self) -> Dict[str, Any]:

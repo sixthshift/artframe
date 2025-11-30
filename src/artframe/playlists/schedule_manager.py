@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from ..models import ScheduleConfig, TargetType, TimeSlot
+from ..models import TimeSlot
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ class ScheduleManager:
 
         self.schedules_file = self.storage_dir / "schedules.json"
         self._slots: Dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
-        self._config: ScheduleConfig = ScheduleConfig()
 
         # Load existing schedule
         self._load_schedule()
@@ -51,13 +50,6 @@ class ScheduleManager:
         try:
             with open(self.schedules_file, "r") as f:
                 data = json.load(f)
-
-            # Load config
-            config_data = data.get("config", {})
-            self._config = ScheduleConfig(
-                default_target_type=config_data.get("default_target_type"),
-                default_target_id=config_data.get("default_target_id"),
-            )
 
             # Load slots
             slots_data = data.get("slots", {})
@@ -77,10 +69,6 @@ class ScheduleManager:
         """Save schedule to storage."""
         try:
             data = {
-                "config": {
-                    "default_target_type": self._config.default_target_type,
-                    "default_target_id": self._config.default_target_id,
-                },
                 "slots": {
                     key: {
                         "target_type": slot.target_type,
@@ -205,36 +193,6 @@ class ScheduleManager:
             for key, slot in self._slots.items()
         }
 
-    def set_default(
-        self,
-        target_type: Optional[str],
-        target_id: Optional[str],
-    ) -> None:
-        """
-        Set the default content for unassigned slots.
-
-        Args:
-            target_type: "instance" or "playlist", or None to clear
-            target_id: The ID, or None to clear
-        """
-        self._config.default_target_type = target_type
-        self._config.default_target_id = target_id
-        self._save_schedule()
-        logger.info(f"Set default to {target_type}:{target_id}")
-
-    def get_default(self) -> Optional[Dict[str, str]]:
-        """Get the default content assignment."""
-        if self._config.default_target_id:
-            return {
-                "target_type": self._config.default_target_type,
-                "target_id": self._config.default_target_id,
-            }
-        return None
-
-    def get_config(self) -> ScheduleConfig:
-        """Get the schedule configuration."""
-        return self._config
-
     def get_slot_count(self) -> int:
         """Get number of assigned slots."""
         return len(self._slots)
@@ -274,15 +232,3 @@ class ScheduleManager:
         self._save_schedule()
         logger.info(f"Cleared all {count} slots")
         return count
-
-    # Legacy compatibility methods
-    def get_default_instance_id(self) -> Optional[str]:
-        """Legacy: Get default instance ID."""
-        return self._config.default_instance_id
-
-    def set_default_instance(self, instance_id: Optional[str]) -> None:
-        """Legacy: Set default instance."""
-        if instance_id:
-            self.set_default(TargetType.INSTANCE.value, instance_id)
-        else:
-            self.set_default(None, None)

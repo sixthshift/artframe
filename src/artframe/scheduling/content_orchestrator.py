@@ -102,67 +102,15 @@ class ContentOrchestrator:
         slot = self.schedule_manager.get_current_slot()
 
         if slot is None:
-            # Try default
-            return self._get_default_content()
+            # No slot assigned for this time
+            logger.debug("No slot assigned for current time")
+            return ContentSource.empty()
 
         # Step 2: Resolve target based on slot type
         if slot.target_type == TargetType.PLAYLIST.value:
             return self._resolve_playlist_content(slot)
         else:
             return self._resolve_instance_content(slot)
-
-    def _get_default_content(self) -> ContentSource:
-        """
-        Get default content when no slot is assigned.
-
-        Returns:
-            ContentSource for default content, or empty if not configured
-        """
-        default = self.schedule_manager.get_default()
-
-        if not default:
-            logger.debug("No default content configured")
-            return ContentSource.empty()
-
-        target_type = default.get("target_type")
-        target_id = default.get("target_id")
-
-        if target_type == TargetType.PLAYLIST.value:
-            # Resolve playlist
-            playlist = self.playlist_manager.get_playlist(target_id)
-            if not playlist or not playlist.enabled:
-                logger.warning(f"Default playlist not found or disabled: {target_id}")
-                return ContentSource.empty()
-
-            # Create a synthetic slot for playlist resolution
-            slot = TimeSlot(
-                day=datetime.now().weekday(),
-                hour=datetime.now().hour,
-                target_type=TargetType.PLAYLIST.value,
-                target_id=target_id,
-            )
-            content = self._resolve_playlist_content(slot)
-            content.source_type = "default"
-            content.source_name = f"Default: {playlist.name}"
-            return content
-
-        else:
-            # Resolve instance
-            instance = self.instance_manager.get_instance(target_id)
-            if not instance:
-                logger.warning(f"Default instance not found: {target_id}")
-                return ContentSource.empty()
-
-            if not instance.enabled:
-                logger.warning(f"Default instance is disabled: {target_id}")
-                return ContentSource.empty()
-
-            return ContentSource(
-                instance=instance,
-                duration_seconds=3600,  # 1 hour default
-                source_type="default",
-                source_name=f"Default: {instance.name}",
-            )
 
     def _resolve_instance_content(self, slot: TimeSlot) -> ContentSource:
         """

@@ -21,13 +21,14 @@ def test_configuration():
     print("🔧 Testing configuration...")
 
     try:
-        config_path = Path(__file__).parent.parent / "config" / "artframe.yaml"
+        config_path = Path(__file__).parent.parent / "config" / "artframe-laptop.yaml"
         config_manager = ConfigManager(config_path)
 
-        print(f"  ✅ Configuration loaded successfully")
-        print(f"  📁 Cache directory: {config_manager.get_cache_config()['directory']}")
-        print(f"  🖥️  Display driver: {config_manager.get_display_config()['driver']}")
-        print(f"  🎨 Style provider: {config_manager.get_style_config()['provider']}")
+        print("  ✅ Configuration loaded successfully")
+        print(f"  📁 Data directory: {config_manager.get_data_dir()}")
+        print(f"  📁 Cache directory: {config_manager.get_cache_dir()}")
+        print(f"  🖥️  Display driver: {config_manager.get_display_driver()}")
+        print(f"  📐 Display size: {config_manager.get_display_dimensions()}")
 
         return True
     except Exception as e:
@@ -41,21 +42,21 @@ def test_mock_display():
 
     try:
         config = {
-            'width': 600,
-            'height': 448,
-            'save_images': True,
-            'output_dir': '/tmp/artframe_test'
+            "width": 600,
+            "height": 448,
+            "save_images": True,
+            "output_dir": "/tmp/artframe_test",
         }
 
         driver = MockDriver(config)
         driver.initialize()
 
         # Create a simple test image
-        test_image = Image.new('L', (600, 448), 128)  # Gray image
+        test_image = Image.new("L", (600, 448), 128)  # Gray image
         driver.display_image(test_image)
 
-        print(f"  ✅ Mock display test successful")
-        print(f"  📁 Check /tmp/artframe_test/ for saved image")
+        print("  ✅ Mock display test successful")
+        print("  📁 Check /tmp/artframe_test/ for saved image")
 
         return True
     except Exception as e:
@@ -72,8 +73,11 @@ def test_storage_manager():
         storage_manager = StorageManager(storage_dir)
 
         stats = storage_manager.get_storage_stats()
-        print(f"  ✅ Storage manager test successful")
-        print(f"  📊 Storage stats: {stats.total_photos} photos, {stats.total_styled_images} styled images, {stats.total_size_mb:.2f} MB")
+        print("  ✅ Storage manager test successful")
+        print(
+            f"  📊 Storage stats: {stats.total_photos} photos, "
+            f"{stats.total_styled_images} styled images, {stats.total_size_mb:.2f} MB"
+        )
 
         return True
     except Exception as e:

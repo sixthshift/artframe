@@ -20,11 +20,9 @@ def api_display_current():
         state = controller.display_controller.get_state()
         driver = controller.display_controller.driver
 
-        # Check if using mock driver
-        has_preview = hasattr(driver, "get_current_image_path")
-        plugin_info = (
-            driver.get_last_plugin_info() if hasattr(driver, "get_last_plugin_info") else {}
-        )
+        # Get plugin info and check if preview is available
+        plugin_info = driver.get_last_plugin_info()
+        preview_path = driver.get_current_image_path()
 
         return jsonify(
             {
@@ -35,10 +33,8 @@ def api_display_current():
                     "plugin_name": plugin_info.get("plugin_name", "Unknown"),
                     "instance_name": plugin_info.get("instance_name", "Unknown"),
                     "status": state.status,
-                    "has_preview": has_preview,
-                    "display_count": (
-                        driver.get_display_count() if hasattr(driver, "get_display_count") else 0
-                    ),
+                    "has_preview": preview_path is not None,
+                    "display_count": driver.get_display_count(),
                 },
             }
         )
@@ -48,34 +44,29 @@ def api_display_current():
 
 @bp.route("/api/display/preview")
 def api_display_preview():
-    """Serve the current display preview image (mock driver only)."""
+    """Serve the current display preview image (if available)."""
     controller = get_app().controller
 
     try:
         driver = controller.display_controller.driver
 
-        # Check if mock driver
-        if hasattr(driver, "get_current_image_path"):
-            # Get output dir and ensure it's an absolute path (MockDriver only)
-            output_dir = getattr(driver, "output_dir", None)
-            if output_dir is None:
-                return jsonify({"success": False, "error": "No output dir configured"}), 404
+        # Get current image path from driver (any driver can provide this)
+        image_path = driver.get_current_image_path()
 
-            if isinstance(output_dir, str):
-                output_dir = Path(output_dir)
+        if image_path is not None:
+            # Ensure path is absolute
+            if isinstance(image_path, str):
+                image_path = Path(image_path)
 
-            # Make absolute if relative
-            if not output_dir.is_absolute():
-                # Resolve relative to project root (where config file is)
+            if not image_path.is_absolute():
+                # Resolve relative to project root
                 project_root = Path(__file__).parent.parent.parent.parent
-                output_dir = (project_root / output_dir).resolve()
+                image_path = (project_root / image_path).resolve()
 
-            latest_path = output_dir / "latest.png"
+            if image_path.exists():
+                return send_file(str(image_path), mimetype="image/png")
 
-            if latest_path.exists():
-                return send_file(str(latest_path), mimetype="image/png")
-
-        # Return placeholder if no image available
+        # No preview available from this driver
         return jsonify({"success": False, "error": "No preview available"}), 404
 
     except Exception as e:

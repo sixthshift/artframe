@@ -52,30 +52,10 @@ def api_schedules_list():
         # Get all slots as a dict for easy lookup
         slots_dict = schedule_manager.get_slots_dict()
 
-        # Get default
-        default = schedule_manager.get_default()
-        default_info = None
-        if default:
-            if default["target_type"] == "instance":
-                instance = instance_manager.get_instance(default["target_id"])
-                default_info = {
-                    "target_type": "instance",
-                    "target_id": default["target_id"],
-                    "target_name": instance.name if instance else "Unknown",
-                }
-            else:
-                playlist = playlist_manager.get_playlist(default["target_id"])
-                default_info = {
-                    "target_type": "playlist",
-                    "target_id": default["target_id"],
-                    "target_name": playlist.name if playlist else "Unknown",
-                }
-
         return jsonify(
             {
                 "success": True,
                 "slots": slots_dict,
-                "default": default_info,
                 "slot_count": schedule_manager.get_slot_count(),
             }
         )
@@ -164,25 +144,6 @@ def api_schedule_bulk_set():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-@bp.route("/api/schedules/default", methods=["PUT"])
-def api_schedule_set_default():
-    """Set the default content for empty slots."""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"success": False, "error": "No data provided"}), 400
-
-        target_type = data.get("target_type")
-        target_id = data.get("target_id")
-
-        schedule_manager = get_app().schedule_manager
-        schedule_manager.set_default(target_type, target_id)
-
-        return jsonify({"success": True, "message": "Default updated"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
 @bp.route("/api/schedules/current", methods=["GET"])
 def api_schedule_current():
     """Get what's currently scheduled for right now."""
@@ -229,39 +190,7 @@ def api_schedule_current():
                     }
                 )
 
-        # No slot - check default
-        default = schedule_manager.get_default()
-        if default:
-            if default["target_type"] == "instance":
-                instance = instance_manager.get_instance(default["target_id"])
-                return jsonify(
-                    {
-                        "success": True,
-                        "data": {
-                            "has_content": True,
-                            "source_type": "default",
-                            "target_type": "instance",
-                            "target_id": default["target_id"],
-                            "target_name": instance.name if instance else "Unknown",
-                            "instance": {"name": instance.name} if instance else None,
-                        },
-                    }
-                )
-            else:
-                playlist = playlist_manager.get_playlist(default["target_id"])
-                return jsonify(
-                    {
-                        "success": True,
-                        "data": {
-                            "has_content": True,
-                            "source_type": "default",
-                            "target_type": "playlist",
-                            "target_id": default["target_id"],
-                            "target_name": playlist.name if playlist else "Unknown",
-                        },
-                    }
-                )
-
+        # No slot assigned for current time
         return jsonify(
             {"success": True, "data": {"has_content": False, "source_type": "none"}}
         )

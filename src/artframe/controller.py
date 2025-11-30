@@ -43,11 +43,11 @@ class ArtframeController:
         self.display_controller = self._create_display_controller()
         self.scheduler = self._create_scheduler()
 
-        # Initialize plugin and playlist management
-        storage_dir = Path.home() / ".artframe" / "data"
-        self.instance_manager = InstanceManager(storage_dir)
-        self.playlist_manager = PlaylistManager(storage_dir)
-        self.schedule_manager = ScheduleManager(storage_dir)
+        # Initialize plugin and playlist management using config paths
+        data_dir = self.config_manager.get_data_dir()
+        self.instance_manager = InstanceManager(data_dir)
+        self.playlist_manager = PlaylistManager(data_dir)
+        self.schedule_manager = ScheduleManager(data_dir)
 
         # Create device config
         device_config = self._get_device_config()
@@ -78,15 +78,8 @@ class ArtframeController:
 
     def _create_storage_manager(self) -> StorageManager:
         """Create and configure storage manager."""
-        # Get cache config
-        cache_config = self.config_manager.config.get("artframe", {}).get("cache", {})
-
-        storage_dir = cache_config.get("cache_directory", "~/.artframe/cache")
-
-        # Expand user home directory
-        storage_dir = Path(storage_dir).expanduser()
-
-        return StorageManager(storage_dir=storage_dir)
+        cache_dir = self.config_manager.get_cache_dir()
+        return StorageManager(storage_dir=cache_dir)
 
     def _create_display_controller(self) -> DisplayController:
         """Create and configure display controller."""
@@ -95,22 +88,19 @@ class ArtframeController:
 
     def _create_scheduler(self) -> Scheduler:
         """Create and configure scheduler."""
-        scheduler_config = self.config_manager.config.get("artframe", {}).get("scheduler", {})
-
-        # For now, use a simple daily update time
-        # TODO: Replace with playlist-based scheduling
+        scheduler_config = self.config_manager.get_scheduler_config()
         update_time = scheduler_config.get("update_time", "06:00")
-        timezone = scheduler_config.get("timezone", "UTC")
-
+        timezone = self.config_manager.get_timezone()
         return Scheduler(update_time, timezone)
 
     def _get_device_config(self) -> Dict[str, Any]:
         """Get device configuration for image generation."""
-        display_config = self.config_manager.get_display_config()
+        width, height = self.config_manager.get_display_dimensions()
+        display_config = self.config_manager.get_display_config().get("config", {})
 
         return {
-            "width": display_config.get("width", 600),
-            "height": display_config.get("height", 448),
+            "width": width,
+            "height": height,
             "rotation": display_config.get("rotation", 0),
             "color_mode": "grayscale",  # E-ink displays are typically grayscale
         }

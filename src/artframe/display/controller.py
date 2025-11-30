@@ -37,7 +37,8 @@ class DisplayController:
         driver_name = self.config.get("driver", "mock")
         driver_config = self.config.get("config", {})
 
-        if driver_name == "waveshare":
+        if driver_name in ("waveshare", "spectra6"):
+            # spectra6 is an alias for waveshare (Spectra 6 is a Waveshare display)
             from .drivers import WaveshareDriver
 
             return cast(DriverInterface, WaveshareDriver(driver_config))

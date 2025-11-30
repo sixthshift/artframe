@@ -68,7 +68,7 @@ async function fetchCurrentDisplay() {
                             <div class="preview-placeholder">
                                 <div class="preview-icon">🖼️</div>
                                 <p class="preview-text">Physical E-ink Display</p>
-                                <p class="preview-note">Preview only available with mock driver</p>
+                                <p class="preview-note">Enable save_images in driver config for preview</p>
                             </div>
                         </div>
                     `;

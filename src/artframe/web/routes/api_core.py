@@ -195,25 +195,18 @@ def api_scheduler_resume():
 
 @bp.route("/api/source/stats")
 def api_source_stats():
-    """Get source statistics."""
-    controller = get_app().controller
+    """
+    Get source statistics.
 
-    try:
-        # Basic stats for now
-        return jsonify(
-            {
-                "success": True,
-                "data": {
-                    "provider": controller.config_manager.get_source_config().get(
-                        "provider", "Unknown"
-                    ),
-                    "total_photos": "N/A",  # TODO: Get from source plugin
-                    "album_name": controller.config_manager.get_source_config()
-                    .get("config", {})
-                    .get("album_id", "N/A"),
-                    "last_sync": "N/A",  # TODO: Track sync time
-                },
-            }
-        )
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    DEPRECATED: Sources are now managed as plugins.
+    Use /api/plugins/instances for plugin instance information.
+    """
+    return jsonify(
+        {
+            "success": True,
+            "data": {
+                "message": "Sources are now managed as plugins. Use /api/plugins/instances instead.",
+                "provider": "plugin-based",
+            },
+        }
+    )
