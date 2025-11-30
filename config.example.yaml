@@ -1,36 +1,64 @@
 # Artframe System Configuration
-# This file contains system-level settings only.
-# Plugin configurations are managed through the web UI (Plugins tab).
+#
+# This file configures the Artframe system itself.
+# Plugin settings are managed through the web UI, not here.
+#
+# Copy this file to one of:
+#   - config/artframe-laptop.yaml (development)
+#   - config/artframe-pi.yaml (production)
 
 artframe:
-  # Scheduler Configuration
-  scheduler:
-    timezone: "America/New_York"          # System timezone (e.g., Europe/London, Asia/Tokyo)
-    default_duration: 3600                # Default seconds to display each playlist item
-    refresh_interval: 86400               # Daily e-ink refresh for screen health (seconds)
-
-  # Display Hardware Configuration
+  # ============================================================
+  # DISPLAY - E-ink display hardware configuration
+  # ============================================================
   display:
-    driver: "spectra6"                    # Display driver: "spectra6" or "mock"
-    width: 600                            # Display width in pixels
-    height: 448                           # Display height in pixels
-    rotation: 0                           # Display rotation: 0, 90, 180, or 270 degrees
+    driver: "mock"                    # "waveshare" or "mock"
+    config:
+      # Common settings for all drivers
+      width: 800                      # Display width in pixels
+      height: 480                     # Display height in pixels
+      rotation: 0                     # 0, 90, 180, or 270 degrees
 
-  # Storage and Cache Configuration
-  cache:
-    cache_directory: "~/.artframe/cache"    # Path to content cache
-    max_size_mb: 500                        # Maximum cache size in megabytes
-    retention_days: 30                      # Days to keep cached content
+      # Waveshare-specific settings (ignored for mock driver)
+      model: "epd7in3e"               # Waveshare display model
+      gpio_pins:                      # GPIO pin mapping (Raspberry Pi)
+        busy: 24
+        reset: 17
+        dc: 25
+        cs: 8
 
-  # Logging Configuration
+      # Mock driver settings (ignored for waveshare)
+      save_images: true               # Save displayed images to disk
+      output_dir: "./data/output"     # Where to save images
+
+  # ============================================================
+  # STORAGE - Data and cache directories
+  # ============================================================
+  storage:
+    data_dir: "~/.artframe/data"      # Runtime data (instances, playlists, schedules)
+    cache_dir: "~/.artframe/cache"    # Content cache
+    cache_max_mb: 500                 # Maximum cache size in megabytes
+    cache_retention_days: 30          # Days to keep cached content
+
+  # ============================================================
+  # LOGGING - Log configuration
+  # ============================================================
   logging:
-    level: "INFO"                         # Log level: DEBUG, INFO, WARNING, ERROR
-    file: "~/.artframe/logs/artframe.log"  # Log file path
-    max_size_mb: 10                       # Max log file size before rotation
-    backup_count: 5                       # Number of rotated logs to keep
+    level: "INFO"                     # DEBUG, INFO, WARNING, ERROR
+    dir: "~/.artframe/logs"           # Log file directory
+    max_size_mb: 10                   # Max log file size before rotation
+    backup_count: 5                   # Number of rotated logs to keep
 
-  # Web Server Configuration
+  # ============================================================
+  # WEB - Web server settings
+  # ============================================================
   web:
-    host: "0.0.0.0"                       # Listen address (0.0.0.0 = all, 127.0.0.1 = localhost only)
-    port: 8000                            # Web server port
-    debug: false                          # Enable debug mode (development only)
+    host: "0.0.0.0"                   # Bind address (0.0.0.0 = all interfaces)
+    port: 8000                        # Web server port
+    debug: false                      # Debug mode (development only)
+
+  # ============================================================
+  # SCHEDULER - Time-based scheduling settings
+  # ============================================================
+  scheduler:
+    timezone: "UTC"                   # Timezone for schedule interpretation

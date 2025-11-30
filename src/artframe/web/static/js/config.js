@@ -316,18 +316,43 @@ async function restartApp() {
     restartBtn.disabled = true;
     restartBtn.textContent = '🔄 Restarting...';
 
-    try {
-        await fetch('/api/restart', { method: 'POST' });
-        showNotification('✓ Restart initiated. Page will reload in 5 seconds...', 'success');
+    // Fire restart request - don't await since server will die
+    fetch('/api/restart', { method: 'POST' }).catch(() => {});
 
-        setTimeout(() => {
-            window.location.reload();
-        }, 5000);
-    } catch (error) {
-        showNotification('✗ Restart failed: ' + error.message, 'error');
-        restartBtn.disabled = false;
-        restartBtn.textContent = '🔄 Restart';
-    }
+    // Show restarting message
+    showNotification('🔄 Restarting server...', 'info');
+
+    // Poll until server is back up
+    const maxAttempts = 30;  // 30 seconds max
+    let attempts = 0;
+
+    const pollServer = async () => {
+        attempts++;
+        try {
+            const response = await fetch('/api/status', {
+                method: 'GET',
+                cache: 'no-store'
+            });
+            if (response.ok) {
+                showNotification('✓ Server restarted successfully!', 'success');
+                setTimeout(() => window.location.reload(), 1000);
+                return;
+            }
+        } catch (e) {
+            // Server still down, keep polling
+        }
+
+        if (attempts < maxAttempts) {
+            setTimeout(pollServer, 1000);
+        } else {
+            showNotification('⚠️ Server taking longer than expected. Please refresh manually.', 'warning');
+            restartBtn.disabled = false;
+            restartBtn.textContent = '🔄 Restart';
+        }
+    };
+
+    // Start polling after a short delay to let server shut down
+    setTimeout(pollServer, 2000);
 }
 
 // Initialize

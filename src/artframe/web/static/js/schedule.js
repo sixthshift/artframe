@@ -6,7 +6,6 @@
 let currentSlots = {};  // Map of "day-hour" -> {target_type, target_id}
 let currentInstances = [];
 let currentPlaylists = [];
-let currentDefault = {};
 let currentTimeInterval = null;
 
 // Multi-select state
@@ -55,11 +54,8 @@ async function loadSchedules() {
         }
 
         currentSlots = result.slots || {};
-        currentDefault = result.default || {};
 
         renderTimetable();
-        renderDefaultContent();
-        updateStats();
 
     } catch (error) {
         console.error('Failed to load schedules:', error);
@@ -132,39 +128,13 @@ function renderCurrentStatus(status) {
     const icon = status.target_type === 'playlist' ? '📋' : '📷';
     let text = `${icon} ${status.target_name}`;
 
-    if (status.source_type === 'default') {
-        text += ' (default)';
-    } else if (status.day !== undefined && status.hour !== undefined) {
+    if (status.day !== undefined && status.hour !== undefined) {
         const dayName = DAY_NAMES[status.day];
         const hour = status.hour.toString().padStart(2, '0');
         text += ` (${dayName} ${hour}:00)`;
     }
 
     textElement.textContent = text;
-}
-
-function renderDefaultContent() {
-    const select = document.getElementById('default-instance-select');
-
-    // Build options: instances and playlists
-    let options = '<option value="">None (keep last displayed)</option>';
-    options += '<optgroup label="Instances">';
-    options += currentInstances.map(instance => {
-        const selected = currentDefault.target_type === 'instance' &&
-                        currentDefault.target_id === instance.id ? 'selected' : '';
-        return `<option value="instance:${instance.id}" ${selected}>📷 ${instance.name}</option>`;
-    }).join('');
-    options += '</optgroup>';
-
-    options += '<optgroup label="Playlists">';
-    options += currentPlaylists.map(playlist => {
-        const selected = currentDefault.target_type === 'playlist' &&
-                        currentDefault.target_id === playlist.id ? 'selected' : '';
-        return `<option value="playlist:${playlist.id}" ${selected}>📋 ${playlist.name}</option>`;
-    }).join('');
-    options += '</optgroup>';
-
-    select.innerHTML = options;
 }
 
 // ===== Timetable Rendering =====
@@ -655,40 +625,6 @@ async function clearSlot(day, hour) {
     }
 }
 
-async function saveDefaultContent() {
-    const select = document.getElementById('default-instance-select');
-    const value = select.value;
-
-    try {
-        let payload = {};
-        if (value) {
-            const [targetType, targetId] = value.split(':');
-            payload = {
-                target_type: targetType,
-                target_id: targetId
-            };
-        }
-
-        const response = await fetch('/api/schedules/default', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        showNotification('Default content updated', 'success');
-
-    } catch (error) {
-        console.error('Failed to update default content:', error);
-        showNotification('Failed to update default content: ' + error.message, 'error');
-    }
-}
-
 async function clearAllSlots() {
     if (!confirm('Are you sure you want to clear ALL scheduled slots? This cannot be undone.')) {
         return;
@@ -798,30 +734,6 @@ function renderLegend() {
         `;
     });
 
-    // Add default legend if set
-    if (currentDefault.target_id) {
-        const defaultInfo = getSlotInfo(currentDefault);
-        const icon = currentDefault.target_type === 'playlist' ? '📋' : '📷';
-        legendHTML += `
-            <div class="legend-item">
-                <span class="legend-color" style="background-color: #f0f0f0; border: 1px solid #ddd;"></span>
-                <span>Default: ${icon} ${defaultInfo.name}</span>
-            </div>
-        `;
-    }
-
     legendHTML += '</div>';
     legendContainer.innerHTML = legendHTML;
-}
-
-// ===== Stats =====
-
-function updateStats() {
-    const filledSlots = Object.keys(currentSlots).length;
-    const totalSlots = 7 * 24; // 7 days * 24 hours
-
-    document.getElementById('stat-entries').textContent = filledSlots;
-
-    const coveragePercent = Math.round((filledSlots / totalSlots) * 100);
-    document.getElementById('stat-coverage').textContent = coveragePercent + '%';
 }

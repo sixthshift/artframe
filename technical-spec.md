@@ -29,14 +29,11 @@ The project encompasses:
 
 ### Built-in Plugin Types
 **Content Plugins (shipped with Artframe):**
-- **Immich Photos** - Display photos from Immich server with optional AI style transformation
-- **Local Photos** - Slideshow from local filesystem directories
-- **Weather Dashboard** - Current conditions and forecast visualization
-- **Calendar View** - Daily agenda from calendar sources
-- **Clock/Date** - Customizable time and date displays
-- **RSS/News** - Headlines and summaries from feeds
-- **Quotes** - Daily inspirational or custom quote rotation
-- **System Stats** - Raspberry Pi monitoring dashboard
+- **Clock & Date** - Continuous time and date display with configurable formats
+- **Immich Photos** - Display photos from Immich server
+- **Immich Photos (AI Styled)** - Photos from Immich with optional AI style transformation
+- **Quote of the Day** - Daily inspirational quote rotation
+- **Word of the Day** - Vocabulary learning with definitions
 
 ### Stakeholders
 | Stakeholder | Role | Interest |
@@ -100,22 +97,28 @@ The project encompasses:
    - Live content preview window
    - Interactive controls for scheduler and manual operations
 
-3. **Playlist Management**
-   - Create named playlists
-   - Add plugin instances to playlists
-   - Configure display duration per item
-   - Set schedule per playlist (time-based, always-on)
-   - Sequential or random playback modes
-   - Conditional display rules (e.g., weather only in morning)
+3. **Slot-Based Scheduling**
+   - 7 days × 24 hours = 168 time slots
+   - Each slot can hold one assignment (instance or playlist)
+   - Bulk assignment for multiple slots at once
+   - Default fallback content when no slot is assigned
+   - Hour-based granularity for predictable scheduling
 
-4. **Instance Management**
+4. **Playlist Management**
+   - Create named playlists with multiple content items
+   - Three playback modes: sequential, random, weighted random
+   - Configure display duration per item
+   - Item weights for weighted random selection
+   - Conditional display rules per item
+
+5. **Instance Management**
    - Multiple instances per plugin type
    - Named instances for easy identification
    - Per-instance settings persistence
    - Clone/duplicate instance configurations
    - Test mode for individual instances
 
-5. **Display Management**
+6. **Display Management**
    - Real-time e-ink health monitoring
    - Aspect ratio detection and optimization
    - Universal image optimization pipeline
@@ -123,8 +126,8 @@ The project encompasses:
    - Display driver abstraction (support multiple e-ink models)
    - Mock display mode for development
 
-6. **Plugin Development Kit**
-   - ContentPlugin base class
+7. **Plugin Development Kit**
+   - BasePlugin base class with lifecycle hooks
    - Display utilities library (aspect ratio, text rendering, layout helpers)
    - Settings schema definition framework
    - Test harness for plugin development
@@ -207,39 +210,40 @@ graph TB
 
     subgraph "Raspberry Pi - Artframe Core"
         subgraph "Flask Web Server"
-            ROUTES[Web Routes]
-            API[REST APIs - Plugin/Playlist/Display]
+            subgraph "Modular Routes"
+                PAGES[pages.py - HTML]
+                APIPLUGINS[api_plugins.py]
+                APISCHEDULES[api_schedules.py]
+                APIPLAYLISTS[api_playlists.py]
+                APIDISPLAY[api_display.py]
+            end
             TEMPLATES[HTML Templates]
             STATIC[Static Assets - JS/CSS]
         end
 
         ORCHESTRATOR[Content Orchestrator]
-        PLUGINMGR[Plugin Manager]
+        SCHEDULEMGR[Schedule Manager - Slot-Based]
         PLAYLISTMGR[Playlist Manager]
         INSTANCEMGR[Instance Manager]
         CONFIG[Configuration Manager]
-        CACHE[Content Cache]
         DISPLAY[Display Controller]
-        SCHEDULER[Playlist Scheduler]
 
         subgraph "Plugin System"
-            PLUGINBASE[ContentPlugin Base Class]
-            PLUGINLOADER[Plugin Loader/Discovery]
-            PLUGINEXEC[Plugin Executor/Sandbox]
+            PLUGINBASE[BasePlugin Base Class]
+            PLUGINREGISTRY[Plugin Registry/Discovery]
         end
 
         subgraph "Built-in Plugins"
-            IMMICHPLUGIN[Immich Photos Plugin]
-            LOCALPLUGIN[Local Photos Plugin]
-            WEATHERPLUGIN[Weather Plugin]
             CLOCKPLUGIN[Clock Plugin]
-            QUOTEPLUGIN[Quotes Plugin]
+            IMMICHPLUGIN[Immich Plugin]
+            IMMICHSTYLE[Immich Photos - AI Styled]
+            QUOTEPLUGIN[Quote of the Day]
+            WORDPLUGIN[Word of the Day]
         end
 
         subgraph "Utilities"
-            DISPLAYUTILS[Display Utils Library]
-            TEXTRENDER[Text Rendering Utils]
-            LAYOUTUTILS[Layout Helpers]
+            DISPLAYUTILS[Display Utils]
+            TEXTRENDER[Text Rendering]
             LOGGER[Domain Logger]
         end
     end
@@ -247,45 +251,36 @@ graph TB
     subgraph "External Services"
         IMMICH[Immich Server]
         AI[AI Services]
-        WEATHER[Weather APIs]
         OTHER[Other APIs...]
     end
 
     EPAPER[E-ink Display Hardware]
 
-    BROWSER --> ROUTES
-    MOBILE --> ROUTES
-    ROUTES --> API
-    API --> ORCHESTRATOR
-    API --> PLUGINMGR
-    API --> PLAYLISTMGR
-    API --> INSTANCEMGR
+    BROWSER --> PAGES
+    MOBILE --> PAGES
+    PAGES --> ORCHESTRATOR
+    APIPLUGINS --> INSTANCEMGR
+    APISCHEDULES --> SCHEDULEMGR
+    APIPLAYLISTS --> PLAYLISTMGR
+    APIDISPLAY --> DISPLAY
 
+    ORCHESTRATOR --> SCHEDULEMGR
     ORCHESTRATOR --> PLAYLISTMGR
+    ORCHESTRATOR --> INSTANCEMGR
     ORCHESTRATOR --> DISPLAY
-    PLAYLISTMGR --> INSTANCEMGR
-    INSTANCEMGR --> PLUGINMGR
-    PLUGINMGR --> PLUGINLOADER
-    PLUGINMGR --> PLUGINEXEC
+    INSTANCEMGR --> PLUGINREGISTRY
 
-    PLUGINEXEC --> IMMICHPLUGIN
-    PLUGINEXEC --> LOCALPLUGIN
-    PLUGINEXEC --> WEATHERPLUGIN
-    PLUGINEXEC --> CLOCKPLUGIN
-    PLUGINEXEC --> QUOTEPLUGIN
+    PLUGINREGISTRY --> CLOCKPLUGIN
+    PLUGINREGISTRY --> IMMICHPLUGIN
+    PLUGINREGISTRY --> IMMICHSTYLE
+    PLUGINREGISTRY --> QUOTEPLUGIN
+    PLUGINREGISTRY --> WORDPLUGIN
 
-    PLUGINEXEC --> CACHE
-    PLUGINEXEC --> DISPLAYUTILS
-    PLUGINEXEC --> TEXTRENDER
-    PLUGINEXEC --> LAYOUTUTILS
-
-    SCHEDULER --> PLAYLISTMGR
     DISPLAY --> EPAPER
 
     IMMICHPLUGIN -.-> IMMICH
-    IMMICHPLUGIN -.-> AI
-    WEATHERPLUGIN -.-> WEATHER
-    QUOTEPLUGIN -.-> OTHER
+    IMMICHSTYLE -.-> IMMICH
+    IMMICHSTYLE -.-> AI
 ```
 
 ### Components & Responsibilities
@@ -293,30 +288,27 @@ graph TB
 | Component | Responsibility | Key Classes/Modules |
 |-----------|---------------|-------------------|
 | **Core System** |
-| Flask Web Server | Web dashboard and REST APIs | `app.py`, `routes.py`, templates |
-| Content Orchestrator | Coordinates playlist execution and display updates | `ContentOrchestrator` |
-| Plugin Manager | Discovery, loading, validation of plugins | `PluginManager` |
-| Playlist Manager | Manages playlists, sequences, scheduling | `PlaylistManager` |
-| Instance Manager | Manages plugin instance configs and lifecycle | `InstanceManager` |
-| Configuration Manager | System and per-instance settings persistence | `ConfigManager` |
-| Content Cache | Stores generated content for reuse | `ContentCache` |
-| Display Controller | Hardware abstraction for e-ink displays | `DisplayController` |
-| Playlist Scheduler | Time-based and event-based playlist triggers | `PlaylistScheduler` |
+| Flask Web Server | Web dashboard and REST APIs | `web/app.py`, `web/routes/` (modular) |
+| Content Orchestrator | Plugin-driven scheduling and content display | `scheduling/content_orchestrator.py` |
+| Plugin Registry | Discovery, loading, validation of plugins | `plugins/plugin_registry.py` |
+| Playlist Manager | Manages playlists and playback modes | `playlists/playlist_manager.py` |
+| Schedule Manager | Manages slot-based time scheduling | `playlists/schedule_manager.py` |
+| Instance Manager | Manages plugin instance configs and lifecycle | `plugins/instance_manager.py` |
+| Configuration Manager | System settings with env-specific configs | `config/manager.py` |
+| Display Controller | Hardware abstraction for e-ink displays | `display/controller.py` |
 | **Plugin System** |
-| ContentPlugin Base | Abstract base class for all plugins | `ContentPlugin` (ABC) |
-| Plugin Loader | Discovers and imports plugin modules | `PluginLoader` |
-| Plugin Executor | Sandboxed execution environment for plugins | `PluginExecutor` |
+| BasePlugin | Abstract base class for all plugins | `plugins/base_plugin.py` |
+| Plugin Registry | Discovers and imports plugin modules | `plugins/plugin_registry.py` |
 | **Built-in Plugins** |
-| Immich Photos | Fetch photos from Immich with optional AI styling | `ImmichPhotosPlugin` |
-| Local Photos | Display from local filesystem directories | `LocalPhotosPlugin` |
-| Weather Dashboard | Weather visualizations from APIs | `WeatherPlugin` |
-| Clock/Date | Time and date displays | `ClockPlugin` |
-| Quotes | Daily quote rotation | `QuotesPlugin` |
+| Clock | Continuous time and date display | `plugins/builtin/clock/` |
+| Immich | Photos from Immich server | `plugins/builtin/immich/` |
+| Immich Photos | AI styled photos from Immich | `plugins/builtin/immich_photos/` |
+| Quote of the Day | Daily inspirational quotes | `plugins/builtin/quote_of_the_day/` |
+| Word of the Day | Vocabulary learning | `plugins/builtin/word_of_the_day/` |
 | **Utilities** |
-| Display Utils | Aspect ratio, scaling, optimization | `display_utils.py` |
-| Text Rendering | Font rendering, text layout | `text_render.py` |
-| Layout Helpers | Grid, flex, positioning utilities | `layout_utils.py` |
-| Domain Logger | Per-plugin logging with context | `logger.py` |
+| Display Utils | Aspect ratio, scaling, optimization | `utils/display_utils.py` |
+| Text Rendering | Font rendering, text layout | `utils/text_render.py` |
+| Domain Logger | Per-domain logging with context | `utils/logger.py` |
 
 ### Data Flow
 
@@ -334,15 +326,15 @@ graph TB
    - Instance Manager creates named instance with config
    - Instance appears in available content sources
 
-3. **Playlist Execution Flow:**
-   - Scheduler triggers playlist at scheduled time
-   - Playlist Manager retrieves next item (plugin instance)
-   - Instance Manager loads instance configuration
-   - Plugin Executor runs plugin with settings and device config
-   - Plugin generates PIL.Image content
-   - Content cached by Content Cache
-   - Display Controller optimizes and renders to e-ink
-   - Scheduler waits for configured duration, then repeats
+3. **Content Orchestration Flow (Slot-Based):**
+   - ContentOrchestrator checks current hour against schedule slots
+   - If slot has assignment, resolves to instance or playlist
+   - For playlists, selects item based on playback mode (sequential/random/weighted)
+   - Plugin's `run_active()` method invoked in dedicated thread
+   - Plugin manages its own refresh loop while active
+   - On hour boundary, ContentOrchestrator checks for slot change
+   - If slot changes, signals current plugin to stop
+   - New plugin activated for new slot
 
 4. **Manual Content Update Flow:**
    - User clicks "Refresh" in web UI
@@ -365,12 +357,11 @@ graph TB
 erDiagram
     PLUGIN {
         string id PK
-        string name
+        string display_name
         string version
-        string author
-        string category
-        json metadata
-        datetime installed_at
+        string description
+        string plugin_class
+        json settings_schema
     }
 
     PLUGIN_INSTANCE {
@@ -379,71 +370,72 @@ erDiagram
         string name
         json settings
         boolean enabled
-        datetime created_at
-        datetime updated_at
+    }
+
+    TIME_SLOT {
+        int day PK
+        int hour PK
+        string target_type
+        string target_id FK
+    }
+
+    SCHEDULE_DEFAULT {
+        string target_type
+        string target_id FK
     }
 
     PLAYLIST {
         string id PK
         string name
-        string schedule_type
-        json schedule_config
+        string playback_mode
         boolean enabled
-        datetime created_at
     }
 
     PLAYLIST_ITEM {
         int id PK
         string playlist_id FK
         string instance_id FK
-        int order_index
         int duration_seconds
+        float weight
         json conditions
-    }
-
-    CONTENT_CACHE {
-        string id PK
-        string instance_id FK
-        datetime generated_at
-        string file_path
-        int file_size
-        json metadata
-    }
-
-    DISPLAY_HISTORY {
-        int id PK
-        string instance_id FK
-        string cache_id FK
-        datetime displayed_at
-        int display_duration
-    }
-
-    SYSTEM_CONFIG {
-        string key PK
-        json value
-        datetime updated_at
     }
 
     PLUGIN ||--o{ PLUGIN_INSTANCE : "has"
     PLUGIN_INSTANCE ||--o{ PLAYLIST_ITEM : "used in"
-    PLUGIN_INSTANCE ||--o{ CONTENT_CACHE : "generates"
+    PLUGIN_INSTANCE ||--o{ TIME_SLOT : "assigned to"
     PLAYLIST ||--o{ PLAYLIST_ITEM : "contains"
-    CONTENT_CACHE ||--o{ DISPLAY_HISTORY : "displayed as"
+    PLAYLIST ||--o{ TIME_SLOT : "assigned to"
 ```
 
 ### Data Structures
 
 ```python
+# Enums
+class PlaybackMode(Enum):
+    SEQUENTIAL = "sequential"
+    RANDOM = "random"
+    WEIGHTED_RANDOM = "weighted_random"
+
+class TargetType(Enum):
+    INSTANCE = "instance"
+    PLAYLIST = "playlist"
+
+# Slot-based scheduling
+@dataclass
+class TimeSlot:
+    day: int           # 0=Monday, 6=Sunday
+    hour: int          # 0-23
+    target_type: str   # "instance" or "playlist"
+    target_id: str     # ID of the target
+
 # Plugin system models
 @dataclass
 class PluginMetadata:
     id: str
-    name: str
+    display_name: str
     version: str
-    author: str
     description: str
-    category: str
-    dependencies: List[str]
+    plugin_class: str
     settings_schema: Dict[str, Any]
 
 @dataclass
@@ -453,63 +445,59 @@ class PluginInstance:
     name: str
     settings: Dict[str, Any]
     enabled: bool
-    created_at: datetime
-    updated_at: datetime
+
+@dataclass
+class PlaylistItem:
+    instance_id: str
+    duration_seconds: int
+    conditions: Optional[Dict[str, Any]] = None
+    weight: float = 1.0  # For weighted random selection
 
 @dataclass
 class Playlist:
     id: str
     name: str
-    schedule_type: str  # 'always', 'time', 'cron'
-    schedule_config: Dict[str, Any]
-    items: List['PlaylistItem']
+    playback_mode: PlaybackMode
+    items: List[PlaylistItem]
     enabled: bool
 
+# Content orchestration output
 @dataclass
-class PlaylistItem:
+class ContentSource:
     instance_id: str
-    order: int
-    duration_seconds: int
-    conditions: Optional[Dict[str, Any]] = None
-
-@dataclass
-class ContentCache:
-    id: str
-    instance_id: str
-    generated_at: datetime
-    file_path: Path
-    metadata: Dict[str, Any]
-
-@dataclass
-class DisplayState:
-    current_instance_id: str
-    current_playlist_id: str
-    last_refresh: datetime
-    next_scheduled: datetime
-    error_count: int
+    playlist_id: Optional[str]
+    playlist_item_index: Optional[int]
+    duration_seconds: Optional[int]
 ```
 
 ### Core APIs
 
 | Method | Description | Return Type |
 |--------|-------------|-------------|
-| **Plugin Management** |
-| `discover_plugins()` | Scans and loads available plugins | `List[PluginMetadata]` |
-| `get_plugin(plugin_id)` | Retrieves plugin by ID | `PluginMetadata` |
-| `validate_plugin(plugin_id)` | Checks plugin dependencies and validity | `Tuple[bool, List[str]]` |
+| **Plugin Registry** |
+| `discover_plugins(plugins_dir)` | Scans for plugin-info.json files | `List[PluginMetadata]` |
+| `load_plugins(plugins_dir)` | Loads all plugins into registries | `None` |
+| `get_plugin(plugin_id)` | Retrieves plugin instance by ID | `BasePlugin` |
+| `list_plugin_metadata()` | Lists all plugin metadata | `List[PluginMetadata]` |
 | **Instance Management** |
 | `create_instance(plugin_id, name, settings)` | Creates plugin instance | `PluginInstance` |
 | `update_instance(instance_id, settings)` | Updates instance settings | `bool` |
 | `delete_instance(instance_id)` | Removes instance | `bool` |
 | `list_instances(plugin_id=None)` | Lists instances, optionally filtered | `List[PluginInstance]` |
+| **Schedule Management** |
+| `set_slot(day, hour, target_type, target_id)` | Assign content to a time slot | `None` |
+| `get_slot(day, hour)` | Get assignment for a specific slot | `Optional[TimeSlot]` |
+| `get_current_slot()` | Get slot for current time | `Optional[TimeSlot]` |
+| `bulk_set_slots(slots)` | Assign multiple slots at once | `None` |
+| `set_default(target_type, target_id)` | Set fallback content | `None` |
 | **Playlist Management** |
-| `create_playlist(name, schedule)` | Creates new playlist | `Playlist` |
-| `add_to_playlist(playlist_id, instance_id, duration)` | Adds item to playlist | `bool` |
-| `execute_playlist_item(item)` | Executes single playlist item | `PIL.Image` |
-| **Content Management** |
-| `get_cached_content(instance_id)` | Retrieves cached content | `Optional[ContentCache]` |
-| `save_content(instance_id, image, metadata)` | Caches generated content | `ContentCache` |
-| `purge_old_cache(days)` | Removes old cached content | `int` |
+| `create_playlist(name, playback_mode)` | Creates new playlist | `Playlist` |
+| `add_item(playlist_id, instance_id, duration, weight)` | Adds item to playlist | `bool` |
+| `update_playback_mode(playlist_id, mode)` | Changes playback mode | `bool` |
+| **Content Orchestration** |
+| `get_current_content_source()` | Determines what to display now | `Optional[ContentSource]` |
+| `should_update_display(content_source)` | Checks if refresh needed | `bool` |
+| `execute_content(content_source)` | Runs plugin to generate image | `PIL.Image` |
 
 ## 6. Design Patterns & Principles
 
@@ -517,24 +505,31 @@ class DisplayState:
 
 1. **Plugin Pattern (Core Architecture)**
    - **Purpose:** Enable extensible content generation system
-   - **Implementation:** Abstract base class with discovery and loading
+   - **Implementation:** Abstract base class with discovery via plugin-info.json
    ```python
-   class ContentPlugin(ABC):
+   class BasePlugin(ABC):
        @abstractmethod
        def generate_image(self, settings: Dict, device_config: Dict) -> PIL.Image:
            """Generate content image for display"""
            pass
 
-       @abstractmethod
+       def run_active(self, display_controller, settings, device_config, stop_event) -> None:
+           """Manage refresh loop while plugin is active (optional override)"""
+           # Default: generate once. Plugins like Clock override for continuous updates.
+           pass
+
        def validate_settings(self, settings: Dict) -> Tuple[bool, str]:
            """Validate plugin settings"""
            pass
 
-       @property
-       @abstractmethod
-       def metadata(self) -> PluginMetadata:
-           """Return plugin metadata"""
-           pass
+       def get_cache_ttl(self, settings: Dict) -> int:
+           """Return cache time-to-live in seconds"""
+           return 3600  # Default 1 hour
+
+       # Lifecycle hooks
+       def on_enable(self, settings: Dict) -> None: pass
+       def on_disable(self, settings: Dict) -> None: pass
+       def on_settings_change(self, old: Dict, new: Dict) -> None: pass
    ```
 
 2. **Factory Pattern**
@@ -611,69 +606,89 @@ class DisplayError(ArtframeError): pass
 
 ## 7. APIs & Interfaces
 
-### REST/GraphQL/gRPC Endpoints
+### REST API Endpoints
 
-While Artframe primarily consumes APIs, it exposes a minimal local REST API for management:
+Artframe exposes a comprehensive REST API organized by domain:
 
-| Endpoint | Method | Description | Request | Response |
-|----------|--------|-------------|---------|----------|
-| `/api/status` | GET | System status | - | `{"status": "running", "last_update": "2024-01-01T12:00:00"}` |
-| `/api/refresh` | POST | Trigger refresh | - | `{"success": true, "message": "Refresh initiated"}` |
-| `/api/config` | GET | View configuration | - | Current configuration JSON |
-| `/api/config` | PATCH | Update configuration | Partial config JSON | `{"success": true, "reloaded": true}` |
-| `/api/cache/stats` | GET | Cache statistics | - | `{"total_images": 50, "size_mb": 245}` |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| **Plugin Management** (`/api/plugins/`) |
+| `/api/plugins` | GET | List all available plugins |
+| `/api/plugins/<id>` | GET | Get plugin details and settings schema |
+| `/api/plugins/instances` | GET | List all plugin instances |
+| `/api/plugins/instances` | POST | Create new plugin instance |
+| `/api/plugins/instances/<id>` | GET | Get instance details |
+| `/api/plugins/instances/<id>` | PUT | Update instance settings |
+| `/api/plugins/instances/<id>` | DELETE | Delete instance |
+| **Schedule Management** (`/api/schedules/`) |
+| `/api/schedules/slots` | GET | Get all schedule slots |
+| `/api/schedules/slots` | POST | Set a single slot assignment |
+| `/api/schedules/slots/bulk` | POST | Bulk set multiple slots |
+| `/api/schedules/slots/<day>/<hour>` | DELETE | Clear a slot |
+| `/api/schedules/default` | GET | Get default content |
+| `/api/schedules/default` | POST | Set default content |
+| **Playlist Management** (`/api/playlists/`) |
+| `/api/playlists` | GET | List all playlists |
+| `/api/playlists` | POST | Create new playlist |
+| `/api/playlists/<id>` | GET | Get playlist details |
+| `/api/playlists/<id>` | PUT | Update playlist |
+| `/api/playlists/<id>` | DELETE | Delete playlist |
+| `/api/playlists/<id>/items` | POST | Add item to playlist |
+| **Display Control** (`/api/display/`) |
+| `/api/display/refresh` | POST | Trigger immediate display refresh |
+| `/api/display/status` | GET | Get current display status |
+| **System** (`/api/system/`) |
+| `/api/system/status` | GET | Get system health and stats |
+| `/api/system/logs` | GET | Get recent log entries |
 
 ### Input/Output Data Formats
+
+**Configuration Files:**
+Environment-specific configuration files are used (no base config to avoid ambiguity):
+- `config/artframe-laptop.yaml` - Development with mock display
+- `config/artframe-pi.yaml` - Production on Raspberry Pi
 
 **Configuration File Format (YAML):**
 ```yaml
 artframe:
   schedule:
-    update_time: "06:00"  # Daily update time
-    timezone: "America/New_York"
-  
+    update_time: "06:00"
+    timezone: "Australia/Sydney"
+
   source:
-    provider: "immich"
-    config:
-      server_url: "https://immich.example.com"
-      api_key: "${IMMICH_API_KEY}"  # Environment variable
-      album_id: "family-photos"
-      selection: "random"  # random, newest, oldest
-  
+    provider: "none"  # Plugins handle their own sources
+    config: {}
+
   style:
-    provider: "nanobanana"
-    config:
-      api_url: "https://api.nanobanana.com"
-      api_key: "${NANOBANANA_API_KEY}"
-      styles:
-        - "ghibli"
-        - "impressionist"
-        - "watercolor"
-        - "oil_painting"
-        - "pencil_sketch"
-      rotation: "daily"  # daily, random, sequential
-  
+    provider: "none"  # Optional AI styling per plugin
+    config: {}
+
   display:
-    driver: "spectra6"
+    driver: "mock"  # or "waveshare" for e-ink
     config:
-      gpio_pins:
-        busy: 24
-        reset: 17
-        dc: 25
-        cs: 8
-      rotation: 0  # 0, 90, 180, 270
-      show_metadata: true
-  
+      width: 600
+      height: 448
+      save_images: true
+      output_dir: "./data/display_output"
+
+  storage:
+    directory: "./data/storage"
+
   cache:
-    directory: "/var/cache/artframe"
-    max_images: 100
+    cache_directory: "./data/cache"
     max_size_mb: 500
     retention_days: 30
-  
+
   logging:
-    level: "INFO"
-    file: "/var/log/artframe/artframe.log"
+    level: "DEBUG"
+    file: "./logs/artframe.log"
 ```
+
+**Runtime Data Storage:**
+Plugin instances, playlists, and schedules are stored as JSON in `~/.artframe/data/`:
+- `plugin_instances.json` - All plugin instances with settings
+- `playlists.json` - Playlist definitions
+- `schedules.json` - Time slot assignments and default content
 
 ### External Integrations
 
@@ -1040,6 +1055,6 @@ test_data:
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: 2024*  
+*Document Version: 3.1 - Slot-Based Scheduling*
+*Last Updated: November 2025*
 *Author: System Architect*

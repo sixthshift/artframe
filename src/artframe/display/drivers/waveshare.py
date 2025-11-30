@@ -37,6 +37,17 @@ class WaveshareDriver(DriverInterface):
         self.rotation = self.config.get("rotation", 0)
         self.show_metadata = self.config.get("show_metadata", True)
 
+        # Optional preview/tracking capabilities (same as mock driver)
+        self.save_images = self.config.get("save_images", False)
+        self.output_dir = Path(self.config.get("output_dir", "/tmp/artframe_preview"))
+        if self.save_images:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        self.display_count = 0
+        self.current_image: Optional[Image.Image] = None
+        self.current_image_path: Optional[Path] = None
+        self.last_plugin_info: Dict[str, Any] = {}
+
         # Dynamically import the appropriate Waveshare display module
         self.epd_module = self._load_display_module()
         self.epd: Optional[Any] = None
@@ -117,7 +128,9 @@ class WaveshareDriver(DriverInterface):
         else:
             return (width, height)
 
-    def display_image(self, image: Image.Image) -> None:
+    def display_image(
+        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+    ) -> None:
         """Display an image on the Waveshare display."""
         if not self.initialized:
             self.initialize()
@@ -128,6 +141,21 @@ class WaveshareDriver(DriverInterface):
         try:
             # Prepare image for display
             processed_image = self._prepare_image(image)
+
+            # Track state
+            self.current_image = processed_image
+            self.last_plugin_info = plugin_info if plugin_info is not None else {}
+            self.display_count += 1
+
+            # Save preview image if configured
+            if self.save_images:
+                filename = f"display_{self.display_count:04d}.png"
+                output_path = self.output_dir / filename
+                processed_image.save(output_path)
+
+                latest_path = self.output_dir / "latest.png"
+                processed_image.save(latest_path)
+                self.current_image_path = latest_path
 
             # Convert to display buffer format
             buffer = self.epd.getbuffer(processed_image)
@@ -196,3 +224,21 @@ class WaveshareDriver(DriverInterface):
             image = image.rotate(-self.rotation, expand=True)
 
         return image
+
+    # Interface method implementations
+
+    def get_current_image_path(self) -> Optional[Path]:
+        """Get path to current displayed image (if save_images is enabled)."""
+        return self.current_image_path
+
+    def get_last_displayed_image(self) -> Optional[Image.Image]:
+        """Get the last displayed image."""
+        return self.current_image
+
+    def get_display_count(self) -> int:
+        """Get number of images displayed."""
+        return self.display_count
+
+    def get_last_plugin_info(self) -> Dict[str, Any]:
+        """Get info about last plugin that generated content."""
+        return self.last_plugin_info

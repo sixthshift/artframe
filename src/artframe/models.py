@@ -143,16 +143,7 @@ class TimeSlot:
 class ScheduleConfig:
     """Global schedule configuration."""
 
-    default_target_type: Optional[str] = None  # "instance" or "playlist"
-    default_target_id: Optional[str] = None  # Fallback when slot is empty
-
-    # Legacy compatibility
-    @property
-    def default_instance_id(self) -> Optional[str]:
-        """Backward compatibility."""
-        if self.default_target_type == TargetType.INSTANCE.value:
-            return self.default_target_id
-        return None
+    pass  # Placeholder for future config options
 
 
 @dataclass

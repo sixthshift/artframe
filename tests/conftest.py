@@ -23,35 +23,27 @@ def temp_dir():
 
 @pytest.fixture
 def sample_config():
-    """Sample configuration for testing."""
+    """Sample system configuration for testing."""
     return {
         "artframe": {
-            "source": {
-                "provider": "immich",
-                "config": {"server_url": "http://localhost:2283", "api_key": "test_key"},
+            "display": {
+                "driver": "mock",
+                "config": {"width": 800, "height": 480, "rotation": 0},
             },
-            "style": {
-                "provider": "nanobanana",
-                "config": {
-                    "api_url": "http://localhost:8080",
-                    "api_key": "test_style_key",
-                    "styles": ["ghibli", "watercolor"],
-                },
-            },
-            "display": {"driver": "mock", "config": {"width": 600, "height": 448, "rotation": 0}},
-            "storage": {"directory": "/tmp/test_cache"},
-            "scheduler": {
-                "timezone": "America/New_York",
-                "default_duration": 3600,
-                "refresh_interval": 86400,
+            "storage": {
+                "data_dir": "/tmp/test_data",
+                "cache_dir": "/tmp/test_cache",
+                "cache_max_mb": 500,
+                "cache_retention_days": 30,
             },
             "logging": {
                 "level": "INFO",
-                "file": "/tmp/test.log",
+                "dir": "/tmp/test_logs",
                 "max_size_mb": 10,
                 "backup_count": 5,
             },
             "web": {"host": "127.0.0.1", "port": 8000, "debug": False},
+            "scheduler": {"timezone": "UTC"},
         }
     }
 

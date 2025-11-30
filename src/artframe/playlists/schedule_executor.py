@@ -71,14 +71,7 @@ class ScheduleExecutor:
                 logger.debug(f"Current slot is a playlist: {slot.target_id}")
                 return None
 
-        # Fall back to default (only if it's an instance)
-        default = self.schedule_manager.get_default()
-        if default and default.get("target_type") == TargetType.INSTANCE.value:
-            default_id = default.get("target_id")
-            logger.debug(f"No slot match, using default: {default_id}")
-            return default_id
-
-        logger.debug("No slot match and no default instance configured")
+        logger.debug("No slot assigned for current time")
         return None
 
     def should_update_display(self) -> bool:
@@ -181,7 +174,6 @@ class ScheduleExecutor:
             "instance_id": instance_id,
             "instance_name": instance.name,
             "plugin_id": instance.plugin_id,
-            "is_default": slot is None,  # True if showing default, False if from slot
         }
 
         if slot:

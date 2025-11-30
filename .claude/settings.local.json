@@ -23,7 +23,10 @@
       "Bash(mv:*)",
       "Bash(xargs ls:*)",
       "Bash(curl:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(git commit:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && cat {}')",
+      "Bash(python -m pytest:*)"
     ],
     "deny": [],
     "ask": []
