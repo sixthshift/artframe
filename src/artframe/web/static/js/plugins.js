@@ -14,33 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInstances();
 });
 
-// Tab switching
-function switchTab(tabName, event) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // If called from click event, set clicked button as active
-    if (event && event.target) {
-        event.target.classList.add('active');
-    } else {
-        // If called programmatically, find the right button
-        const buttons = document.querySelectorAll('.tab-btn');
-        buttons.forEach((btn, index) => {
-            if ((tabName === 'plugins' && index === 0) || (tabName === 'instances' && index === 1)) {
-                btn.classList.add('active');
-            }
-        });
-    }
-
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
-}
-
 // ===== Plugins Tab =====
 
 async function loadPlugins() {
@@ -131,61 +104,48 @@ function renderInstances(instances) {
         container.innerHTML = `
             <div class="empty-state">
                 <h3>No instances yet</h3>
-                <p>Create a plugin instance from the Available Plugins tab to get started.</p>
+                <p>Create a plugin instance from the Available Plugins panel to get started.</p>
             </div>
         `;
         return;
     }
 
     const instancesHTML = `
-        <table class="instances-table">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Plugin</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${instances.map(instance => {
-                    const plugin = currentPlugins.find(p => p.id === instance.plugin_id);
-                    const pluginName = plugin ? plugin.display_name : instance.plugin_id;
-                    const createdDate = new Date(instance.created_at).toLocaleDateString();
+        <div class="instances-list-items">
+            ${instances.map(instance => {
+                const plugin = currentPlugins.find(p => p.id === instance.plugin_id);
+                const pluginName = plugin ? plugin.display_name : instance.plugin_id;
 
-                    return `
-                        <tr>
-                            <td><strong>${instance.name}</strong></td>
-                            <td>${pluginName}</td>
-                            <td>
-                                <span class="status-badge ${instance.enabled ? 'enabled' : 'disabled'}">
-                                    ${instance.enabled ? 'Enabled' : 'Disabled'}
-                                </span>
-                            </td>
-                            <td>${createdDate}</td>
-                            <td>
-                                <div class="instance-actions">
-                                    <button class="btn btn-small btn-secondary" onclick="editInstance('${instance.id}')">
-                                        Edit
-                                    </button>
-                                    <button class="btn btn-small ${instance.enabled ? 'btn-warning' : 'btn-primary'}"
-                                            onclick="toggleInstance('${instance.id}', ${instance.enabled})">
-                                        ${instance.enabled ? 'Disable' : 'Enable'}
-                                    </button>
-                                    <button class="btn btn-small btn-secondary" onclick="testInstance('${instance.id}')">
-                                        Test
-                                    </button>
-                                    <button class="btn btn-small btn-danger" onclick="deleteInstance('${instance.id}', '${instance.name}')">
-                                        Delete
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        </table>
+                return `
+                    <div class="instance-item">
+                        <div class="instance-item-header">
+                            <h4 class="instance-item-title">${instance.name}</h4>
+                            <span class="status-badge ${instance.enabled ? 'enabled' : 'disabled'}">
+                                ${instance.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="instance-item-meta">
+                            ${pluginName}
+                        </div>
+                        <div class="instance-actions">
+                            <button class="btn btn-small btn-secondary" onclick="editInstance('${instance.id}')">
+                                Edit
+                            </button>
+                            <button class="btn btn-small ${instance.enabled ? 'btn-warning' : 'btn-primary'}"
+                                    onclick="toggleInstance('${instance.id}', ${instance.enabled})">
+                                ${instance.enabled ? 'Disable' : 'Enable'}
+                            </button>
+                            <button class="btn btn-small btn-secondary" onclick="testInstance('${instance.id}')">
+                                Test
+                            </button>
+                            <button class="btn btn-small btn-danger" onclick="deleteInstance('${instance.id}', '${instance.name}')">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
     `;
 
     container.innerHTML = instancesHTML;
@@ -407,9 +367,6 @@ document.getElementById('instance-form').addEventListener('submit', async functi
         // Close modal and reload instances
         closeInstanceModal();
         await loadInstances();
-
-        // Switch to instances tab
-        switchTab('instances');
 
         showNotification(instanceId ? 'Instance updated successfully' : 'Instance created successfully', 'success');
 

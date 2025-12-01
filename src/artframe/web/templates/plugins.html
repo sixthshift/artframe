@@ -4,34 +4,31 @@
 
 {% block content %}
 <div class="plugins-page">
-    <!-- Tab Navigation -->
-    <div class="tab-navigation">
-        <button class="tab-btn active" onclick="switchTab('plugins', event)">Available Plugins</button>
-        <button class="tab-btn" onclick="switchTab('instances', event)">Plugin Instances</button>
-    </div>
-
-    <!-- Available Plugins Tab -->
-    <div id="plugins-tab" class="tab-content active">
-        <div class="card">
-            <div class="card-header">
-                <h2>Available Plugins</h2>
-                <p class="subtitle">Browse and use content plugins</p>
-            </div>
-            <div id="plugins-list">
-                <p class="loading">Loading plugins...</p>
+    <!-- Side-by-side layout -->
+    <div class="plugins-layout">
+        <!-- Available Plugins Panel -->
+        <div class="plugins-panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Available Plugins</h2>
+                    <p class="subtitle">Browse and use content plugins</p>
+                </div>
+                <div id="plugins-list">
+                    <p class="loading">Loading plugins...</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Plugin Instances Tab -->
-    <div id="instances-tab" class="tab-content">
-        <div class="card">
-            <div class="card-header">
-                <h2>Plugin Instances</h2>
-                <p class="subtitle">Manage your configured plugin instances</p>
-            </div>
-            <div id="instances-list">
-                <p class="loading">Loading instances...</p>
+        <!-- Plugin Instances Panel -->
+        <div class="instances-panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Plugin Instances</h2>
+                    <p class="subtitle">Manage your configured plugin instances</p>
+                </div>
+                <div id="instances-list">
+                    <p class="loading">Loading instances...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -71,52 +68,38 @@
 
 <style>
 .plugins-page {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
 }
 
-.tab-navigation {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #e0e0e0;
+.plugins-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
 }
 
-.tab-btn {
-    padding: 12px 24px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 500;
-    color: #666;
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
+.plugins-panel,
+.instances-panel {
+    min-width: 0;
 }
 
-.tab-btn:hover {
-    color: #333;
-    background: #f5f5f5;
-}
-
-.tab-btn.active {
-    color: #4CAF50;
-    border-bottom-color: #4CAF50;
-}
-
-.tab-content {
-    display: none;
-}
-
-.tab-content.active {
-    display: block;
+.plugins-panel .card,
+.instances-panel .card {
+    height: 100%;
 }
 
 .plugins-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     margin-top: 20px;
+}
+
+@media (max-width: 1200px) {
+    .plugins-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 .plugin-card {
@@ -149,15 +132,54 @@
     line-height: 1.5;
 }
 
+.instances-list-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.instance-item {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    background: #fff;
+    transition: all 0.2s;
+}
+
+.instance-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.instance-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.instance-item-title {
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.instance-item-meta {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+}
+
 .instances-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
+    font-size: 14px;
 }
 
 .instances-table th,
 .instances-table td {
-    padding: 12px;
+    padding: 10px 8px;
     text-align: left;
     border-bottom: 1px solid #e0e0e0;
 }
@@ -166,6 +188,7 @@
     background: #f9f9f9;
     font-weight: 600;
     color: #333;
+    font-size: 13px;
 }
 
 .instances-table tr:hover {
@@ -192,12 +215,17 @@
 
 .instance-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
 }
 
 .instance-actions button {
     padding: 6px 12px;
     font-size: 12px;
+}
+
+.instance-item .instance-actions {
+    margin-top: 4px;
 }
 
 /* Modal Styles */
