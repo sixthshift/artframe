@@ -13,12 +13,6 @@ def index():
     return render_template("dashboard.html")
 
 
-@bp.route("/display")
-def display_page():
-    """Render display page."""
-    return render_template("display.html")
-
-
 @bp.route("/system")
 def system_page():
     """Render system page."""
