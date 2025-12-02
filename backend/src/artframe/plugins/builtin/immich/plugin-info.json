@@ -1,0 +1,86 @@
+{
+  "id": "immich",
+  "display_name": "Immich",
+  "class": "Immich",
+  "description": "Syncs and displays photos from an Immich album. Downloads all photos locally and keeps them in sync with the server.",
+  "author": "Artframe",
+  "version": "1.0.0",
+  "icon": "icon.png",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Immich Server Connection",
+        "fields": [
+          {
+            "key": "immich_url",
+            "type": "string",
+            "label": "Immich Server URL",
+            "placeholder": "https://immich.example.com",
+            "required": true,
+            "help": "URL of your Immich server (e.g., https://immich.example.com)"
+          },
+          {
+            "key": "immich_api_key",
+            "type": "password",
+            "label": "Immich API Key",
+            "required": true,
+            "help": "API key from Immich user settings (Settings → Account → API Keys)"
+          }
+        ]
+      },
+      {
+        "title": "Album Selection",
+        "fields": [
+          {
+            "key": "album_id",
+            "type": "string",
+            "label": "Album ID",
+            "placeholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+            "help": "UUID of the album to sync. Leave empty to sync all photos."
+          },
+          {
+            "key": "max_photos",
+            "type": "number",
+            "label": "Maximum Photos to Sync",
+            "default": 0,
+            "min": 0,
+            "max": 10000,
+            "help": "Limit number of photos synced (0 = unlimited)"
+          }
+        ]
+      },
+      {
+        "title": "Display Options",
+        "fields": [
+          {
+            "key": "selection_mode",
+            "type": "select",
+            "label": "Photo Selection Mode",
+            "default": "random",
+            "options": [
+              { "value": "random", "label": "Random" },
+              { "value": "sequential", "label": "Sequential" },
+              { "value": "newest", "label": "Newest First" },
+              { "value": "oldest", "label": "Oldest First" }
+            ],
+            "help": "How to select which photo to display from synced collection"
+          }
+        ]
+      },
+      {
+        "title": "Synchronization",
+        "fields": [
+          {
+            "key": "sync_interval_hours",
+            "type": "number",
+            "label": "Sync Interval (hours)",
+            "default": 6,
+            "min": 1,
+            "max": 168,
+            "help": "How often to check for album changes (1-168 hours)"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+/* Dashboard specific styles */
+.controls {
+  @apply flex gap-4 mb-6 p-6 bg-white rounded-lg shadow-md;
+}
+
+.schedulerBar {
+  @apply bg-white rounded-lg p-4 mb-6 shadow-md;
+}
+
+.schedulerInfo {
+  @apply flex gap-8 items-center flex-wrap;
+}
+
+.badge {
+  @apply inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
+}
+
+.badge.success {
+  @apply bg-emerald-100 text-emerald-800;
+}
+
+.badge.warning {
+  @apply bg-amber-100 text-amber-800;
+}
+
+.badge.error {
+  @apply bg-red-100 text-red-800;
+}
+
+.pausedNote {
+  @apply text-amber-600 text-sm font-semibold;
+}
+
+/* Display preview */
+.displayPreview {
+  @apply bg-gray-100 border-2 border-gray-200 rounded-lg p-4 text-center mb-4;
+}
+
+.displayPreview img {
+  @apply max-w-full h-auto border border-gray-300 rounded shadow-lg mx-auto;
+}
+
+.displayPlaceholder {
+  @apply bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4;
+}
+
+.displayPlaceholder .icon {
+  @apply text-5xl mb-3;
+}
+
+.displayPlaceholder h3 {
+  @apply text-lg font-semibold text-gray-600;
+}
+
+.displayPlaceholder p {
+  @apply text-sm text-gray-500;
+}
+
+/* Display info grid */
+.displayInfo {
+  @apply grid grid-cols-2 gap-3 mt-4;
+}
+
+.displayInfoItem {
+  @apply p-3 bg-gray-50 rounded;
+}
+
+.displayInfoItem .label {
+  @apply block text-xs text-gray-500;
+}
+
+.displayInfoItem .value {
+  @apply font-semibold;
+}

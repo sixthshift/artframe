@@ -1,0 +1,32 @@
+/* Button base styles */
+.btn {
+  @apply px-4 py-2 rounded-md font-semibold transition-all duration-200
+         disabled:opacity-50 disabled:cursor-not-allowed
+         hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0;
+}
+
+/* Button variants */
+.primary {
+  @apply bg-gradient-to-br from-primary-500 to-accent-500 text-white;
+}
+
+.secondary {
+  @apply bg-gray-500 text-white hover:bg-gray-600;
+}
+
+.warning {
+  @apply bg-amber-500 text-white hover:bg-amber-600;
+}
+
+.success {
+  @apply bg-emerald-500 text-white hover:bg-emerald-600;
+}
+
+.danger {
+  @apply bg-red-500 text-white hover:bg-red-600;
+}
+
+/* Button sizes */
+.small {
+  @apply px-3 py-1.5 text-sm;
+}

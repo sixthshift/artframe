@@ -1,0 +1,52 @@
+/* Layout structure */
+.layout {
+  @apply min-h-screen flex flex-col;
+}
+
+.header {
+  @apply bg-gradient-to-br from-primary-500 to-accent-500 text-white py-6 shadow-md;
+}
+
+.headerContent {
+  @apply max-w-7xl mx-auto px-5;
+}
+
+.headerTop {
+  @apply flex justify-between items-center;
+}
+
+.branding h1 {
+  @apply text-3xl font-bold;
+}
+
+.branding p {
+  @apply text-white/80 mt-1;
+}
+
+/* Navigation */
+.nav {
+  @apply flex gap-2;
+}
+
+.navTab {
+  @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 text-white/90
+         hover:bg-white/20;
+}
+
+.navTab.active {
+  @apply bg-white/30 shadow-md;
+}
+
+/* Main content */
+.main {
+  @apply flex-1 max-w-7xl mx-auto px-5 py-8 w-full;
+}
+
+/* Footer */
+.footer {
+  @apply bg-gray-800 text-white text-center py-4 mt-auto;
+}
+
+.footer p {
+  @apply text-white/70;
+}

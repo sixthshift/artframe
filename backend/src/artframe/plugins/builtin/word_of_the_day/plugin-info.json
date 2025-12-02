@@ -1,0 +1,90 @@
+{
+  "id": "word_of_the_day",
+  "display_name": "Word of the Day",
+  "class": "WordOfTheDay",
+  "description": "Learn a new vocabulary word each day with definitions and examples",
+  "author": "Artframe Team",
+  "version": "1.0.0",
+  "icon": "icon.png",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Vocabulary Settings",
+        "fields": [
+          {
+            "key": "difficulty",
+            "type": "select",
+            "label": "Difficulty Level",
+            "default": "medium",
+            "options": [
+              { "value": "easy", "label": "Easy" },
+              { "value": "medium", "label": "Medium" },
+              { "value": "hard", "label": "Hard" },
+              { "value": "random", "label": "Random (Mix)" }
+            ],
+            "help": "Choose vocabulary difficulty level"
+          },
+          {
+            "key": "daily_word",
+            "type": "boolean",
+            "label": "Same Word All Day",
+            "default": true,
+            "help": "If enabled, shows the same word for the entire day. Otherwise, shows a new random word each time."
+          },
+          {
+            "key": "show_pronunciation",
+            "type": "boolean",
+            "label": "Show Pronunciation",
+            "default": true,
+            "help": "Display phonetic pronunciation guide"
+          },
+          {
+            "key": "show_example",
+            "type": "boolean",
+            "label": "Show Example Sentence",
+            "default": true,
+            "help": "Display an example sentence using the word"
+          }
+        ]
+      },
+      {
+        "title": "Appearance",
+        "fields": [
+          {
+            "key": "font_size",
+            "type": "select",
+            "label": "Font Size",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Small" },
+              { "value": "medium", "label": "Medium" },
+              { "value": "large", "label": "Large" }
+            ],
+            "help": "Size of the text"
+          },
+          {
+            "key": "text_color",
+            "type": "color",
+            "label": "Text Color",
+            "default": "#000000",
+            "help": "Color of the main text"
+          },
+          {
+            "key": "accent_color",
+            "type": "color",
+            "label": "Accent Color",
+            "default": "#4CAF50",
+            "help": "Color for headers and highlights"
+          },
+          {
+            "key": "background_color",
+            "type": "color",
+            "label": "Background Color",
+            "default": "#FFFFFF",
+            "help": "Background color"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "id": "clock",
+  "display_name": "Clock & Date",
+  "class": "Clock",
+  "description": "Display current time and date with customizable formats and styles",
+  "author": "Artframe Team",
+  "version": "1.0.0",
+  "icon": "icon.png",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Time Display",
+        "fields": [
+          {
+            "key": "time_format",
+            "type": "select",
+            "label": "Time Format",
+            "default": "24h",
+            "options": [
+              { "value": "12h", "label": "12-Hour (AM/PM)" },
+              { "value": "24h", "label": "24-Hour" }
+            ],
+            "help": "Choose between 12-hour and 24-hour time format"
+          },
+          {
+            "key": "show_seconds",
+            "type": "boolean",
+            "label": "Show Seconds",
+            "default": true,
+            "help": "Display seconds in the time"
+          }
+        ]
+      },
+      {
+        "title": "Timezone",
+        "fields": [
+          {
+            "key": "timezone",
+            "type": "select",
+            "label": "Timezone",
+            "default": "",
+            "options": [
+              { "value": "", "label": "System Default" },
+              { "value": "America/New_York", "label": "New York (Eastern)" },
+              { "value": "America/Chicago", "label": "Chicago (Central)" },
+              { "value": "America/Denver", "label": "Denver (Mountain)" },
+              { "value": "America/Los_Angeles", "label": "Los Angeles (Pacific)" },
+              { "value": "America/Toronto", "label": "Toronto" },
+              { "value": "America/Vancouver", "label": "Vancouver" },
+              { "value": "Europe/London", "label": "London (GMT/BST)" },
+              { "value": "Europe/Paris", "label": "Paris (CET)" },
+              { "value": "Europe/Berlin", "label": "Berlin (CET)" },
+              { "value": "Europe/Amsterdam", "label": "Amsterdam (CET)" },
+              { "value": "Asia/Tokyo", "label": "Tokyo" },
+              { "value": "Asia/Shanghai", "label": "Shanghai" },
+              { "value": "Asia/Singapore", "label": "Singapore" },
+              { "value": "Australia/Sydney", "label": "Sydney" },
+              { "value": "UTC", "label": "UTC" }
+            ],
+            "help": "Timezone for the clock display"
+          }
+        ]
+      },
+      {
+        "title": "Date Display",
+        "fields": [
+          {
+            "key": "date_format",
+            "type": "select",
+            "label": "Date Format",
+            "default": "full",
+            "options": [
+              { "value": "full", "label": "Full (Monday, January 15, 2025)" },
+              { "value": "short", "label": "Short (01/15/2025)" },
+              { "value": "none", "label": "Don't Show Date" }
+            ],
+            "help": "How to display the date below the time"
+          }
+        ]
+      },
+      {
+        "title": "Appearance",
+        "fields": [
+          {
+            "key": "font_size",
+            "type": "select",
+            "label": "Font Size",
+            "default": "large",
+            "options": [
+              { "value": "small", "label": "Small" },
+              { "value": "medium", "label": "Medium" },
+              { "value": "large", "label": "Large" },
+              { "value": "xlarge", "label": "Extra Large" }
+            ],
+            "help": "Size of the clock display"
+          },
+          {
+            "key": "text_color",
+            "type": "color",
+            "label": "Text Color",
+            "default": "#000000",
+            "help": "Color of the time and date text"
+          },
+          {
+            "key": "background_color",
+            "type": "color",
+            "label": "Background Color",
+            "default": "#FFFFFF",
+            "help": "Background color"
+          }
+        ]
+      }
+    ]
+  }
+}

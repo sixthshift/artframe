@@ -3,50 +3,52 @@
 
 set -e
 
-echo "🚀 Setting up Artframe development environment..."
+echo "Setting up Artframe development environment..."
 
-# Install the package with all dependencies using uv sync (native mode)
-echo "📦 Installing Artframe with uv sync (includes dev dependencies)..."
-uv sync --dev
+# Install uv - fast Python package manager
+echo "Installing uv..."
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.local/bin:$PATH"
+
+# Install Python package with all dependencies
+echo "Installing Python dependencies with uv..."
+cd /workspace/backend && uv sync --dev
+cd /workspace
+
+# Install frontend dependencies
+echo "Installing frontend dependencies..."
+cd /workspace/frontend && npm install
+cd /workspace
 
 # Create development directories
-echo "📁 Creating development directories..."
+echo "Creating development directories..."
 mkdir -p logs
 mkdir -p /tmp/artframe_dev
 mkdir -p /tmp/artframe_cache
 
 # Create environment file from template if it doesn't exist
-echo "⚙️  Setting up environment configuration..."
+echo "Setting up environment configuration..."
 if [ ! -f .env ]; then
     if [ -f .env.example ]; then
         cp .env.example .env
-        echo "📝 Created .env file from template"
-    else
-        echo "⚠️  No .env.example found - skipping .env creation"
+        echo "Created .env file from template"
     fi
 fi
 
-
 # Make scripts executable
-echo "🔧 Making scripts executable..."
-chmod +x scripts/*.sh 2>/dev/null || true
+chmod +x backend/scripts/*.sh 2>/dev/null || true
 
-# Display helpful information
 echo ""
-echo "🎉 Development environment setup complete!"
+echo "Development environment setup complete!"
 echo ""
-echo "📝 Next steps:"
-echo "  1. Edit .env file with your configuration"
-echo "  2. Edit config/artframe-dev.yaml for your setup"
-echo "  3. Run tests: pytest tests/"
+echo "Useful commands:"
+echo "  Python:"
+echo "    cd backend && uv sync --dev      - Sync dependencies"
+echo "    pytest backend/tests/ -v         - Run tests"
+echo "    black backend/src/ backend/tests/  - Format code"
+echo "    mypy backend/src/artframe        - Type check"
 echo ""
-echo "💡 Useful commands:"
-echo "  • Add package: uv add <package>"
-echo "  • Add dev package: uv add --dev <package>"
-echo "  • Sync dependencies: uv sync --dev"
-echo "  • Format code: black src/ tests/"
-echo "  • Type check: mypy src/artframe"
-echo "  • Run tests: pytest tests/ -v"
+echo "  Frontend:"
+echo "    cd frontend && npm run dev    - Start dev server"
+echo "    cd frontend && npm run build  - Build for production"
 echo ""
-
-echo "Happy coding! 🎨"

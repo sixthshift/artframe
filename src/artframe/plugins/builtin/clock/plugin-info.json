@@ -1,9 +1,0 @@
-{
-    "id": "clock",
-    "display_name": "Clock & Date",
-    "class": "Clock",
-    "description": "Display current time and date with customizable formats and styles",
-    "author": "Artframe Team",
-    "version": "1.0.0",
-    "icon": "icon.png"
-}

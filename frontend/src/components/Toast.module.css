@@ -1,0 +1,42 @@
+/* Toast container */
+.container {
+  @apply fixed top-5 right-5 z-50 flex flex-col gap-2;
+}
+
+/* Toast base */
+.toast {
+  @apply px-4 py-3 rounded-lg text-white font-medium shadow-lg;
+}
+
+/* Toast variants */
+.success {
+  @apply bg-emerald-500;
+}
+
+.error {
+  @apply bg-red-500;
+}
+
+.info {
+  @apply bg-primary-500;
+}
+
+.warning {
+  @apply bg-amber-500;
+}
+
+/* Animation */
+.toast {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
