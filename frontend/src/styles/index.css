@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global base styles */
+@layer base {
+  body {
+    @apply bg-gray-100 text-gray-900 antialiased;
+  }
+}
+
+/* Global utility classes (only if needed across multiple components) */
+@layer components {
+  /* Form inputs - shared across multiple pages */
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .select {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md bg-white
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  /* Modal overlay and container */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/50 flex items-center justify-center z-50;
+  }
+
+  .modal {
+    @apply bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden;
+  }
+}

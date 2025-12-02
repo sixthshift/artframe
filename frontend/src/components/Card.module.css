@@ -1,0 +1,16 @@
+/* Card component */
+.card {
+  @apply bg-white rounded-lg p-6 shadow-md;
+}
+
+.header {
+  @apply flex justify-between items-center mb-4 pb-3 border-b-2 border-gray-100;
+}
+
+.title {
+  @apply text-xl font-bold text-primary-500;
+}
+
+.actions {
+  @apply flex gap-2;
+}

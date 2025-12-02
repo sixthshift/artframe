@@ -1,0 +1,4 @@
+/* Config page styles */
+.configExample {
+  @apply bg-gray-900 text-gray-300 p-4 rounded-lg font-mono text-sm overflow-x-auto whitespace-pre;
+}

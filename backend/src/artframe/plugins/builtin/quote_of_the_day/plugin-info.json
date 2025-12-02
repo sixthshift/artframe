@@ -1,0 +1,77 @@
+{
+  "id": "quote_of_the_day",
+  "display_name": "Quote of the Day",
+  "class": "QuoteOfTheDay",
+  "description": "Display inspirational and thought-provoking quotes",
+  "author": "Artframe Team",
+  "version": "1.0.0",
+  "icon": "icon.png",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Quote Selection",
+        "fields": [
+          {
+            "key": "category",
+            "type": "select",
+            "label": "Quote Category",
+            "default": "inspirational",
+            "options": [
+              { "value": "inspirational", "label": "Inspirational" },
+              { "value": "wisdom", "label": "Wisdom" },
+              { "value": "funny", "label": "Funny" },
+              { "value": "technology", "label": "Technology" },
+              { "value": "random", "label": "Random (Mix)" }
+            ],
+            "help": "Choose the type of quotes to display"
+          },
+          {
+            "key": "daily_quote",
+            "type": "boolean",
+            "label": "Same Quote All Day",
+            "default": true,
+            "help": "If enabled, shows the same quote for the entire day. Otherwise, shows a new random quote each time."
+          },
+          {
+            "key": "show_author",
+            "type": "boolean",
+            "label": "Show Author Name",
+            "default": true,
+            "help": "Display the quote author/attribution"
+          }
+        ]
+      },
+      {
+        "title": "Appearance",
+        "fields": [
+          {
+            "key": "font_size",
+            "type": "select",
+            "label": "Font Size",
+            "default": "medium",
+            "options": [
+              { "value": "small", "label": "Small" },
+              { "value": "medium", "label": "Medium" },
+              { "value": "large", "label": "Large" }
+            ],
+            "help": "Size of the quote text"
+          },
+          {
+            "key": "text_color",
+            "type": "color",
+            "label": "Text Color",
+            "default": "#000000",
+            "help": "Color of the quote text"
+          },
+          {
+            "key": "background_color",
+            "type": "color",
+            "label": "Background Color",
+            "default": "#FFFFFF",
+            "help": "Background color"
+          }
+        ]
+      }
+    ]
+  }
+}

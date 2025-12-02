@@ -1,0 +1,67 @@
+/* Status Grid */
+.statusGrid {
+  @apply grid gap-3;
+}
+
+/* Status Item */
+.statusItem {
+  @apply flex justify-between p-3 bg-gray-50 rounded border-l-4 border-primary-500;
+}
+
+.statusLabel {
+  @apply font-semibold text-gray-600;
+}
+
+.statusValue {
+  @apply font-mono;
+}
+
+.statusValue.success {
+  @apply text-emerald-600 font-semibold;
+}
+
+.statusValue.error {
+  @apply text-red-600 font-semibold;
+}
+
+.statusValue.warning {
+  @apply text-amber-600 font-semibold;
+}
+
+.statusValue.normal {
+  @apply text-gray-700;
+}
+
+/* Info Grid */
+.infoGrid {
+  @apply grid grid-cols-2 md:grid-cols-3 gap-4;
+}
+
+/* Info Item */
+.infoItem {
+  @apply text-center p-4 bg-gray-50 rounded min-h-[80px] flex flex-col justify-center;
+}
+
+.infoLabel {
+  @apply block text-sm font-semibold text-gray-500 mb-1;
+}
+
+.infoValue {
+  @apply block font-mono tabular-nums;
+}
+
+.infoValue.success {
+  @apply text-emerald-600 font-semibold;
+}
+
+.infoValue.error {
+  @apply text-red-600 font-semibold;
+}
+
+.infoValue.warning {
+  @apply text-amber-600 font-semibold;
+}
+
+.infoValue.normal {
+  @apply text-gray-700;
+}

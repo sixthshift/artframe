@@ -17,18 +17,20 @@
 				"python.testing.pytestEnabled": true,
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestArgs": [
-					"tests"
+					"backend/tests"
 				],
 				"files.exclude": {
 					"**/__pycache__": true,
 					"**/*.pyc": true,
 					"**/venv": true,
 					"**/.pytest_cache": true,
-					"**/.mypy_cache": true
+					"**/.mypy_cache": true,
+					"**/node_modules": true
 				},
 				"files.watcherExclude": {
 					"**/__pycache__/**": true,
-					"**/venv/**": true
+					"**/venv/**": true,
+					"**/node_modules/**": true
 				},
 				"terminal.integrated.defaultProfile.linux": "bash"
 			},
@@ -39,19 +41,21 @@
 				"ms-toolsai.jupyter",
 				"eamodio.gitlens",
 				"Anthropic.claude-code",
-				"mhutchie.git-graph"
+				"mhutchie.git-graph",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode"
 			]
 		}
 	},
 
-	"forwardPorts": [8000, 8080, 5000],
+	"forwardPorts": [8000, 8080, 5000, 5173],
 
 	"postCreateCommand": "bash .devcontainer/post-create.sh",
 
 	"remoteUser": "vscode",
 
 	"containerEnv": {
-		"PYTHONPATH": "${containerWorkspaceFolder}/src",
+		"PYTHONPATH": "${containerWorkspaceFolder}/backend/src",
 		"ARTFRAME_DEV_MODE": "true"
 	},
 
@@ -61,16 +65,13 @@
 	],
 
 	"features": {
-		"ghcr.io/devcontainers/features/git:1": {
-			"version": "latest"
+		"ghcr.io/devcontainers/features/python:1": {
+			"version": "3.11",
+			"installTools": true
 		},
-		"ghcr.io/devcontainers/features/common-utils:2": {
-			"installZsh": false,
-			"installOhMyZsh": false,
-			"upgradePackages": false,
-			"username": "vscode",
-			"uid": "1000",
-			"gid": "1000"
-		}
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "20"
+		},
+		"ghcr.io/devcontainers/features/git:1": {}
 	}
 }

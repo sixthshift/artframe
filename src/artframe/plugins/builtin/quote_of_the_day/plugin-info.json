@@ -1,9 +1,0 @@
-{
-    "id": "quote_of_the_day",
-    "display_name": "Quote of the Day",
-    "class": "QuoteOfTheDay",
-    "description": "Display inspirational and thought-provoking quotes",
-    "author": "Artframe Team",
-    "version": "1.0.0",
-    "icon": "icon.png"
-}
