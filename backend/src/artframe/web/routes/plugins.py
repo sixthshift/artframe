@@ -1,11 +1,12 @@
 """
 Plugin and instance management API routes for Artframe dashboard.
 
-Includes plugin listing, details, and instance CRUD operations.
+Provides endpoints for plugin listing and instance CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from ..dependencies import get_device_config, get_instance_manager
 from ..schemas import (
     APIResponse,
     InstanceCreateRequest,
@@ -15,79 +16,69 @@ from ..schemas import (
     PluginResponse,
     PluginsListResponse,
 )
-from . import get_state
 
-router = APIRouter()
-
-
-# ===== Plugin Management APIs =====
+router = APIRouter(prefix="/api/plugins", tags=["Plugins"])
 
 
-@router.get("/api/plugins", response_model=PluginsListResponse)
-def api_plugins_list():
+# ===== Plugin List =====
+
+
+@router.get("", response_model=PluginsListResponse)
+def list_plugins():
     """Get list of all available plugins."""
     try:
         from ...plugins.plugin_registry import list_plugin_metadata
 
         plugins_data = []
         for metadata in list_plugin_metadata():
-            plugins_data.append(
-                {
-                    "id": metadata.plugin_id,
-                    "display_name": metadata.display_name,
-                    "class_name": metadata.class_name,
-                    "description": metadata.description,
-                    "author": metadata.author,
-                    "version": metadata.version,
-                    "icon": metadata.icon,
-                    "settings_schema": metadata.settings_schema,
-                }
-            )
+            plugins_data.append({
+                "id": metadata.plugin_id,
+                "display_name": metadata.display_name,
+                "class_name": metadata.class_name,
+                "description": metadata.description,
+                "author": metadata.author,
+                "version": metadata.version,
+                "icon": metadata.icon,
+                "settings_schema": metadata.settings_schema,
+            })
 
         return {"success": True, "data": plugins_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ===== Plugin Instance Management APIs =====
-# NOTE: These routes must come BEFORE /api/plugins/{plugin_id} to avoid route conflicts
+# ===== Instance Management =====
+# NOTE: These routes MUST come BEFORE /{plugin_id} to avoid route conflicts
+# Otherwise "instances" gets matched as a plugin_id
 
 
-@router.get("/api/plugins/instances", response_model=InstancesListResponse)
-def api_instances_list():
+@router.get("/instances", response_model=InstancesListResponse)
+def list_instances(instance_manager=Depends(get_instance_manager)):
     """Get list of all plugin instances."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         instances = instance_manager.list_instances()
 
         instances_data = []
         for inst in instances:
-            instances_data.append(
-                {
-                    "id": inst.id,
-                    "plugin_id": inst.plugin_id,
-                    "name": inst.name,
-                    "settings": inst.settings,
-                    "enabled": inst.enabled,
-                    "created_at": inst.created_at.isoformat(),
-                    "updated_at": inst.updated_at.isoformat(),
-                }
-            )
+            instances_data.append({
+                "id": inst.id,
+                "plugin_id": inst.plugin_id,
+                "name": inst.name,
+                "settings": inst.settings,
+                "enabled": inst.enabled,
+                "created_at": inst.created_at.isoformat(),
+                "updated_at": inst.updated_at.isoformat(),
+            })
 
         return {"success": True, "data": instances_data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/plugins/instances", response_model=InstanceResponse)
-def api_instances_create(request: InstanceCreateRequest):
+@router.post("/instances", response_model=InstanceResponse)
+def create_instance(request: InstanceCreateRequest, instance_manager=Depends(get_instance_manager)):
     """Create a new plugin instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         instance = instance_manager.create_instance(
             request.plugin_id, request.name, request.settings
         )
@@ -115,13 +106,10 @@ def api_instances_create(request: InstanceCreateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/plugins/instances/{instance_id}", response_model=InstanceResponse)
-def api_instance_details(instance_id: str):
+@router.get("/instances/{instance_id}", response_model=InstanceResponse)
+def get_instance(instance_id: str, instance_manager=Depends(get_instance_manager)):
     """Get details for a specific instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         instance = instance_manager.get_instance(instance_id)
 
         if instance is None:
@@ -145,13 +133,14 @@ def api_instance_details(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/api/plugins/instances/{instance_id}", response_model=InstanceResponse)
-def api_instance_update(instance_id: str, request: InstanceUpdateRequest):
+@router.put("/instances/{instance_id}", response_model=InstanceResponse)
+def update_instance(
+    instance_id: str,
+    request: InstanceUpdateRequest,
+    instance_manager=Depends(get_instance_manager),
+):
     """Update an instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         success = instance_manager.update_instance(instance_id, request.name, request.settings)
 
         if not success:
@@ -179,13 +168,10 @@ def api_instance_update(instance_id: str, request: InstanceUpdateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/api/plugins/instances/{instance_id}", response_model=APIResponse)
-def api_instance_delete(instance_id: str):
+@router.delete("/instances/{instance_id}", response_model=APIResponse)
+def delete_instance(instance_id: str, instance_manager=Depends(get_instance_manager)):
     """Delete an instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         success = instance_manager.delete_instance(instance_id)
 
         if not success:
@@ -198,13 +184,10 @@ def api_instance_delete(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/plugins/instances/{instance_id}/enable", response_model=APIResponse)
-def api_instance_enable(instance_id: str):
+@router.post("/instances/{instance_id}/enable", response_model=APIResponse)
+def enable_instance(instance_id: str, instance_manager=Depends(get_instance_manager)):
     """Enable an instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         success = instance_manager.enable_instance(instance_id)
 
         if not success:
@@ -217,13 +200,10 @@ def api_instance_enable(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/plugins/instances/{instance_id}/disable", response_model=APIResponse)
-def api_instance_disable(instance_id: str):
+@router.post("/instances/{instance_id}/disable", response_model=APIResponse)
+def disable_instance(instance_id: str, instance_manager=Depends(get_instance_manager)):
     """Disable an instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
         success = instance_manager.disable_instance(instance_id)
 
         if not success:
@@ -236,22 +216,14 @@ def api_instance_disable(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/plugins/instances/{instance_id}/test", response_model=APIResponse)
-def api_instance_test(instance_id: str):
+@router.post("/instances/{instance_id}/test", response_model=APIResponse)
+def test_instance(
+    instance_id: str,
+    instance_manager=Depends(get_instance_manager),
+    device_config=Depends(get_device_config),
+):
     """Test run a plugin instance."""
-    state = get_state()
-
     try:
-        instance_manager = state.instance_manager
-
-        # Get device config from display controller
-        device_config = {
-            "width": 600,  # TODO: Get from actual display
-            "height": 448,
-            "rotation": 0,
-            "color_mode": "grayscale",
-        }
-
         success, error_msg = instance_manager.test_instance(instance_id, device_config)
 
         if not success:
@@ -264,12 +236,12 @@ def api_instance_test(instance_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ===== Plugin Details API =====
-# NOTE: This route must come AFTER /api/plugins/instances* routes to avoid conflicts
+# ===== Plugin Details =====
+# NOTE: This route MUST come AFTER /instances routes to avoid conflicts
 
 
-@router.get("/api/plugins/{plugin_id}", response_model=PluginResponse)
-def api_plugin_details(plugin_id: str):
+@router.get("/{plugin_id}", response_model=PluginResponse)
+def get_plugin(plugin_id: str):
     """Get details for a specific plugin."""
     try:
         from ...plugins.plugin_registry import get_plugin_metadata

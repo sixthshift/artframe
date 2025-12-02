@@ -18,23 +18,6 @@ from ..plugins.instance_manager import InstanceManager
 from ..plugins.plugin_registry import load_plugins
 
 
-class AppState:
-    """Application state container for shared resources."""
-
-    def __init__(self):
-        self.controller: Optional[ArtframeController] = None
-        self.instance_manager: Optional[InstanceManager] = None
-        self.playlist_manager: Optional[PlaylistManager] = None
-        self.schedule_manager: Optional[ScheduleManager] = None
-        self.schedule_executor: Optional[ScheduleExecutor] = None
-        self.scheduler_started: bool = False
-        self.scheduler_thread: Optional[threading.Thread] = None
-
-
-# Global app state
-app_state = AppState()
-
-
 def create_app(controller: ArtframeController, config: Optional[dict] = None) -> FastAPI:
     """
     Create and configure FastAPI application.
@@ -51,7 +34,7 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     async def lifespan(app: FastAPI):
         """Startup and shutdown lifecycle management."""
         # Startup: Initialize managers and start scheduler
-        app_state.controller = controller
+        app.state.controller = controller
 
         # Load plugins from builtin directory
         plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"
@@ -59,31 +42,34 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
         # Create instance manager
         storage_dir = Path.home() / ".artframe" / "data"
-        app_state.instance_manager = InstanceManager(storage_dir)
+        app.state.instance_manager = InstanceManager(storage_dir)
 
         # Create playlist manager
-        app_state.playlist_manager = PlaylistManager(storage_dir)
+        app.state.playlist_manager = PlaylistManager(storage_dir)
 
         # Create schedule manager and executor
-        app_state.schedule_manager = ScheduleManager(storage_dir)
+        app.state.schedule_manager = ScheduleManager(storage_dir)
+
+        # Get device config from controller
+        display_config = controller.config_manager.get_display_config()
         device_config = {
-            "width": 600,  # TODO: Get from controller/config
-            "height": 448,
-            "rotation": 0,
-            "color_mode": "grayscale",
+            "width": display_config.get("width", 600),
+            "height": display_config.get("height", 448),
+            "rotation": display_config.get("rotation", 0),
+            "color_mode": display_config.get("color_mode", "grayscale"),
         }
-        app_state.schedule_executor = ScheduleExecutor(
-            app_state.schedule_manager, app_state.instance_manager, device_config
+        app.state.schedule_executor = ScheduleExecutor(
+            app.state.schedule_manager, app.state.instance_manager, device_config
         )
 
         # Start scheduler in background thread
-        if not app_state.scheduler_started:
-            app_state.scheduler_started = True
+        if not getattr(app.state, "scheduler_started", False):
+            app.state.scheduler_started = True
             scheduler_thread = threading.Thread(
                 target=controller.run_scheduled_loop, daemon=True, name="ArtframeScheduler"
             )
             scheduler_thread.start()
-            app_state.scheduler_thread = scheduler_thread
+            app.state.scheduler_thread = scheduler_thread
 
         yield
 
@@ -107,20 +93,14 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     )
 
     # Import and include routers
-    from .routes import api_core, api_display, api_playlists, api_plugins, api_schedules, api_system
-    from .routes import pages
+    from .routes import core, display, playlists, plugins, schedules, spa, system
 
-    app.include_router(api_core.router, tags=["Core"])
-    app.include_router(api_display.router, tags=["Display"])
-    app.include_router(api_playlists.router, tags=["Playlists"])
-    app.include_router(api_plugins.router, tags=["Plugins"])
-    app.include_router(api_schedules.router, tags=["Schedules"])
-    app.include_router(api_system.router, tags=["System"])
-    app.include_router(pages.router, tags=["Pages"])
+    app.include_router(core.router)
+    app.include_router(system.router)
+    app.include_router(display.router)
+    app.include_router(plugins.router)
+    app.include_router(playlists.router)
+    app.include_router(schedules.router)
+    app.include_router(spa.router)
 
     return app
-
-
-def get_state() -> AppState:
-    """Get the global application state."""
-    return app_state

@@ -1,31 +1,27 @@
 """
 Display API routes for Artframe dashboard.
 
-Includes current display info, preview, history, and health APIs.
+Provides endpoints for display info, preview, history, and health at /api/display/*.
 """
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
+from ..dependencies import get_controller
 from ..schemas import APIResponseWithData, DisplayCurrentResponse, DisplayHealthResponse
-from . import get_state
 
-router = APIRouter()
+router = APIRouter(prefix="/api/display", tags=["Display"])
 
 
-@router.get("/api/display/current", response_model=DisplayCurrentResponse)
-def api_display_current():
+@router.get("/current", response_model=DisplayCurrentResponse)
+def get_current(controller=Depends(get_controller)):
     """Get current display information."""
-    state = get_state()
-    controller = state.controller
-
     try:
         display_state = controller.display_controller.get_state()
         driver = controller.display_controller.driver
 
-        # Get plugin info and check if preview is available
         plugin_info = driver.get_last_plugin_info()
         preview_path = driver.get_current_image_path()
 
@@ -45,32 +41,24 @@ def api_display_current():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/display/preview")
-def api_display_preview():
-    """Serve the current display preview image (if available)."""
-    state = get_state()
-    controller = state.controller
-
+@router.get("/preview")
+def get_preview(controller=Depends(get_controller)):
+    """Serve the current display preview image."""
     try:
         driver = controller.display_controller.driver
-
-        # Get current image path from driver (any driver can provide this)
         image_path = driver.get_current_image_path()
 
         if image_path is not None:
-            # Ensure path is absolute
             if isinstance(image_path, str):
                 image_path = Path(image_path)
 
             if not image_path.is_absolute():
-                # Resolve relative to project root
                 project_root = Path(__file__).parent.parent.parent.parent
                 image_path = (project_root / image_path).resolve()
 
             if image_path.exists():
                 return FileResponse(str(image_path), media_type="image/png")
 
-        # No preview available from this driver
         raise HTTPException(status_code=404, detail="No preview available")
 
     except HTTPException:
@@ -81,22 +69,16 @@ def api_display_preview():
         raise HTTPException(status_code=500, detail=error_detail)
 
 
-@router.get("/api/display/history", response_model=APIResponseWithData)
-def api_display_history():
+@router.get("/history", response_model=APIResponseWithData)
+def get_history():
     """Get display history."""
-    try:
-        # TODO: Implement history tracking
-        return {"success": True, "data": []}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # TODO: Implement history tracking
+    return {"success": True, "data": []}
 
 
-@router.get("/api/display/health", response_model=DisplayHealthResponse)
-def api_display_health():
+@router.get("/health", response_model=DisplayHealthResponse)
+def get_health(controller=Depends(get_controller)):
     """Get e-ink display health metrics."""
-    state = get_state()
-    controller = state.controller
-
     try:
         display_state = controller.display_controller.get_state()
         return {

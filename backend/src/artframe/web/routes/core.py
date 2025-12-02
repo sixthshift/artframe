@@ -1,27 +1,32 @@
 """
 Core API routes for Artframe dashboard.
 
-Includes status, config, update, clear, restart, and scheduler APIs.
+Provides endpoints for status, config, connections, update, clear, restart, and scheduler.
+These are the main control endpoints at /api/* level.
 """
 
 import os
 import signal
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from ..schemas import APIResponse, APIResponseWithData, SchedulerStatusResponse
-from . import get_state
+from ..dependencies import get_controller
+from ..schemas import (
+    APIResponse,
+    APIResponseWithData,
+    SchedulerStatusResponse,
+)
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["Core"])
 
 
-@router.get("/api/status", response_model=APIResponseWithData)
-def api_status():
-    """Get current system status as JSON."""
-    state = get_state()
-    controller = state.controller
+# ===== Status & Connections =====
 
+
+@router.get("/status", response_model=APIResponseWithData)
+def get_status(controller=Depends(get_controller)):
+    """Get current system status."""
     try:
         status = controller.get_status()
         return {"success": True, "data": status}
@@ -29,39 +34,22 @@ def api_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/config", response_model=APIResponseWithData)
-def api_config():
-    """Get current configuration as JSON."""
-    state = get_state()
-    controller = state.controller
-
-    try:
-        config = controller.config_manager.config
-        return {"success": True, "data": config}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/api/connections", response_model=APIResponseWithData)
-def api_connections():
+@router.get("/connections", response_model=APIResponseWithData)
+def test_connections(controller=Depends(get_controller)):
     """Test all external connections."""
-    state = get_state()
-    controller = state.controller
-
     try:
         connections = controller.test_connections()
-        # Returns dict like {"display": true, "storage": true}
         return {"success": True, "data": connections}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/update", response_model=APIResponse)
-def api_trigger_update():
-    """Trigger immediate photo update."""
-    state = get_state()
-    controller = state.controller
+# ===== Display Control =====
 
+
+@router.post("/update", response_model=APIResponse)
+def trigger_update(controller=Depends(get_controller)):
+    """Trigger immediate photo update."""
     try:
         success = controller.manual_refresh()
         return {
@@ -72,12 +60,9 @@ def api_trigger_update():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/clear", response_model=APIResponse)
-def api_clear_display():
+@router.post("/clear", response_model=APIResponse)
+def clear_display(controller=Depends(get_controller)):
     """Clear the display."""
-    state = get_state()
-    controller = state.controller
-
     try:
         controller.display_controller.clear_display()
         return {"success": True, "message": "Display cleared"}
@@ -85,17 +70,26 @@ def api_clear_display():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/api/config", response_model=APIResponse)
-def api_update_config(new_config: Dict[str, Any]):
-    """Update in-memory configuration (validation only, not saved)."""
-    state = get_state()
-    controller = state.controller
+# ===== Configuration =====
 
+
+@router.get("/config", response_model=APIResponseWithData)
+def get_config(controller=Depends(get_controller)):
+    """Get current configuration."""
+    try:
+        config = controller.config_manager.config
+        return {"success": True, "data": config}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/config", response_model=APIResponse)
+def update_config(new_config: Dict[str, Any], controller=Depends(get_controller)):
+    """Update in-memory configuration (validation only, not saved)."""
     try:
         if not new_config:
             raise HTTPException(status_code=400, detail="No configuration data provided")
 
-        # Validate and update in-memory config
         controller.config_manager.update_config(new_config)
 
         return {
@@ -108,12 +102,9 @@ def api_update_config(new_config: Dict[str, Any]):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/config/save", response_model=APIResponseWithData)
-def api_save_config():
+@router.post("/config/save", response_model=APIResponseWithData)
+def save_config(controller=Depends(get_controller)):
     """Save current in-memory configuration to YAML file."""
-    state = get_state()
-    controller = state.controller
-
     try:
         controller.config_manager.save_to_file(backup=True)
         return {
@@ -125,12 +116,9 @@ def api_save_config():
         raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}")
 
 
-@router.post("/api/config/revert", response_model=APIResponse)
-def api_revert_config():
+@router.post("/config/revert", response_model=APIResponse)
+def revert_config(controller=Depends(get_controller)):
     """Revert in-memory config to what's on disk."""
-    state = get_state()
-    controller = state.controller
-
     try:
         controller.config_manager.revert_to_file()
         return {"success": True, "message": "Configuration reverted to saved version"}
@@ -138,28 +126,25 @@ def api_revert_config():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/restart", response_model=APIResponse)
-def api_restart():
+# ===== Restart =====
+
+
+@router.post("/restart", response_model=APIResponse)
+def restart():
     """Restart the application."""
     try:
-        # Send SIGTERM to self to trigger graceful restart
-        # In production, systemd will restart the service automatically
         os.kill(os.getpid(), signal.SIGTERM)
-
         return {"success": True, "message": "Restart initiated"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ===== Scheduler APIs =====
+# ===== Scheduler Control =====
 
 
-@router.get("/api/scheduler/status", response_model=SchedulerStatusResponse)
-def api_scheduler_status():
+@router.get("/scheduler/status", response_model=SchedulerStatusResponse)
+def get_scheduler_status(controller=Depends(get_controller)):
     """Get scheduler status."""
-    state = get_state()
-    controller = state.controller
-
     try:
         status = controller.scheduler.get_status()
         return {"success": True, "data": status}
@@ -167,12 +152,9 @@ def api_scheduler_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/scheduler/pause", response_model=SchedulerStatusResponse)
-def api_scheduler_pause():
+@router.post("/scheduler/pause", response_model=SchedulerStatusResponse)
+def pause_scheduler(controller=Depends(get_controller)):
     """Pause automatic updates (daily e-ink refresh still occurs)."""
-    state = get_state()
-    controller = state.controller
-
     try:
         controller.scheduler.pause()
         return {
@@ -184,12 +166,9 @@ def api_scheduler_pause():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/scheduler/resume", response_model=SchedulerStatusResponse)
-def api_scheduler_resume():
+@router.post("/scheduler/resume", response_model=SchedulerStatusResponse)
+def resume_scheduler(controller=Depends(get_controller)):
     """Resume automatic updates."""
-    state = get_state()
-    controller = state.controller
-
     try:
         controller.scheduler.resume()
         return {
@@ -199,20 +178,3 @@ def api_scheduler_resume():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/api/source/stats", response_model=APIResponseWithData)
-def api_source_stats():
-    """
-    Get source statistics.
-
-    DEPRECATED: Sources are now managed as plugins.
-    Use /api/plugins/instances for plugin instance information.
-    """
-    return {
-        "success": True,
-        "data": {
-            "message": "Sources are now managed as plugins. Use /api/plugins/instances instead.",
-            "provider": "plugin-based",
-        },
-    }

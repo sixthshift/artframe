@@ -1,27 +1,26 @@
 """
 Schedule management API routes for Artframe dashboard.
 
-Includes slot-based schedule CRUD operations.
+Provides endpoints for slot-based schedule CRUD operations.
 """
 
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from ..dependencies import get_instance_manager, get_playlist_manager, get_schedule_manager
 from ..schemas import (
     APIResponse,
     APIResponseWithData,
     BulkSlotSetRequest,
     ScheduleCurrentResponse,
-    ScheduleSlotsResponse,
     SlotSetRequest,
     SlotSetResponse,
 )
-from . import get_state
 
-router = APIRouter()
+router = APIRouter(prefix="/api/schedules", tags=["Schedules"])
 
 
 class SlotClearRequest(BaseModel):
@@ -61,15 +60,10 @@ def _serialize_slot(slot, instance_manager, playlist_manager):
     }
 
 
-@router.get("/api/schedules", response_model=APIResponseWithData)
-def api_schedules_list():
+@router.get("", response_model=APIResponseWithData)
+def list_schedules(schedule_manager=Depends(get_schedule_manager)):
     """Get all schedule slots."""
-    state = get_state()
-
     try:
-        schedule_manager = state.schedule_manager
-
-        # Get all slots as a dict for easy lookup
         slots_dict = schedule_manager.get_slots_dict()
 
         return {
@@ -83,13 +77,10 @@ def api_schedules_list():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/schedules/slot", response_model=SlotSetResponse)
-def api_schedule_set_slot(request: SlotSetRequest):
+@router.post("/slot", response_model=SlotSetResponse)
+def set_slot(request: SlotSetRequest, schedule_manager=Depends(get_schedule_manager)):
     """Set a single time slot."""
-    state = get_state()
-
     try:
-        schedule_manager = state.schedule_manager
         slot = schedule_manager.set_slot(
             request.day, request.hour, request.target_type, request.target_id
         )
@@ -108,17 +99,15 @@ def api_schedule_set_slot(request: SlotSetRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/api/schedules/slot", response_model=APIResponseWithData)
-def api_schedule_clear_slot(
+@router.delete("/slot", response_model=APIResponseWithData)
+def clear_slot(
     day: Optional[int] = Query(None),
     hour: Optional[int] = Query(None),
     request: Optional[SlotClearRequest] = None,
+    schedule_manager=Depends(get_schedule_manager),
 ):
     """Clear a single time slot."""
-    state = get_state()
-
     try:
-        # Accept both query params and JSON body
         actual_day = day
         actual_hour = hour
 
@@ -133,7 +122,6 @@ def api_schedule_clear_slot(
         if actual_hour is None:
             raise HTTPException(status_code=400, detail="hour is required")
 
-        schedule_manager = state.schedule_manager
         cleared = schedule_manager.clear_slot(int(actual_day), int(actual_hour))
 
         return {"success": True, "data": {"cleared": cleared}}
@@ -143,13 +131,10 @@ def api_schedule_clear_slot(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/schedules/slots/bulk", response_model=APIResponseWithData)
-def api_schedule_bulk_set(request: BulkSlotSetRequest):
+@router.post("/slots/bulk", response_model=APIResponseWithData)
+def bulk_set_slots(request: BulkSlotSetRequest, schedule_manager=Depends(get_schedule_manager)):
     """Set multiple slots at once."""
-    state = get_state()
-
     try:
-        schedule_manager = state.schedule_manager
         slots_data = [
             {
                 "day": s.day,
@@ -166,16 +151,14 @@ def api_schedule_bulk_set(request: BulkSlotSetRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/schedules/current", response_model=ScheduleCurrentResponse)
-def api_schedule_current():
+@router.get("/current", response_model=ScheduleCurrentResponse)
+def get_current_schedule(
+    schedule_manager=Depends(get_schedule_manager),
+    instance_manager=Depends(get_instance_manager),
+    playlist_manager=Depends(get_playlist_manager),
+):
     """Get what's currently scheduled for right now."""
-    state = get_state()
-
     try:
-        schedule_manager = state.schedule_manager
-        instance_manager = state.instance_manager
-        playlist_manager = state.playlist_manager
-
         now = datetime.now()
         slot = schedule_manager.get_current_slot(now)
 
@@ -210,19 +193,15 @@ def api_schedule_current():
                     },
                 }
 
-        # No slot assigned for current time
         return {"success": True, "data": {"has_content": False, "source_type": "none"}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/schedules/clear", response_model=APIResponseWithData)
-def api_schedule_clear_all():
+@router.post("/clear", response_model=APIResponseWithData)
+def clear_all_schedules(schedule_manager=Depends(get_schedule_manager)):
     """Clear all schedule slots."""
-    state = get_state()
-
     try:
-        schedule_manager = state.schedule_manager
         count = schedule_manager.clear_all_slots()
 
         return {"success": True, "data": {"cleared": count}}

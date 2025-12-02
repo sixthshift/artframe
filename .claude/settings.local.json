@@ -46,7 +46,8 @@
       "Bash(pkill:*)",
       "Bash(netstat:*)",
       "Bash(__NEW_LINE__ echo -e \"\\n--- /api/system/info ---\")",
-      "Bash(__NEW_LINE__ echo -e \"\\n\\n--- /api/update ---\")"
+      "Bash(__NEW_LINE__ echo -e \"\\n\\n--- /api/update ---\")",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []
