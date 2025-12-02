@@ -209,15 +209,16 @@ graph TB
     end
 
     subgraph "Raspberry Pi - Artframe Core"
-        subgraph "Flask Web Server"
+        subgraph "FastAPI Web Server"
             subgraph "Modular Routes"
-                PAGES[pages.py - HTML]
-                APIPLUGINS[api_plugins.py]
-                APISCHEDULES[api_schedules.py]
-                APIPLAYLISTS[api_playlists.py]
-                APIDISPLAY[api_display.py]
+                SPA[spa.py - SPA Serving]
+                SYSTEM[system.py - Status/Config/Scheduler]
+                PLUGINS[plugins.py - Plugin & Instance CRUD]
+                SCHEDULES[schedules.py - Slot Management]
+                PLAYLISTS[playlists.py - Playlist CRUD]
+                DISPLAY[display.py - Display Control]
             end
-            TEMPLATES[HTML Templates]
+            DEPS[dependencies.py - DI]
             STATIC[Static Assets - JS/CSS]
         end
 
@@ -226,7 +227,7 @@ graph TB
         PLAYLISTMGR[Playlist Manager]
         INSTANCEMGR[Instance Manager]
         CONFIG[Configuration Manager]
-        DISPLAY[Display Controller]
+        DISPLAYCTRL[Display Controller]
 
         subgraph "Plugin System"
             PLUGINBASE[BasePlugin Base Class]
@@ -256,18 +257,18 @@ graph TB
 
     EPAPER[E-ink Display Hardware]
 
-    BROWSER --> PAGES
-    MOBILE --> PAGES
-    PAGES --> ORCHESTRATOR
-    APIPLUGINS --> INSTANCEMGR
-    APISCHEDULES --> SCHEDULEMGR
-    APIPLAYLISTS --> PLAYLISTMGR
-    APIDISPLAY --> DISPLAY
+    BROWSER --> SPA
+    MOBILE --> SPA
+    SPA --> ORCHESTRATOR
+    PLUGINS --> INSTANCEMGR
+    SCHEDULES --> SCHEDULEMGR
+    PLAYLISTS --> PLAYLISTMGR
+    DISPLAY --> DISPLAYCTRL
 
     ORCHESTRATOR --> SCHEDULEMGR
     ORCHESTRATOR --> PLAYLISTMGR
     ORCHESTRATOR --> INSTANCEMGR
-    ORCHESTRATOR --> DISPLAY
+    ORCHESTRATOR --> DISPLAYCTRL
     INSTANCEMGR --> PLUGINREGISTRY
 
     PLUGINREGISTRY --> CLOCKPLUGIN
@@ -276,7 +277,7 @@ graph TB
     PLUGINREGISTRY --> QUOTEPLUGIN
     PLUGINREGISTRY --> WORDPLUGIN
 
-    DISPLAY --> EPAPER
+    DISPLAYCTRL --> EPAPER
 
     IMMICHPLUGIN -.-> IMMICH
     IMMICHSTYLE -.-> IMMICH
@@ -288,7 +289,7 @@ graph TB
 | Component | Responsibility | Key Classes/Modules |
 |-----------|---------------|-------------------|
 | **Core System** |
-| Flask Web Server | Web dashboard and REST APIs | `web/app.py`, `web/routes/` (modular) |
+| FastAPI Web Server | Web dashboard and REST APIs | `web/app.py`, `web/routes/` (modular) |
 | Content Orchestrator | Plugin-driven scheduling and content display | `scheduling/content_orchestrator.py` |
 | Plugin Registry | Discovery, loading, validation of plugins | `plugins/plugin_registry.py` |
 | Playlist Manager | Manages playlists and playback modes | `playlists/playlist_manager.py` |

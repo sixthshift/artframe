@@ -9,7 +9,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import FileResponse, HTMLResponse
 
-router = APIRouter()
+router = APIRouter(tags=["SPA"])
 
 
 def get_static_dir() -> Path:
@@ -20,13 +20,12 @@ def get_static_dir() -> Path:
 def get_spa_index():
     """Serve the SPA index.html with correct asset paths."""
     static_dir = get_static_dir()
-
-    # Check if the built SPA exists
     index_path = static_dir / "index.html"
+
     if index_path.exists():
         return FileResponse(index_path, media_type="text/html")
 
-    # Fallback: return a simple HTML that explains the situation
+    # Fallback: explain how to build the frontend
     fallback_html = """
     <!DOCTYPE html>
     <html>
@@ -88,7 +87,6 @@ def playlists_page():
     return get_spa_index()
 
 
-# Serve static assets from the dist directory
 @router.get("/assets/{filename:path}")
 def serve_assets(filename: str):
     """Serve built assets from dist directory."""
@@ -98,7 +96,6 @@ def serve_assets(filename: str):
     if not file_path.exists():
         return HTMLResponse(content="Not found", status_code=404)
 
-    # Determine media type based on extension
     suffix = file_path.suffix.lower()
     media_types = {
         ".js": "application/javascript",

@@ -1,14 +1,15 @@
 """
 Playlist management API routes for Artframe dashboard.
 
-Includes playlist CRUD operations and activation.
+Provides endpoints for playlist CRUD operations and activation.
 """
 
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from ...models import PlaylistItem
+from ..dependencies import get_playlist_manager
 from ..schemas import (
     APIResponse,
     PlaylistCreateRequest,
@@ -16,9 +17,8 @@ from ..schemas import (
     PlaylistsListResponse,
     PlaylistUpdateRequest,
 )
-from . import get_state
 
-router = APIRouter()
+router = APIRouter(prefix="/api/playlists", tags=["Playlists"])
 
 
 def _serialize_playlist_item(item):
@@ -46,13 +46,10 @@ def _serialize_playlist(playlist):
     }
 
 
-@router.get("/api/playlists", response_model=PlaylistsListResponse)
-def api_playlists_list():
+@router.get("", response_model=PlaylistsListResponse)
+def list_playlists(playlist_manager=Depends(get_playlist_manager)):
     """Get list of all playlists."""
-    state = get_state()
-
     try:
-        playlist_manager = state.playlist_manager
         playlists = playlist_manager.list_playlists()
 
         playlists_data = [_serialize_playlist(playlist) for playlist in playlists]
@@ -67,13 +64,10 @@ def api_playlists_list():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/playlists", response_model=PlaylistResponse)
-def api_playlist_create(request: PlaylistCreateRequest):
+@router.post("", response_model=PlaylistResponse)
+def create_playlist(request: PlaylistCreateRequest, playlist_manager=Depends(get_playlist_manager)):
     """Create a new playlist."""
-    state = get_state()
-
     try:
-        # Parse items
         items: List[PlaylistItem] = []
         for item_data in request.items:
             items.append(
@@ -86,7 +80,6 @@ def api_playlist_create(request: PlaylistCreateRequest):
                 )
             )
 
-        playlist_manager = state.playlist_manager
         playlist = playlist_manager.create_playlist(
             request.name, request.description, items, playback_mode=request.playback_mode
         )
@@ -96,13 +89,10 @@ def api_playlist_create(request: PlaylistCreateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/playlists/{playlist_id}", response_model=PlaylistResponse)
-def api_playlist_details(playlist_id: str):
+@router.get("/{playlist_id}", response_model=PlaylistResponse)
+def get_playlist(playlist_id: str, playlist_manager=Depends(get_playlist_manager)):
     """Get details for a specific playlist."""
-    state = get_state()
-
     try:
-        playlist_manager = state.playlist_manager
         playlist = playlist_manager.get_playlist(playlist_id)
 
         if playlist is None:
@@ -115,13 +105,14 @@ def api_playlist_details(playlist_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/api/playlists/{playlist_id}", response_model=PlaylistResponse)
-def api_playlist_update(playlist_id: str, request: PlaylistUpdateRequest):
+@router.put("/{playlist_id}", response_model=PlaylistResponse)
+def update_playlist(
+    playlist_id: str,
+    request: PlaylistUpdateRequest,
+    playlist_manager=Depends(get_playlist_manager),
+):
     """Update a playlist."""
-    state = get_state()
-
     try:
-        # Parse items if provided
         items: Optional[List[PlaylistItem]] = None
         if request.items is not None:
             items = []
@@ -136,7 +127,6 @@ def api_playlist_update(playlist_id: str, request: PlaylistUpdateRequest):
                     )
                 )
 
-        playlist_manager = state.playlist_manager
         success = playlist_manager.update_playlist(
             playlist_id,
             name=request.name,
@@ -160,13 +150,10 @@ def api_playlist_update(playlist_id: str, request: PlaylistUpdateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/api/playlists/{playlist_id}", response_model=APIResponse)
-def api_playlist_delete(playlist_id: str):
+@router.delete("/{playlist_id}", response_model=APIResponse)
+def delete_playlist(playlist_id: str, playlist_manager=Depends(get_playlist_manager)):
     """Delete a playlist."""
-    state = get_state()
-
     try:
-        playlist_manager = state.playlist_manager
         success = playlist_manager.delete_playlist(playlist_id)
 
         if not success:
@@ -179,13 +166,10 @@ def api_playlist_delete(playlist_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/playlists/{playlist_id}/activate", response_model=APIResponse)
-def api_playlist_activate(playlist_id: str):
+@router.post("/{playlist_id}/activate", response_model=APIResponse)
+def activate_playlist(playlist_id: str, playlist_manager=Depends(get_playlist_manager)):
     """Set a playlist as active."""
-    state = get_state()
-
     try:
-        playlist_manager = state.playlist_manager
         success = playlist_manager.set_active_playlist(playlist_id)
 
         if not success:
@@ -198,13 +182,10 @@ def api_playlist_activate(playlist_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/api/playlists/deactivate", response_model=APIResponse)
-def api_playlist_deactivate():
+@router.post("/deactivate", response_model=APIResponse)
+def deactivate_playlist(playlist_manager=Depends(get_playlist_manager)):
     """Deactivate the current playlist."""
-    state = get_state()
-
     try:
-        playlist_manager = state.playlist_manager
         success = playlist_manager.set_active_playlist(None)
 
         if not success:

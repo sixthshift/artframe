@@ -1,7 +1,7 @@
 """
 System API routes for Artframe dashboard.
 
-Includes system info and logs APIs.
+Provides endpoints for system info and logs at /api/system/*.
 """
 
 import platform
@@ -13,12 +13,12 @@ from fastapi.responses import PlainTextResponse
 
 from ..schemas import SystemInfoResponse, SystemLogsResponse
 
-router = APIRouter()
+router = APIRouter(prefix="/api/system", tags=["System"])
 
 
-@router.get("/api/system/info", response_model=SystemInfoResponse)
-def api_system_info():
-    """Get system information."""
+@router.get("/info", response_model=SystemInfoResponse)
+def get_info():
+    """Get system information (CPU, memory, disk, temperature)."""
     try:
         import psutil
 
@@ -51,12 +51,11 @@ def api_system_info():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/system/logs", response_model=SystemLogsResponse)
-def api_system_logs():
+@router.get("/logs", response_model=SystemLogsResponse)
+def get_logs():
     """Get system logs."""
     try:
         # TODO: Read from actual log file
-        # For now, return placeholder
         return {
             "success": True,
             "data": [
@@ -76,8 +75,8 @@ def api_system_logs():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/system/logs/export")
-def api_system_logs_export():
+@router.get("/logs/export")
+def export_logs():
     """Export system logs as text file."""
     try:
         # TODO: Read from actual log file
