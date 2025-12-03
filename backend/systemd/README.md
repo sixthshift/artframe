@@ -8,7 +8,15 @@ This directory contains the systemd service configuration for Artframe.
 
 ## Installation
 
-The service file is automatically installed by `scripts/install.sh`. Variables like user, paths, etc. are substituted during installation.
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixthshift/artframe/main/backend/scripts/install.sh | sudo bash
+```
+
+To specify a different user (default is `pi`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sixthshift/artframe/main/backend/scripts/install.sh | sudo ARTFRAME_USER=myuser bash
+```
 
 ## Manual Installation
 
@@ -87,9 +95,13 @@ sudo systemctl enable artframe
 
 ### Customizing the Service
 
-Edit `systemd/artframe.service` before installation to customize:
+The user/group can be set during installation via `ARTFRAME_USER`. For other customizations, edit the installed service file:
 
-1. **Change user/group:**
+```bash
+sudo systemctl edit artframe
+```
+
+1. **Change user/group** (if not set during install):
    ```ini
    User=myuser
    Group=mygroup
@@ -138,18 +150,18 @@ ls -la /var/log/artframe
 
 ```bash
 # Test manual execution
-sudo -u pi /opt/artframe/venv/bin/python -m artframe
+cd /opt/artframe && sudo -u pi uv run artframe
 
 # Check Python environment
-sudo -u pi /opt/artframe/venv/bin/python --version
-sudo -u pi /opt/artframe/venv/bin/pip list
+cd /opt/artframe && sudo -u pi uv run python --version
+cd /opt/artframe && sudo -u pi uv pip list
 ```
 
 ### Display not clearing on stop
 
 ```bash
 # Manually clear display
-sudo -u pi /opt/artframe/venv/bin/python -m artframe.clear_display
+cd /opt/artframe && sudo -u pi uv run python -m artframe.clear_display
 
 # Check ExecStopPost is configured
 systemctl cat artframe | grep ExecStopPost

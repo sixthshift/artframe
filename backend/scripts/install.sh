@@ -17,7 +17,7 @@ INSTALL_DIR="/opt/artframe"
 SERVICE_NAME="artframe"
 LOG_DIR="/var/log/artframe"
 CACHE_DIR="/var/cache/artframe"
-REPO_URL="https://github.com/yourusername/artframe.git"
+REPO_URL="https://github.com/sixthshift/artframe.git"
 REPO_BRANCH="main"
 
 # Check if we're running from within the repo or need to clone it
