@@ -6,7 +6,6 @@ import type {
   ConnectionStatus,
   SchedulerStatus,
   LogEntry,
-  SourceStats,
   DisplayStatus,
   DisplayHealth,
 } from '@/api/types'
@@ -18,7 +17,6 @@ export const systemKeys = {
   connections: () => [...systemKeys.all, 'connections'] as const,
   scheduler: () => [...systemKeys.all, 'scheduler'] as const,
   logs: (level?: string) => [...systemKeys.all, 'logs', level] as const,
-  sourceStats: () => [...systemKeys.all, 'sourceStats'] as const,
 }
 
 export const displayKeys = {
@@ -64,14 +62,6 @@ export function useLogs(level?: string) {
   return useQuery({
     queryKey: systemKeys.logs(level),
     queryFn: () => get<LogEntry[]>(`/system/logs${level ? `?level=${level}` : ''}`),
-  })
-}
-
-export function useSourceStats() {
-  return useQuery({
-    queryKey: systemKeys.sourceStats(),
-    queryFn: () => get<SourceStats>('/source/stats'),
-    refetchInterval: 30000,
   })
 }
 

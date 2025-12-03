@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { get, post, put, del } from '@/api/client'
-import type { Playlist, CreatePlaylistRequest, PlaylistItem } from '@/api/types'
+import type { Playlist, CreatePlaylistRequest } from '@/api/types'
 
 export const playlistKeys = {
   all: ['playlists'] as const,
@@ -55,19 +55,6 @@ export function useDeletePlaylist() {
     mutationFn: (id: string) => del(`/playlists/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: playlistKeys.list() })
-    },
-  })
-}
-
-export function useAddPlaylistItem() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({ playlistId, item }: { playlistId: string; item: PlaylistItem }) =>
-      post(`/playlists/${playlistId}/items`, item),
-    onSuccess: (_, { playlistId }) => {
-      queryClient.invalidateQueries({ queryKey: playlistKeys.list() })
-      queryClient.invalidateQueries({ queryKey: playlistKeys.detail(playlistId) })
     },
   })
 }

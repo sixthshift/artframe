@@ -109,16 +109,6 @@ export interface SystemStatus {
 // Returns a dict of service name -> connected boolean
 export type ConnectionStatus = Record<string, boolean>
 
-// Source stats (deprecated, now plugin-based)
-export interface SourceStats {
-  message?: string
-  provider?: string
-  // Legacy fields
-  total_photos?: number
-  album_name?: string
-  last_sync?: string
-}
-
 // Legacy type aliases for backwards compatibility
 export type TimeSlot = SlotSetRequest
 export type BulkSlotAssignment = BulkSlotSetRequest
