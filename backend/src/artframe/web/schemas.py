@@ -36,6 +36,9 @@ class SchedulerStatus(BaseModel):
     paused: bool
     next_update: Optional[str] = None
     last_update: Optional[str] = None
+    current_time: Optional[str] = None
+    timezone: Optional[str] = None
+    update_time: Optional[str] = None
 
 
 class StatusData(BaseModel):

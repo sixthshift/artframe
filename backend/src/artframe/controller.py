@@ -43,9 +43,10 @@ class ArtframeController:
 
         # Initialize plugin and playlist management using config paths
         data_dir = self.config_manager.get_data_dir()
+        timezone = self.config_manager.get_timezone()
         self.instance_manager = InstanceManager(data_dir)
         self.playlist_manager = PlaylistManager(data_dir)
-        self.schedule_manager = ScheduleManager(data_dir)
+        self.schedule_manager = ScheduleManager(data_dir, timezone=timezone)
 
         # Create device config
         device_config = self._get_device_config()

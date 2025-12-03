@@ -47,8 +47,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         # Create playlist manager
         app.state.playlist_manager = PlaylistManager(storage_dir)
 
-        # Create schedule manager and executor
-        app.state.schedule_manager = ScheduleManager(storage_dir)
+        # Create schedule manager and executor with configured timezone
+        timezone = controller.config_manager.get_timezone()
+        app.state.schedule_manager = ScheduleManager(storage_dir, timezone=timezone)
 
         # Get device config from controller
         display_config = controller.config_manager.get_display_config()

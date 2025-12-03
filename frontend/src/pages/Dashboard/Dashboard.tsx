@@ -90,6 +90,13 @@ export const Dashboard = () => {
                 {scheduler.paused ? 'PAUSED' : 'ACTIVE'}
               </span>
             </span>
+            {scheduler.current_time && (
+              <span>
+                <strong>Server Time:</strong>{' '}
+                {scheduler.current_time}
+                {scheduler.timezone && <span class="text-gray-500 text-sm ml-1">({scheduler.timezone})</span>}
+              </span>
+            )}
             <span>
               <strong>Next Update:</strong>{' '}
               {scheduler.next_update ? new Date(scheduler.next_update).toLocaleString() : 'N/A'}

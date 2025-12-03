@@ -38,19 +38,15 @@
 }
 
 .sectionHeader {
-  @apply flex items-start gap-3 mb-4 pb-4 border-b border-gray-200;
+  @apply flex items-center gap-3 mb-4 pb-3 border-b border-gray-200;
 }
 
 .sectionIcon {
-  @apply text-2xl mt-0.5;
+  @apply text-xl;
 }
 
 .sectionTitle {
-  @apply text-primary-600 font-semibold text-lg;
-}
-
-.sectionDescription {
-  @apply text-gray-500 text-sm mt-0.5;
+  @apply text-primary-600 font-semibold;
 }
 
 /* Config Items */
