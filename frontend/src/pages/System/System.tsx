@@ -6,7 +6,7 @@ import {
   useSystemStatus,
   useLogs,
 } from '@/queries'
-import { formatTimestamp } from './System.utils'
+import { formatDateTime } from '@/utils/date'
 
 export const System = () => {
   const { data: systemInfo, isLoading: systemLoading } = useSystemInfo()
@@ -60,7 +60,7 @@ export const System = () => {
           ) : displayHealth ? (
             <InfoGrid>
               <InfoItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
-              <InfoItem label="Last Refresh" value={formatTimestamp(displayHealth.last_refresh)} />
+              <InfoItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
               <InfoItem
                 label="Status"
                 value={displayHealth.status || 'Unknown'}
