@@ -1,14 +1,18 @@
 /* Dashboard specific styles */
+.controlBar {
+  @apply flex flex-wrap justify-between items-center gap-4 mb-6 p-4 bg-white rounded-lg shadow-md;
+}
+
 .controls {
-  @apply flex gap-4 mb-6 p-6 bg-white rounded-lg shadow-md;
+  @apply flex gap-3 flex-wrap;
 }
 
-.schedulerBar {
-  @apply bg-white rounded-lg p-4 mb-6 shadow-md;
+.statusInfo {
+  @apply flex items-center gap-6;
 }
 
-.schedulerInfo {
-  @apply flex gap-8 items-center flex-wrap;
+.schedulerStatus {
+  @apply flex items-center gap-2;
 }
 
 .badge {
@@ -29,6 +33,23 @@
 
 .pausedNote {
   @apply text-amber-600 text-sm font-semibold;
+}
+
+.timeInfo {
+  @apply grid gap-x-2 gap-y-1 text-sm;
+  grid-template-columns: auto auto;
+}
+
+.timeLabel {
+  @apply text-right font-semibold;
+}
+
+.timeValue {
+  @apply font-mono;
+}
+
+.timezone {
+  @apply text-gray-500 text-xs ml-1 font-sans;
 }
 
 /* Display preview */

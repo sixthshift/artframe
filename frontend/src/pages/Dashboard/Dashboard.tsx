@@ -55,56 +55,69 @@ export const Dashboard = () => {
 
   return (
     <div>
-      {/* Controls */}
-      <div class={styles.controls}>
-        <Button
-          variant="primary"
-          onClick={handleTriggerUpdate}
-          loading={triggerUpdate.isPending}
-        >
-          🔄 Update Now
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={handleClearDisplay}
-          loading={clearDisplay.isPending}
-        >
-          🗑️ Clear Display
-        </Button>
-        <Button
-          variant={scheduler?.paused ? 'success' : 'warning'}
-          onClick={handleToggleScheduler}
-          loading={toggleScheduler.isPending}
-        >
-          {scheduler?.paused ? '▶️ Resume Scheduler' : '⏸️ Pause Scheduler'}
-        </Button>
-      </div>
+      {/* Controls & Status Bar */}
+      <div class={styles.controlBar}>
+        <div class={styles.controls}>
+          <Button
+            variant="primary"
+            onClick={handleTriggerUpdate}
+            loading={triggerUpdate.isPending}
+          >
+            🔄 Update Now
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleClearDisplay}
+            loading={clearDisplay.isPending}
+          >
+            🗑️ Clear Display
+          </Button>
+          <Button
+            variant={scheduler?.paused ? 'success' : 'warning'}
+            onClick={handleToggleScheduler}
+            loading={toggleScheduler.isPending}
+          >
+            {scheduler?.paused ? '▶️ Resume Scheduler' : '⏸️ Pause Scheduler'}
+          </Button>
+        </div>
 
-      {/* Scheduler Status Bar */}
-      <div class={styles.schedulerBar}>
         {scheduler && (
-          <div class={styles.schedulerInfo}>
-            <span>
-              <strong>Scheduler:</strong>{' '}
+          <div class={styles.statusInfo}>
+            <div class={styles.schedulerStatus}>
+              {scheduler.paused && (
+                <span class={styles.pausedNote}>
+                  ⚡ e-ink refresh still active
+                </span>
+              )}
               <span class={clsx(styles.badge, scheduler.paused ? styles.warning : styles.success)}>
                 {scheduler.paused ? 'PAUSED' : 'ACTIVE'}
               </span>
-            </span>
-            {scheduler.current_time && (
-              <span>
-                <strong>Server Time:</strong>{' '}
-                {scheduler.current_time}
-                {scheduler.timezone && <span class="text-gray-500 text-sm ml-1">({scheduler.timezone})</span>}
-              </span>
-            )}
-            <span>
-              <strong>Next Update:</strong>{' '}
-              {scheduler.next_update ? new Date(scheduler.next_update).toLocaleString() : 'N/A'}
-            </span>
-            {scheduler.paused && (
-              <span class={styles.pausedNote}>
-                ⚡ Daily e-ink refresh still active for screen health
-              </span>
+            </div>
+            {(scheduler.current_time || scheduler.next_update) && (
+              <div class={styles.timeInfo}>
+                {scheduler.current_time && (
+                  <>
+                    <span class={styles.timeLabel}>Server Time:</span>
+                    <span class={styles.timeValue}>{scheduler.current_time}</span>
+                  </>
+                )}
+                {scheduler.next_update && (
+                  <>
+                    <span class={styles.timeLabel}>Next Update:</span>
+                    <span class={styles.timeValue}>
+                      {new Date(scheduler.next_update).toLocaleString('sv-SE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false,
+                      })}
+                    </span>
+                  </>
+                )}
+              </div>
             )}
           </div>
         )}
