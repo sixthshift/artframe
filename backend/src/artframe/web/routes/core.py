@@ -340,7 +340,7 @@ def restart():
 def get_scheduler_status(controller=Depends(get_controller)):
     """Get scheduler status."""
     try:
-        status = controller.scheduler.get_status()
+        status = controller.orchestrator.get_scheduler_status()
         return {"success": True, "data": status}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -348,13 +348,13 @@ def get_scheduler_status(controller=Depends(get_controller)):
 
 @router.post("/scheduler/pause", response_model=SchedulerStatusResponse)
 def pause_scheduler(controller=Depends(get_controller)):
-    """Pause automatic updates (daily e-ink refresh still occurs)."""
+    """Pause automatic updates."""
     try:
-        controller.scheduler.pause()
+        controller.orchestrator.pause()
         return {
             "success": True,
-            "message": "Scheduler paused. Daily e-ink refresh will still occur for screen health.",
-            "status": controller.scheduler.get_status(),
+            "message": "Scheduler paused",
+            "status": controller.orchestrator.get_scheduler_status(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -364,11 +364,11 @@ def pause_scheduler(controller=Depends(get_controller)):
 def resume_scheduler(controller=Depends(get_controller)):
     """Resume automatic updates."""
     try:
-        controller.scheduler.resume()
+        controller.orchestrator.resume()
         return {
             "success": True,
             "message": "Scheduler resumed",
-            "status": controller.scheduler.get_status(),
+            "status": controller.orchestrator.get_scheduler_status(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

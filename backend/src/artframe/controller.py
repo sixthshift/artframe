@@ -15,7 +15,6 @@ from .playlists.schedule_manager import ScheduleManager
 from .plugins import InstanceManager
 from .scheduling import ConditionEvaluator, ContentOrchestrator
 from .storage import StorageManager
-from .utils import Scheduler
 
 
 class ArtframeController:
@@ -41,7 +40,6 @@ class ArtframeController:
         # Initialize components
         self.storage_manager = self._create_storage_manager()
         self.display_controller = self._create_display_controller()
-        self.scheduler = self._create_scheduler()
 
         # Initialize plugin and playlist management using config paths
         data_dir = self.config_manager.get_data_dir()
@@ -85,13 +83,6 @@ class ArtframeController:
         """Create and configure display controller."""
         display_config = self.config_manager.get_display_config()
         return DisplayController(display_config)
-
-    def _create_scheduler(self) -> Scheduler:
-        """Create and configure scheduler."""
-        scheduler_config = self.config_manager.get_scheduler_config()
-        update_time = scheduler_config.get("update_time", "06:00")
-        timezone = self.config_manager.get_timezone()
-        return Scheduler(update_time, timezone)
 
     def _get_device_config(self) -> Dict[str, Any]:
         """Get device configuration for image generation."""
@@ -187,7 +178,7 @@ class ArtframeController:
         return {
             "running": self.running,
             "last_update": self.last_update.isoformat() if self.last_update else None,
-            "next_scheduled": self.scheduler.get_next_update_time().isoformat(),
+            "next_scheduled": self.orchestrator.get_next_update_time().isoformat(),
             "orchestrator": orchestrator_status,
             "storage_stats": {
                 "total_photos": storage_stats.total_photos,
