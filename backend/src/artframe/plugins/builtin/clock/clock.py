@@ -5,7 +5,7 @@ Displays current time and date with customizable formats.
 """
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
@@ -264,6 +264,7 @@ class Clock(BasePlugin):
         settings: Dict[str, Any],
         device_config: Dict[str, Any],
         stop_event,
+        plugin_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Run the clock's own refresh loop.
@@ -279,7 +280,7 @@ class Clock(BasePlugin):
                 # Generate and display the clock
                 image = self.generate_image(settings, device_config)
                 if image:
-                    display_controller.display_image(image)
+                    display_controller.display_image(image, plugin_info)
                     self.logger.debug("Clock display updated")
             except Exception as e:
                 self.logger.error(f"Failed to update clock display: {e}")

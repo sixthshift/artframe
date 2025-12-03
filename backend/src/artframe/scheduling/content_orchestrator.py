@@ -26,7 +26,7 @@ from ..models import (
 )
 from ..playlists.playlist_manager import PlaylistManager
 from ..playlists.schedule_manager import ScheduleManager
-from ..plugins import get_plugin
+from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
 from .condition_evaluator import ConditionEvaluator
 
@@ -514,10 +514,19 @@ class ContentOrchestrator:
         self._active_plugin_stop_event = threading.Event()
         self._active_instance_id = instance.id
 
+        # Build plugin info for display tracking
+        metadata = get_plugin_metadata(instance.plugin_id)
+        plugin_info = {
+            "plugin_name": metadata.display_name if metadata else instance.plugin_id,
+            "instance_name": instance.name,
+            "instance_id": instance.id,
+            "plugin_id": instance.plugin_id,
+        }
+
         # Start plugin in its own thread
         self._active_plugin_thread = threading.Thread(
             target=self._run_plugin_active,
-            args=(plugin, display_controller, instance.settings, self.device_config),
+            args=(plugin, display_controller, instance.settings, self.device_config, plugin_info),
             daemon=True,
             name=f"plugin-{instance.plugin_id}",
         )
@@ -526,7 +535,8 @@ class ContentOrchestrator:
         logger.info(f"Started plugin: {instance.name} ({instance.plugin_id})")
 
     def _run_plugin_active(
-        self, plugin, display_controller, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, plugin, display_controller, settings: Dict[str, Any], device_config: Dict[str, Any],
+        plugin_info: Dict[str, Any]
     ) -> None:
         """Wrapper to run plugin's run_active method."""
         try:
@@ -535,6 +545,7 @@ class ContentOrchestrator:
                 settings,
                 device_config,
                 self._active_plugin_stop_event,
+                plugin_info,
             )
         except Exception as e:
             logger.error(f"Plugin run_active failed: {e}", exc_info=True)
@@ -604,7 +615,17 @@ class ContentOrchestrator:
             image = self.execute_content(content_source)
 
             if image:
-                display_controller.display_image(image)
+                # Build plugin info for display tracking
+                plugin_info = None
+                if content_source.instance:
+                    metadata = get_plugin_metadata(content_source.instance.plugin_id)
+                    plugin_info = {
+                        "plugin_name": metadata.display_name if metadata else content_source.instance.plugin_id,
+                        "instance_name": content_source.instance.name,
+                        "instance_id": content_source.instance.id,
+                        "plugin_id": content_source.instance.plugin_id,
+                    }
+                display_controller.display_image(image, plugin_info)
                 logger.info("Force refresh successful")
                 return True
             else:

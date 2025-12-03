@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from ..models import Playlist
-from ..plugins import get_plugin
+from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
 from .playlist_manager import PlaylistManager
 
@@ -69,17 +69,17 @@ class PlaylistExecutor:
 
         return elapsed_seconds >= current_item.duration_seconds
 
-    def execute_current_item(self) -> Optional[Any]:
+    def execute_current_item(self) -> tuple[Optional[Any], Optional[Dict[str, Any]]]:
         """
         Execute the current playlist item and generate content.
 
         Returns:
-            Generated image or None if failed
+            Tuple of (image, plugin_info) or (None, None) if failed
         """
         playlist = self.get_active_playlist()
         if not playlist or not playlist.items:
             logger.warning("No active playlist or empty playlist")
-            return None
+            return None, None
 
         # Get current item
         current_item = playlist.items[self.current_item_index]
@@ -89,17 +89,17 @@ class PlaylistExecutor:
             instance = self.instance_manager.get_instance(current_item.instance_id)
             if not instance:
                 logger.error(f"Instance not found: {current_item.instance_id}")
-                return None
+                return None, None
 
             if not instance.enabled:
                 logger.warning(f"Instance is disabled: {current_item.instance_id}")
-                return None
+                return None, None
 
             # Get the plugin
             plugin = get_plugin(instance.plugin_id)
             if not plugin:
                 logger.error(f"Plugin not found: {instance.plugin_id}")
-                return None
+                return None, None
 
             # Generate image
             logger.info(
@@ -109,14 +109,23 @@ class PlaylistExecutor:
 
             image = plugin.generate_image(instance.settings, self.device_config)
 
+            # Build plugin info for display tracking
+            metadata = get_plugin_metadata(instance.plugin_id)
+            plugin_info = {
+                "plugin_name": metadata.display_name if metadata else instance.plugin_id,
+                "instance_name": instance.name,
+                "instance_id": instance.id,
+                "plugin_id": instance.plugin_id,
+            }
+
             # Mark start time
             self.current_item_start_time = datetime.now()
 
-            return image
+            return image, plugin_info
 
         except Exception as e:
             logger.error(f"Failed to execute playlist item: {e}", exc_info=True)
-            return None
+            return None, None
 
     def advance_to_next_item(self) -> None:
         """Advance to the next item in the playlist."""
@@ -206,12 +215,12 @@ class PlaylistExecutor:
                 # Check if we should advance to next item
                 if self.should_advance_to_next_item():
                     # Execute and display current item
-                    image = self.execute_current_item()
+                    image, plugin_info = self.execute_current_item()
 
                     if image:
                         # Display the image
                         try:
-                            display_controller.display_image(image)
+                            display_controller.display_image(image, plugin_info)
                             logger.info("Successfully displayed playlist item")
                         except Exception as e:
                             logger.error(f"Failed to display image: {e}", exc_info=True)
