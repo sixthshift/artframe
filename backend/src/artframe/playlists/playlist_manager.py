@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from ..models import PlaybackMode, Playlist, PlaylistItem
 
@@ -24,15 +25,17 @@ class PlaylistManager:
     to JSON storage.
     """
 
-    def __init__(self, storage_dir: Path):
+    def __init__(self, storage_dir: Path, timezone: str = "UTC"):
         """
         Initialize playlist manager.
 
         Args:
             storage_dir: Directory for storing playlist data
+            timezone: Timezone for timestamps (e.g., "Australia/Sydney")
         """
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.timezone = ZoneInfo(timezone)
 
         self.playlists_file = self.storage_dir / "playlists.json"
         self._playlists: Dict[str, Playlist] = {}
@@ -40,6 +43,10 @@ class PlaylistManager:
 
         # Load existing playlists
         self._load_playlists()
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self.timezone)
 
     def _load_playlists(self) -> None:
         """Load playlists from storage."""
@@ -111,7 +118,7 @@ class PlaylistManager:
                     for playlist in self._playlists.values()
                 ],
                 "active_playlist_id": self._active_playlist_id,
-                "last_updated": datetime.now().isoformat(),
+                "last_updated": self._now().isoformat(),
             }
 
             with open(self.playlists_file, "w") as f:
@@ -147,8 +154,8 @@ class PlaylistManager:
             description=description,
             enabled=True,
             items=items or [],
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=self._now(),
+            updated_at=self._now(),
             playback_mode=playback_mode,
         )
 
@@ -222,7 +229,7 @@ class PlaylistManager:
         if playback_mode is not None:
             playlist.playback_mode = playback_mode
 
-        playlist.updated_at = datetime.now()
+        playlist.updated_at = self._now()
         self._save_playlists()
 
         logger.info(f"Updated playlist {playlist.name} ({playlist_id})")
@@ -340,7 +347,7 @@ class PlaylistManager:
 
         playlist.items.append(item)
         playlist.items.sort(key=lambda x: x.order)
-        playlist.updated_at = datetime.now()
+        playlist.updated_at = self._now()
 
         self._save_playlists()
 
@@ -374,7 +381,7 @@ class PlaylistManager:
         for i, item in enumerate(playlist.items):
             item.order = i
 
-        playlist.updated_at = datetime.now()
+        playlist.updated_at = self._now()
         self._save_playlists()
 
         logger.info(f"Removed item from playlist {playlist_id}")

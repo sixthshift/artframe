@@ -5,6 +5,7 @@ Display controller for managing e-ink display operations.
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Union, cast
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -15,14 +16,16 @@ from .drivers import DriverInterface
 class DisplayController:
     """Controls display operations and manages display state."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], timezone: str = "UTC"):
         """
         Initialize display controller.
 
         Args:
             config: Display configuration
+            timezone: Timezone for timestamps (e.g., "Australia/Sydney")
         """
         self.config = config
+        self.timezone = ZoneInfo(timezone)
         self.driver = self._create_driver()
         self.state = DisplayState(
             current_image_id=None,
@@ -48,6 +51,10 @@ class DisplayController:
             return cast(DriverInterface, MockDriver(driver_config))
         else:
             raise ValueError(f"Unknown display driver: {driver_name}")
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self.timezone)
 
     def initialize(self) -> None:
         """Initialize the display hardware."""
@@ -83,7 +90,7 @@ class DisplayController:
 
             # Update state
             self.state.current_image_id = styled_image.original_photo_id
-            self.state.last_refresh = datetime.now()
+            self.state.last_refresh = self._now()
             self.state.status = "idle"
             self.state.error_count = 0
 
@@ -110,7 +117,7 @@ class DisplayController:
 
             # Update state
             self.state.current_image_id = plugin_info.get("instance_id") if plugin_info else None
-            self.state.last_refresh = datetime.now()
+            self.state.last_refresh = self._now()
             self.state.status = "idle"
             self.state.error_count = 0
 
@@ -142,7 +149,7 @@ class DisplayController:
 
             # Update state
             self.state.current_image_id = str(image_path)
-            self.state.last_refresh = datetime.now()
+            self.state.last_refresh = self._now()
             self.state.status = "idle"
             self.state.error_count = 0
 
@@ -158,7 +165,7 @@ class DisplayController:
             self.driver.clear_display()
 
             self.state.current_image_id = None
-            self.state.last_refresh = datetime.now()
+            self.state.last_refresh = self._now()
             self.state.status = "idle"
             self.state.error_count = 0
 

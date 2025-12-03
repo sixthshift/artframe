@@ -4,7 +4,6 @@ Schedule management API routes for Artframe dashboard.
 Provides endpoints for slot-based schedule CRUD operations.
 """
 
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -159,8 +158,8 @@ def get_current_schedule(
 ):
     """Get what's currently scheduled for right now."""
     try:
-        now = datetime.now()
-        slot = schedule_manager.get_current_slot(now)
+        # Let schedule_manager use its configured timezone
+        slot = schedule_manager.get_current_slot()
 
         if slot:
             if slot.target_type == "playlist":

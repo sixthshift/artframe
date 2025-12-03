@@ -84,10 +84,17 @@ class ContentOrchestrator:
         self._random_history: List[str] = []
         self._max_history_size = 5
 
+        # Timezone from schedule manager
+        self._tz = ZoneInfo(self.schedule_manager.timezone)
+
         # Plugin-driven refresh: track active plugin thread
         self._active_plugin_thread: Optional[threading.Thread] = None
         self._active_plugin_stop_event: Optional[threading.Event] = None
         self._active_instance_id: Optional[str] = None
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self._tz)
 
     def get_current_content_source(self) -> ContentSource:
         """
@@ -136,7 +143,7 @@ class ContentOrchestrator:
             return ContentSource.empty()
 
         # Duration until end of this hour slot
-        now = datetime.now()
+        now = self._now()
         minutes_remaining = 60 - now.minute
         duration = minutes_remaining * 60 - now.second
 
@@ -262,7 +269,7 @@ class ContentOrchestrator:
             return False
 
         current_item = items[self.current_playlist_index]
-        elapsed = (datetime.now() - self.current_item_start).total_seconds()
+        elapsed = (self._now() - self.current_item_start).total_seconds()
 
         return elapsed >= current_item.duration_seconds
 
@@ -370,7 +377,7 @@ class ContentOrchestrator:
         # For playlists, check if item duration has elapsed
         if content_source.source_type == "playlist":
             if self.current_item_start:
-                elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                elapsed = (self._now() - self.current_item_start).total_seconds()
                 if elapsed >= content_source.duration_seconds:
                     return True
 
@@ -380,7 +387,7 @@ class ContentOrchestrator:
             if plugin and hasattr(plugin, 'get_cache_ttl'):
                 try:
                     ttl = plugin.get_cache_ttl(content_source.instance.settings)
-                    elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                    elapsed = (self._now() - self.current_item_start).total_seconds()
                     if elapsed >= ttl:
                         return True
                 except Exception:
@@ -417,8 +424,8 @@ class ContentOrchestrator:
             # Update state
             self.last_displayed_instance_id = instance.id
             self.last_content_source = content_source
-            self.current_item_start = datetime.now()
-            self.last_refresh = datetime.now()
+            self.current_item_start = self._now()
+            self.last_refresh = self._now()
 
             return image
 
@@ -479,7 +486,7 @@ class ContentOrchestrator:
 
     def _seconds_until_next_hour(self) -> int:
         """Calculate seconds until the next hour boundary."""
-        now = datetime.now()
+        now = self._now()
         # Next hour starts at minute=0, second=0
         seconds_into_hour = now.minute * 60 + now.second
         seconds_until_next = 3600 - seconds_into_hour
@@ -583,7 +590,7 @@ class ContentOrchestrator:
             if plugin and hasattr(plugin, 'get_cache_ttl'):
                 try:
                     ttl = plugin.get_cache_ttl(content_source.instance.settings)
-                    elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                    elapsed = (self._now() - self.current_item_start).total_seconds()
                     remaining = ttl - elapsed
                     if remaining > 0:
                         return max(1, int(remaining))
@@ -594,7 +601,7 @@ class ContentOrchestrator:
 
         if content_source.source_type == "playlist" and self.current_item_start:
             # Calculate time until current item expires
-            elapsed = (datetime.now() - self.current_item_start).total_seconds()
+            elapsed = (self._now() - self.current_item_start).total_seconds()
             remaining = content_source.duration_seconds - elapsed
             return max(1, int(remaining))
 
@@ -661,9 +668,7 @@ class ContentOrchestrator:
         """
         from datetime import timedelta
 
-        # Use configured timezone for consistency
-        tz = ZoneInfo(self.schedule_manager.timezone)
-        now = datetime.now(tz)
+        now = self._now()
         # Next hour starts at minute=0, second=0
         next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         return next_hour
@@ -675,18 +680,15 @@ class ContentOrchestrator:
         Returns:
             Dictionary with scheduler state
         """
-        # Get current time in configured timezone
-        timezone = self.schedule_manager.timezone
-        tz = ZoneInfo(timezone)
-        now = datetime.now(tz)
+        now = self._now()
 
         return {
             "paused": self.paused,
             "update_time": f"{now.hour:02d}:00",  # Current hour slot
             "next_update": self.get_next_update_time().isoformat(),
             "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
-            "current_time": now.strftime("%Y-%m-%d %H:%M:%S"),
-            "timezone": timezone,
+            "current_time": now.isoformat(),
+            "timezone": self.schedule_manager.timezone,
         }
 
     def get_current_status(self) -> Dict[str, Any]:
@@ -725,7 +727,7 @@ class ContentOrchestrator:
             }
 
             if self.current_item_start:
-                elapsed = (datetime.now() - self.current_item_start).total_seconds()
+                elapsed = (self._now() - self.current_item_start).total_seconds()
                 status["playlist"]["elapsed_seconds"] = int(elapsed)
                 status["playlist"]["remaining_seconds"] = max(
                     0, content_source.duration_seconds - int(elapsed)

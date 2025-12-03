@@ -8,6 +8,7 @@ and extensible custom conditions.
 import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +37,13 @@ class ConditionEvaluator:
         "late_night": (0, 5),  # 00:00 - 4:59
     }
 
-    def __init__(self):
-        """Initialize condition evaluator with built-in handlers."""
+    def __init__(self, timezone: str = "UTC"):
+        """Initialize condition evaluator with built-in handlers.
+
+        Args:
+            timezone: IANA timezone string (e.g. "Australia/Sydney")
+        """
+        self._tz = ZoneInfo(timezone)
         self._handlers: Dict[str, Callable[[Dict[str, Any]], bool]] = {
             "time_of_day": self._eval_time_of_day,
             "day_of_week": self._eval_day_of_week,
@@ -49,6 +55,10 @@ class ConditionEvaluator:
         }
         # Store for external condition providers (e.g., weather, API status)
         self._external_providers: Dict[str, Callable[[], Any]] = {}
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self._tz)
 
     def register_provider(
         self, name: str, provider: Callable[[], Any]
@@ -133,7 +143,7 @@ class ConditionEvaluator:
         if not periods:
             return True
 
-        current_hour = datetime.now().hour
+        current_hour = self._now().hour
 
         for period in periods:
             if period in self.TIME_PERIODS:
@@ -162,7 +172,7 @@ class ConditionEvaluator:
         if not days:
             return True
 
-        current_day = datetime.now().weekday()
+        current_day = self._now().weekday()
         return current_day in days
 
     def _eval_date_range(self, params: Dict[str, Any]) -> bool:
@@ -178,7 +188,7 @@ class ConditionEvaluator:
         Returns:
             True if current date is within range
         """
-        today = datetime.now().date()
+        today = self._now().date()
 
         start_str = params.get("start_date")
         end_str = params.get("end_date")
@@ -219,7 +229,7 @@ class ConditionEvaluator:
             return True
 
         try:
-            now = datetime.now()
+            now = self._now()
             current_time = now.strftime("%H:%M")
 
             start_t = datetime.strptime(start_str, "%H:%M").time()
@@ -332,7 +342,7 @@ class ConditionEvaluator:
         Returns:
             Dictionary with current time, day, and external provider states
         """
-        now = datetime.now()
+        now = self._now()
         current_hour = now.hour
 
         # Determine current time period
