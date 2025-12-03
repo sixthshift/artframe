@@ -9,7 +9,7 @@ import {
   useClearSlot,
   useClearAllSlots,
 } from '@/queries'
-import { useInstances, usePlaylists } from '@/queries'
+import { useInstances } from '@/queries'
 import type { ScheduleSlots } from '@/api/types'
 import styles from './Schedule.module.css'
 import { DAY_NAMES, getColorForId, getCurrentDayIndex } from './Schedule.utils'
@@ -18,7 +18,6 @@ export const Schedule = () => {
   const { data: scheduleData, isLoading } = useSchedules()
   const { data: currentStatus } = useCurrentSchedule()
   const { data: instances = [] } = useInstances()
-  const { data: playlists = [] } = usePlaylists()
 
   const [selectedSlots, setSelectedSlots] = useState<Set<string>>(new Set())
   const [isSelecting, setIsSelecting] = useState(false)
@@ -34,13 +33,8 @@ export const Schedule = () => {
 
   const slots: ScheduleSlots = scheduleData?.slots || {}
   const enabledInstances = instances.filter((i) => i.enabled)
-  const enabledPlaylists = playlists.filter((p) => p.enabled)
 
   const getSlotInfo = (slot: { target_type: string; target_id: string }) => {
-    if (slot.target_type === 'playlist') {
-      const playlist = enabledPlaylists.find((p) => p.id === slot.target_id)
-      return { name: playlist?.name || 'Unknown', icon: '📋' }
-    }
     const instance = enabledInstances.find((i) => i.id === slot.target_id)
     return { name: instance?.name || 'Unknown', icon: '📷' }
   }
@@ -135,7 +129,7 @@ export const Schedule = () => {
         await setSlot.mutateAsync({
           day: slotModalData.day,
           hour: slotModalData.hour,
-          target_type: targetType as 'instance' | 'playlist',
+          target_type: targetType as 'instance',
           target_id: targetId,
         })
       }
@@ -155,7 +149,7 @@ export const Schedule = () => {
     const [targetType, targetId] = targetValue.split(':')
     const slotsArray = [...selectedSlots].map((key) => {
       const [day, hour] = key.split('-').map(Number)
-      return { day, hour, target_type: targetType as 'instance' | 'playlist', target_id: targetId }
+      return { day, hour, target_type: targetType as 'instance', target_id: targetId }
     })
 
     try {
@@ -205,7 +199,7 @@ export const Schedule = () => {
           <strong>Currently Active:</strong>{' '}
           {currentStatus?.has_content ? (
             <>
-              {currentStatus.target_type === 'playlist' ? '📋' : '📷'} {currentStatus.target_name}
+              📷 {currentStatus.target_name}
             </>
           ) : (
             'No content scheduled for this slot'
@@ -271,7 +265,7 @@ export const Schedule = () => {
                     >
                       {hasContent && (
                         <div
-                          class={clsx(styles.slotContent, slot.target_type === 'playlist' && styles.isPlaylist)}
+                          class={styles.slotContent}
                           style={{ backgroundColor: getColorForId(slot.target_id) }}
                         >
                           <span class={styles.slotName}>{getSlotInfo(slot).name}</span>
@@ -287,7 +281,7 @@ export const Schedule = () => {
       </div>
 
       {/* Legend */}
-      <ScheduleLegend slots={slots} instances={enabledInstances} playlists={enabledPlaylists} />
+      <ScheduleLegend slots={slots} instances={enabledInstances} />
 
       {/* Slot Modal */}
       {slotModalOpen && slotModalData && (
@@ -296,7 +290,6 @@ export const Schedule = () => {
           hour={slotModalData.hour}
           existing={slotModalData.existing}
           instances={enabledInstances}
-          playlists={enabledPlaylists}
           onSave={handleSaveSlot}
           onClose={() => setSlotModalOpen(false)}
         />
@@ -307,7 +300,6 @@ export const Schedule = () => {
         <BulkModal
           count={selectedSlots.size}
           instances={enabledInstances}
-          playlists={enabledPlaylists}
           onSave={handleBulkAssign}
           onClose={() => setBulkModalOpen(false)}
         />
@@ -319,10 +311,9 @@ export const Schedule = () => {
 interface ScheduleLegendProps {
   slots: ScheduleSlots
   instances: Array<{ id: string; name: string }>
-  playlists: Array<{ id: string; name: string }>
 }
 
-const ScheduleLegend = ({ slots, instances, playlists }: ScheduleLegendProps) => {
+const ScheduleLegend = ({ slots, instances }: ScheduleLegendProps) => {
   const contentMap = new Map<string, { target_type: string; target_id: string }>()
   Object.values(slots).forEach((slot) => {
     contentMap.set(`${slot.target_type}:${slot.target_id}`, slot)
@@ -341,11 +332,7 @@ const ScheduleLegend = ({ slots, instances, playlists }: ScheduleLegendProps) =>
       <h4>Legend</h4>
       <div class={styles.legendGrid}>
         {[...contentMap.values()].map((slot) => {
-          const name =
-            slot.target_type === 'playlist'
-              ? playlists.find((p) => p.id === slot.target_id)?.name
-              : instances.find((i) => i.id === slot.target_id)?.name
-          const icon = slot.target_type === 'playlist' ? '📋' : '📷'
+          const name = instances.find((i) => i.id === slot.target_id)?.name
 
           return (
             <div key={`${slot.target_type}:${slot.target_id}`} class={styles.legendItem}>
@@ -353,9 +340,7 @@ const ScheduleLegend = ({ slots, instances, playlists }: ScheduleLegendProps) =>
                 class={styles.legendColor}
                 style={{ backgroundColor: getColorForId(slot.target_id) }}
               />
-              <span>
-                {icon} {name || 'Unknown'}
-              </span>
+              <span>📷 {name || 'Unknown'}</span>
             </div>
           )
         })}
@@ -369,12 +354,11 @@ interface SlotModalProps {
   hour: number
   existing?: { target_type: string; target_id: string }
   instances: Array<{ id: string; name: string }>
-  playlists: Array<{ id: string; name: string; items?: Array<unknown> }>
   onSave: (value: string) => void
   onClose: () => void
 }
 
-const SlotModal = ({ day, hour, existing, instances, playlists, onSave, onClose }: SlotModalProps) => {
+const SlotModal = ({ day, hour, existing, instances, onSave, onClose }: SlotModalProps) => {
   const [value, setValue] = useState(
     existing ? `${existing.target_type}:${existing.target_id}` : ''
   )
@@ -393,20 +377,11 @@ const SlotModal = ({ day, hour, existing, instances, playlists, onSave, onClose 
             <label>Content</label>
             <select value={value} onChange={(e) => setValue((e.target as HTMLSelectElement).value)}>
               <option value="">-- Empty (no content) --</option>
-              <optgroup label="Plugin Instances">
-                {instances.map((inst) => (
-                  <option key={inst.id} value={`instance:${inst.id}`}>
-                    📷 {inst.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Playlists">
-                {playlists.map((pl) => (
-                  <option key={pl.id} value={`playlist:${pl.id}`}>
-                    📋 {pl.name} ({pl.items?.length || 0} items)
-                  </option>
-                ))}
-              </optgroup>
+              {instances.map((inst) => (
+                <option key={inst.id} value={`instance:${inst.id}`}>
+                  📷 {inst.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -422,12 +397,11 @@ const SlotModal = ({ day, hour, existing, instances, playlists, onSave, onClose 
 interface BulkModalProps {
   count: number
   instances: Array<{ id: string; name: string }>
-  playlists: Array<{ id: string; name: string }>
   onSave: (value: string) => void
   onClose: () => void
 }
 
-const BulkModal = ({ count, instances, playlists, onSave, onClose }: BulkModalProps) => {
+const BulkModal = ({ count, instances, onSave, onClose }: BulkModalProps) => {
   const [value, setValue] = useState('')
 
   return (
@@ -444,20 +418,11 @@ const BulkModal = ({ count, instances, playlists, onSave, onClose }: BulkModalPr
             <label>Content</label>
             <select value={value} onChange={(e) => setValue((e.target as HTMLSelectElement).value)}>
               <option value="">-- Select content --</option>
-              <optgroup label="Plugin Instances">
-                {instances.map((inst) => (
-                  <option key={inst.id} value={`instance:${inst.id}`}>
-                    📷 {inst.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Playlists">
-                {playlists.map((pl) => (
-                  <option key={pl.id} value={`playlist:${pl.id}`}>
-                    📋 {pl.name}
-                  </option>
-                ))}
-              </optgroup>
+              {instances.map((inst) => (
+                <option key={inst.id} value={`instance:${inst.id}`}>
+                  📷 {inst.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>

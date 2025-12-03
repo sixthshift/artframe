@@ -236,64 +236,6 @@ class InstanceUpdateRequest(BaseModel):
     settings: Optional[Dict[str, Any]] = None
 
 
-# ===== Playlist Schemas =====
-
-
-class PlaylistItemData(BaseModel):
-    """Playlist item data."""
-
-    instance_id: str
-    duration_seconds: int
-    order: int = 0
-    conditions: Optional[Dict[str, Any]] = None
-    weight: int = 1
-
-
-class PlaylistData(BaseModel):
-    """Playlist data."""
-
-    id: str
-    name: str
-    description: str = ""
-    enabled: bool
-    playback_mode: str = "sequential"
-    items: List[PlaylistItemData] = Field(default_factory=list)
-    created_at: str
-    updated_at: str
-
-
-class PlaylistsListResponse(APIResponse):
-    """Response for /api/playlists endpoint."""
-
-    data: Optional[List[PlaylistData]] = None
-    active_playlist_id: Optional[str] = None
-
-
-class PlaylistResponse(APIResponse):
-    """Response for /api/playlists/<id> endpoint."""
-
-    data: Optional[PlaylistData] = None
-
-
-class PlaylistCreateRequest(BaseModel):
-    """Request body for creating a playlist."""
-
-    name: str
-    description: str = ""
-    playback_mode: str = "sequential"
-    items: List[PlaylistItemData] = Field(default_factory=list)
-
-
-class PlaylistUpdateRequest(BaseModel):
-    """Request body for updating a playlist."""
-
-    name: Optional[str] = None
-    description: Optional[str] = None
-    enabled: Optional[bool] = None
-    playback_mode: Optional[str] = None
-    items: Optional[List[PlaylistItemData]] = None
-
-
 # ===== Schedule Schemas =====
 
 

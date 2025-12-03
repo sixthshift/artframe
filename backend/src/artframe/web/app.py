@@ -11,9 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..controller import ArtframeController
-from ..playlists import PlaylistManager
-from ..playlists.schedule_executor import ScheduleExecutor
-from ..playlists.schedule_manager import ScheduleManager
+from ..playlists import ScheduleManager
 from ..plugins.instance_manager import InstanceManager
 from ..plugins.plugin_registry import load_plugins
 
@@ -47,23 +45,8 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         storage_dir = Path.home() / ".artframe" / "data"
         app.state.instance_manager = InstanceManager(storage_dir, timezone=timezone)
 
-        # Create playlist manager
-        app.state.playlist_manager = PlaylistManager(storage_dir, timezone=timezone)
-
-        # Create schedule manager and executor
+        # Create schedule manager
         app.state.schedule_manager = ScheduleManager(storage_dir, timezone=timezone)
-
-        # Get device config from controller
-        display_config = controller.config_manager.get_display_config()
-        device_config = {
-            "width": display_config.get("width", 600),
-            "height": display_config.get("height", 448),
-            "rotation": display_config.get("rotation", 0),
-            "color_mode": display_config.get("color_mode", "grayscale"),
-        }
-        app.state.schedule_executor = ScheduleExecutor(
-            app.state.schedule_manager, app.state.instance_manager, device_config
-        )
 
         # Start scheduler in background thread
         if not getattr(app.state, "scheduler_started", False):
@@ -99,13 +82,12 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     )
 
     # Import and include routers
-    from .routes import core, display, playlists, plugins, schedules, spa, system
+    from .routes import core, display, plugins, schedules, spa, system
 
     app.include_router(core.router)
     app.include_router(system.router)
     app.include_router(display.router)
     app.include_router(plugins.router)
-    app.include_router(playlists.router)
     app.include_router(schedules.router)
     app.include_router(spa.router)
 

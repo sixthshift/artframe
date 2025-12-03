@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from ..dependencies import get_instance_manager, get_playlist_manager, get_schedule_manager
+from ..dependencies import get_instance_manager, get_schedule_manager
 from ..schemas import (
     APIResponse,
     APIResponseWithData,
@@ -29,24 +29,15 @@ class SlotClearRequest(BaseModel):
     hour: Optional[int] = None
 
 
-def _serialize_slot(slot, instance_manager, playlist_manager):
+def _serialize_slot(slot, instance_manager):
     """Serialize a time slot with target info."""
     target_name = "Unknown"
     target_details: Dict[str, Any] = {}
 
-    if slot.target_type == "playlist":
-        playlist = playlist_manager.get_playlist(slot.target_id)
-        if playlist:
-            target_name = playlist.name
-            target_details = {
-                "item_count": len(playlist.items),
-                "playback_mode": playlist.playback_mode,
-            }
-    else:
-        instance = instance_manager.get_instance(slot.target_id)
-        if instance:
-            target_name = instance.name
-            target_details = {"plugin_id": instance.plugin_id}
+    instance = instance_manager.get_instance(slot.target_id)
+    if instance:
+        target_name = instance.name
+        target_details = {"plugin_id": instance.plugin_id}
 
     return {
         "day": slot.day,
@@ -154,7 +145,6 @@ def bulk_set_slots(request: BulkSlotSetRequest, schedule_manager=Depends(get_sch
 def get_current_schedule(
     schedule_manager=Depends(get_schedule_manager),
     instance_manager=Depends(get_instance_manager),
-    playlist_manager=Depends(get_playlist_manager),
 ):
     """Get what's currently scheduled for right now."""
     try:
@@ -162,35 +152,20 @@ def get_current_schedule(
         slot = schedule_manager.get_current_slot()
 
         if slot:
-            if slot.target_type == "playlist":
-                playlist = playlist_manager.get_playlist(slot.target_id)
-                return {
-                    "success": True,
-                    "data": {
-                        "has_content": True,
-                        "source_type": "schedule",
-                        "target_type": "playlist",
-                        "target_id": slot.target_id,
-                        "target_name": playlist.name if playlist else "Unknown",
-                        "day": slot.day,
-                        "hour": slot.hour,
-                    },
-                }
-            else:
-                instance = instance_manager.get_instance(slot.target_id)
-                return {
-                    "success": True,
-                    "data": {
-                        "has_content": True,
-                        "source_type": "schedule",
-                        "target_type": "instance",
-                        "target_id": slot.target_id,
-                        "target_name": instance.name if instance else "Unknown",
-                        "instance": {"name": instance.name} if instance else None,
-                        "day": slot.day,
-                        "hour": slot.hour,
-                    },
-                }
+            instance = instance_manager.get_instance(slot.target_id)
+            return {
+                "success": True,
+                "data": {
+                    "has_content": True,
+                    "source_type": "schedule",
+                    "target_type": "instance",
+                    "target_id": slot.target_id,
+                    "target_name": instance.name if instance else "Unknown",
+                    "instance": {"name": instance.name} if instance else None,
+                    "day": slot.day,
+                    "hour": slot.hour,
+                },
+            }
 
         return {"success": True, "data": {"has_content": False, "source_type": "none"}}
     except Exception as e:

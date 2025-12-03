@@ -2,26 +2,17 @@
 Data models for the Artframe system.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-
-
-class PlaybackMode(str, Enum):
-    """Playback mode for playlists."""
-
-    SEQUENTIAL = "sequential"
-    RANDOM = "random"
-    WEIGHTED_RANDOM = "weighted_random"
+from typing import Any, Dict, Optional
 
 
 class TargetType(str, Enum):
     """Target type for schedule entries."""
 
     INSTANCE = "instance"
-    PLAYLIST = "playlist"
 
 
 @dataclass
@@ -81,34 +72,6 @@ class PluginInstance:
 
 
 @dataclass
-class PlaylistItem:
-    """Represents a single item in a playlist."""
-
-    instance_id: str
-    duration_seconds: int
-    order: int
-    # Optional conditions for when this item should be shown
-    conditions: Optional[Dict[str, Any]] = None
-    # Weight for weighted random selection (higher = more likely)
-    weight: int = 1
-
-
-@dataclass
-class Playlist:
-    """Represents a playlist of plugin instances."""
-
-    id: str
-    name: str
-    description: str
-    enabled: bool
-    items: List[PlaylistItem]
-    created_at: datetime
-    updated_at: datetime
-    # Playback mode: sequential, random, or weighted_random
-    playback_mode: str = PlaybackMode.SEQUENTIAL.value
-
-
-@dataclass
 class TimeSlot:
     """
     Represents a single time slot assignment.
@@ -119,8 +82,8 @@ class TimeSlot:
 
     day: int  # 0=Monday, 6=Sunday
     hour: int  # 0-23
-    target_type: str  # "instance" or "playlist"
-    target_id: str  # instance_id or playlist_id
+    target_type: str  # "instance"
+    target_id: str  # instance_id
 
     @property
     def key(self) -> str:
@@ -160,12 +123,9 @@ class ContentSource:
     # How long to display this content (seconds)
     duration_seconds: int = 0
     # Where this content came from
-    source_type: str = "none"  # "schedule", "playlist", "default", "none"
-    source_id: Optional[str] = None  # schedule_entry_id or playlist_id
+    source_type: str = "none"  # "schedule", "default", "none"
+    source_id: Optional[str] = None  # slot key
     source_name: Optional[str] = None  # Human-readable source name
-    # For playlist sources, track position
-    playlist_index: int = 0
-    playlist_total: int = 0
 
     @classmethod
     def empty(cls) -> "ContentSource":
