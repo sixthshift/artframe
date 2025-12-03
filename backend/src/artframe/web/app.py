@@ -81,6 +81,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         description="REST API for Artframe e-ink display platform",
         version="1.0.0",
         lifespan=lifespan,
+        swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+        swagger_favicon_url="/favicon.svg",
+        redoc_url=None,  # Disable ReDoc, we use /api instead
     )
 
     # Add CORS middleware for frontend development

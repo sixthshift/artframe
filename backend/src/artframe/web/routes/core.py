@@ -33,6 +33,7 @@ def api_index():
 <html>
 <head>
     <title>Artframe API</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
@@ -161,7 +162,6 @@ def api_index():
                 <div class="endpoint-group-title">Documentation</div>
                 <div class="endpoint-list">
                     <a class="endpoint docs-link" href="/docs" target="_blank">OpenAPI (Swagger)</a>
-                    <a class="endpoint docs-link" href="/redoc" target="_blank">ReDoc</a>
                 </div>
             </div>
         </div>
