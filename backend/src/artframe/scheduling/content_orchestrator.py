@@ -11,6 +11,7 @@ import threading
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from PIL import Image
 
@@ -651,11 +652,18 @@ class ContentOrchestrator:
         Returns:
             Dictionary with scheduler state
         """
+        # Get current time in configured timezone
+        timezone = self.schedule_manager.timezone
+        tz = ZoneInfo(timezone)
+        now = datetime.now(tz)
+
         return {
             "paused": self.paused,
-            "update_time": f"{datetime.now().hour:02d}:00",  # Current hour slot
+            "update_time": f"{now.hour:02d}:00",  # Current hour slot
             "next_update": self.get_next_update_time().isoformat(),
             "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
+            "current_time": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "timezone": timezone,
         }
 
     def get_current_status(self) -> Dict[str, Any]:

@@ -1,5 +1,6 @@
 import { Card } from '@/components'
 import { Link } from 'wouter-preact'
+import { useConfig } from '@/queries'
 import styles from './Config.module.css'
 
 const ConfigItem = ({ label, value, hint }: { label: string; value: string; hint?: string }) => (
@@ -15,21 +16,16 @@ const ConfigItem = ({ label, value, hint }: { label: string; value: string; hint
 const ConfigSection = ({
   icon,
   title,
-  description,
   children,
 }: {
   icon: string
   title: string
-  description: string
   children: preact.ComponentChildren
 }) => (
   <div class={styles.section}>
     <div class={styles.sectionHeader}>
       <span class={styles.sectionIcon}>{icon}</span>
-      <div>
-        <h3 class={styles.sectionTitle}>{title}</h3>
-        <p class={styles.sectionDescription}>{description}</p>
-      </div>
+      <h3 class={styles.sectionTitle}>{title}</h3>
     </div>
     <div class={styles.configItems}>{children}</div>
   </div>
@@ -43,6 +39,23 @@ const EnvRow = ({ name, description }: { name: string; description: string }) =>
 )
 
 export const Config = () => {
+  const { data: config, isLoading } = useConfig()
+
+  const artframe = config?.artframe
+  const display = artframe?.display
+  const displayConfig = display?.config
+  const scheduler = artframe?.scheduler
+  const storage = artframe?.storage
+  const web = artframe?.web
+  const logging = artframe?.logging
+
+  // Check if sections have any content
+  const hasScheduler = scheduler && (scheduler.timezone || scheduler.update_times?.length)
+  const hasDisplay = display && (display.driver || displayConfig)
+  const hasStorage = storage && (storage.data_dir || storage.cache_dir)
+  const hasWeb = web && (web.host || web.port)
+  const hasLogging = logging && (logging.level || logging.dir)
+
   return (
     <div class="max-w-4xl mx-auto">
       {/* Info Banner */}
@@ -60,39 +73,71 @@ export const Config = () => {
 
       <div class="flex flex-col gap-6">
         {/* Main Configuration */}
-        <Card title="Configuration Reference">
-          <div class={styles.sectionsGrid}>
-            <ConfigSection
-              icon="🕐"
-              title="Schedule"
-              description="Configure when the display updates"
-            >
-              <ConfigItem label="Update Time" value="06:00" hint="24-hour format" />
-              <ConfigItem label="Timezone" value="Australia/Sydney" hint="IANA timezone" />
-            </ConfigSection>
+        <Card title="Current Configuration">
+          {isLoading ? (
+            <p class="text-gray-500 italic text-center py-4">Loading configuration...</p>
+          ) : (
+            <div class={styles.sectionsGrid}>
+              {hasScheduler && (
+                <ConfigSection icon="🕐" title="Scheduler">
+                  {scheduler.timezone && (
+                    <ConfigItem label="Timezone" value={scheduler.timezone} hint="timezone" />
+                  )}
+                  {scheduler.update_times && scheduler.update_times.length > 0 && (
+                    <ConfigItem
+                      label="Update Times"
+                      value={scheduler.update_times.join(', ')}
+                      hint="24-hour format"
+                    />
+                  )}
+                </ConfigSection>
+              )}
 
-            <ConfigSection
-              icon="🖥️"
-              title="Display"
-              description="Set the display driver and dimensions"
-            >
-              <ConfigItem label="Driver" value="mock" hint="mock or waveshare" />
-              <ConfigItem label="Width" value="600" hint="pixels" />
-              <ConfigItem label="Height" value="448" hint="pixels" />
-              <ConfigItem label="Save Images" value="true" hint="enables preview" />
-            </ConfigSection>
+              {hasDisplay && (
+                <ConfigSection icon="🖥️" title="Display">
+                  {display.driver && <ConfigItem label="Driver" value={display.driver} />}
+                  {displayConfig?.width != null && (
+                    <ConfigItem label="Width" value={String(displayConfig.width)} hint="pixels" />
+                  )}
+                  {displayConfig?.height != null && (
+                    <ConfigItem label="Height" value={String(displayConfig.height)} hint="pixels" />
+                  )}
+                  {displayConfig?.save_images != null && (
+                    <ConfigItem
+                      label="Save Images"
+                      value={String(displayConfig.save_images)}
+                      hint="enables preview"
+                    />
+                  )}
+                </ConfigSection>
+              )}
 
-            <ConfigSection
-              icon="💾"
-              title="Storage & Cache"
-              description="Configure directories and limits"
-            >
-              <ConfigItem label="Storage Directory" value="./data/storage" />
-              <ConfigItem label="Cache Directory" value="./data/cache" />
-              <ConfigItem label="Max Cache Size" value="500" hint="MB" />
-              <ConfigItem label="Retention" value="30" hint="days" />
-            </ConfigSection>
-          </div>
+              {hasStorage && (
+                <ConfigSection icon="💾" title="Storage">
+                  {storage.data_dir && <ConfigItem label="Data Directory" value={storage.data_dir} />}
+                  {storage.cache_dir && <ConfigItem label="Cache Directory" value={storage.cache_dir} />}
+                </ConfigSection>
+              )}
+
+              {hasWeb && (
+                <ConfigSection icon="🌐" title="Web Server">
+                  {web.host && <ConfigItem label="Host" value={web.host} />}
+                  {web.port != null && <ConfigItem label="Port" value={String(web.port)} />}
+                </ConfigSection>
+              )}
+
+              {hasLogging && (
+                <ConfigSection icon="📋" title="Logging">
+                  {logging.level && <ConfigItem label="Level" value={logging.level} />}
+                  {logging.dir && <ConfigItem label="Directory" value={logging.dir} />}
+                </ConfigSection>
+              )}
+
+              {!hasScheduler && !hasDisplay && !hasStorage && !hasWeb && !hasLogging && (
+                <p class="text-gray-500 italic text-center py-4">No configuration found</p>
+              )}
+            </div>
+          )}
         </Card>
 
         {/* Plugin Configuration */}

@@ -8,6 +8,7 @@ import type {
   LogEntry,
   DisplayStatus,
   DisplayHealth,
+  AppConfig,
 } from '@/api/types'
 
 export const systemKeys = {
@@ -17,6 +18,7 @@ export const systemKeys = {
   connections: () => [...systemKeys.all, 'connections'] as const,
   scheduler: () => [...systemKeys.all, 'scheduler'] as const,
   logs: (level?: string) => [...systemKeys.all, 'logs', level] as const,
+  config: () => [...systemKeys.all, 'config'] as const,
 }
 
 export const displayKeys = {
@@ -62,6 +64,13 @@ export function useLogs(level?: string) {
   return useQuery({
     queryKey: systemKeys.logs(level),
     queryFn: () => get<LogEntry[]>(`/system/logs${level ? `?level=${level}` : ''}`),
+  })
+}
+
+export function useConfig() {
+  return useQuery({
+    queryKey: systemKeys.config(),
+    queryFn: () => get<AppConfig>('/config'),
   })
 }
 

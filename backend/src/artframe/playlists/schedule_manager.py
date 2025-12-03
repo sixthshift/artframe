@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from ..models import TimeSlot
 
@@ -25,15 +26,17 @@ class ScheduleManager:
     No overlapping, no priorities - just direct slot assignments.
     """
 
-    def __init__(self, storage_dir: Path):
+    def __init__(self, storage_dir: Path, timezone: str = "UTC"):
         """
         Initialize schedule manager.
 
         Args:
             storage_dir: Directory for storing schedule data
+            timezone: IANA timezone string (e.g. "Australia/Sydney")
         """
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.timezone = timezone
 
         self.schedules_file = self.storage_dir / "schedules.json"
         self._slots: Dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
@@ -154,16 +157,18 @@ class ScheduleManager:
 
     def get_current_slot(self, current_time: Optional[datetime] = None) -> Optional[TimeSlot]:
         """
-        Get the slot for the current time.
+        Get the slot for the current time in the configured timezone.
 
         Args:
-            current_time: Time to check (defaults to now)
+            current_time: Time to check (defaults to now in configured timezone)
 
         Returns:
             TimeSlot if assigned, None otherwise
         """
         if current_time is None:
-            current_time = datetime.now()
+            # Get current time in the configured timezone
+            tz = ZoneInfo(self.timezone)
+            current_time = datetime.now(tz)
 
         day = current_time.weekday()  # 0=Monday, 6=Sunday
         hour = current_time.hour

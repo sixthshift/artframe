@@ -78,8 +78,14 @@ export type DisplayHealth = components['schemas']['DisplayHealthData']
 
 // System types
 export type SystemInfo = components['schemas']['SystemInfoData']
-export type SchedulerStatus = components['schemas']['SchedulerStatus']
 export type LogEntry = components['schemas']['LogEntry']
+
+// Extended scheduler status with timezone info
+export type SchedulerStatus = components['schemas']['SchedulerStatus'] & {
+  current_time?: string
+  timezone?: string
+  update_time?: string
+}
 
 // System status (from /api/status endpoint)
 // Note: Some fields may not be present depending on backend version
@@ -113,6 +119,48 @@ export type ConnectionStatus = Record<string, boolean>
 export type TimeSlot = SlotSetRequest
 export type BulkSlotAssignment = BulkSlotSetRequest
 export type CurrentScheduleStatus = ScheduleCurrentData
+
+// Configuration types (from /api/config endpoint)
+export interface DisplayConfig {
+  driver?: string
+  config?: {
+    width?: number
+    height?: number
+    save_images?: boolean
+  }
+}
+
+export interface StorageConfig {
+  data_dir?: string
+  cache_dir?: string
+}
+
+export interface SchedulerConfig {
+  timezone?: string
+  update_times?: string[]
+}
+
+export interface WebConfig {
+  host?: string
+  port?: number
+}
+
+export interface LoggingConfig {
+  level?: string
+  dir?: string
+}
+
+export interface ArtframeConfig {
+  display?: DisplayConfig
+  storage?: StorageConfig
+  scheduler?: SchedulerConfig
+  web?: WebConfig
+  logging?: LoggingConfig
+}
+
+export interface AppConfig {
+  artframe?: ArtframeConfig
+}
 
 // Re-export the full generated module for advanced usage
 export type { components, paths, operations } from './generated'
