@@ -199,6 +199,7 @@ class BasePlugin(ABC):
         settings: Dict[str, Any],
         device_config: Dict[str, Any],
         stop_event,
+        plugin_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Run while this plugin is the active content source.
@@ -215,12 +216,13 @@ class BasePlugin(ABC):
             settings: Plugin instance settings
             device_config: Display device configuration
             stop_event: threading.Event - set when plugin should stop
+            plugin_info: Optional metadata about the plugin/instance for display tracking
 
         Example (Clock plugin):
-            def run_active(self, display_controller, settings, device_config, stop_event):
+            def run_active(self, display_controller, settings, device_config, stop_event, plugin_info):
                 while not stop_event.is_set():
                     image = self.generate_image(settings, device_config)
-                    display_controller.display_image(image)
+                    display_controller.display_image(image, plugin_info)
                     # Wait 60 seconds or until stopped
                     stop_event.wait(timeout=60)
         """
@@ -228,7 +230,7 @@ class BasePlugin(ABC):
         try:
             image = self.generate_image(settings, device_config)
             if image:
-                display_controller.display_image(image)
+                display_controller.display_image(image, plugin_info)
         except Exception as e:
             self.logger.error(f"Failed to generate/display image: {e}")
 

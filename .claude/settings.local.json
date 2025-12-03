@@ -47,7 +47,9 @@
       "Bash(netstat:*)",
       "Bash(__NEW_LINE__ echo -e \"\\n--- /api/system/info ---\")",
       "Bash(__NEW_LINE__ echo -e \"\\n\\n--- /api/update ---\")",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(wc:*)",
+      "Bash(PYTHONPATH=src python -m pytest:*)"
     ],
     "deny": [],
     "ask": []

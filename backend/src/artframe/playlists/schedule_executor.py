@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from ..models import TargetType
-from ..plugins import get_plugin
+from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
 from .schedule_manager import ScheduleManager
 
@@ -101,50 +101,59 @@ class ScheduleExecutor:
 
         return False
 
-    def execute_current_schedule(self) -> Optional[Any]:
+    def execute_current_schedule(self) -> tuple[Optional[Any], Optional[Dict[str, Any]]]:
         """
         Execute the currently scheduled instance and generate content.
 
         Returns:
-            Generated image or None if failed
+            Tuple of (image, plugin_info) or (None, None) if failed
         """
         instance_id = self.get_current_scheduled_instance_id()
 
         if instance_id is None:
             logger.warning("No instance scheduled and no default configured")
-            return None
+            return None, None
 
         try:
             # Get the instance
             instance = self.instance_manager.get_instance(instance_id)
             if not instance:
                 logger.error(f"Instance not found: {instance_id}")
-                return None
+                return None, None
 
             if not instance.enabled:
                 logger.warning(f"Instance is disabled: {instance_id}")
-                return None
+                return None, None
 
             # Get the plugin
             plugin = get_plugin(instance.plugin_id)
             if not plugin:
                 logger.error(f"Plugin not found: {instance.plugin_id}")
-                return None
+                return None, None
 
             # Generate image
             logger.info(f"Executing scheduled instance: {instance.name}")
 
             image = plugin.generate_image(instance.settings, self.device_config)
 
+            # Build plugin info for display tracking
+            metadata = get_plugin_metadata(instance.plugin_id)
+            plugin_info = {
+                "plugin_name": metadata.display_name if metadata else instance.plugin_id,
+                "instance_name": instance.name,
+                "instance_id": instance.id,
+                "plugin_id": instance.plugin_id,
+            }
+
             # Track what we just displayed
             self.last_displayed_instance_id = instance_id
             self.last_check_time = datetime.now()
 
-            return image
+            return image, plugin_info
 
         except Exception as e:
             logger.error(f"Failed to execute scheduled instance: {e}", exc_info=True)
-            return None
+            return None, None
 
     def get_current_schedule_info(self) -> Optional[Dict[str, Any]]:
         """
@@ -206,12 +215,12 @@ class ScheduleExecutor:
                 # Check if we should update the display
                 if self.should_update_display():
                     # Execute and display the current schedule
-                    image = self.execute_current_schedule()
+                    image, plugin_info = self.execute_current_schedule()
 
                     if image:
                         # Display the image
                         try:
-                            display_controller.display_image(image)
+                            display_controller.display_image(image, plugin_info)
                             logger.info("Successfully displayed scheduled content")
                         except Exception as e:
                             logger.error(f"Failed to display image: {e}", exc_info=True)
@@ -243,9 +252,9 @@ class ScheduleExecutor:
             True if successful
         """
         try:
-            image = self.execute_current_schedule()
+            image, plugin_info = self.execute_current_schedule()
             if image:
-                display_controller.display_image(image)
+                display_controller.display_image(image, plugin_info)
                 logger.info("Force refresh successful")
                 return True
             else:
