@@ -636,11 +636,13 @@ class ContentOrchestrator:
         Get the next scheduled update time (next hour boundary).
 
         Returns:
-            datetime: Next update time
+            datetime: Next update time in configured timezone
         """
         from datetime import timedelta
 
-        now = datetime.now()
+        # Use configured timezone for consistency
+        tz = ZoneInfo(self.schedule_manager.timezone)
+        now = datetime.now(tz)
         # Next hour starts at minute=0, second=0
         next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         return next_hour
