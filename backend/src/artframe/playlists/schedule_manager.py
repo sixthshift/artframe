@@ -40,9 +40,14 @@ class ScheduleManager:
 
         self.schedules_file = self.storage_dir / "schedules.json"
         self._slots: Dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
+        self._tz = ZoneInfo(timezone)
 
         # Load existing schedule
         self._load_schedule()
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self._tz)
 
     def _load_schedule(self) -> None:
         """Load schedule from storage."""
@@ -79,7 +84,7 @@ class ScheduleManager:
                     }
                     for key, slot in self._slots.items()
                 },
-                "last_updated": datetime.now().isoformat(),
+                "last_updated": self._now().isoformat(),
             }
 
             with open(self.schedules_file, "w") as f:

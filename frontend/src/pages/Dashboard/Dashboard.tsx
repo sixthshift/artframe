@@ -98,7 +98,7 @@ export const Dashboard = () => {
                 {scheduler.current_time && (
                   <>
                     <span class={styles.timeLabel}>Server Time:</span>
-                    <span class={styles.timeValue}>{scheduler.current_time}</span>
+                    <span class={styles.timeValue}>{formatDateTime(scheduler.current_time)}</span>
                   </>
                 )}
                 {scheduler.next_update && (

@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from ..models import PluginInstance
 from .plugin_registry import get_plugin
@@ -25,21 +26,27 @@ class InstanceManager:
     to JSON storage.
     """
 
-    def __init__(self, storage_dir: Path):
+    def __init__(self, storage_dir: Path, timezone: str = "UTC"):
         """
         Initialize instance manager.
 
         Args:
             storage_dir: Directory for storing instance data
+            timezone: Timezone for timestamps (e.g., "Australia/Sydney")
         """
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.timezone = ZoneInfo(timezone)
 
         self.instances_file = self.storage_dir / "plugin_instances.json"
         self._instances: Dict[str, PluginInstance] = {}
 
         # Load existing instances
         self._load_instances()
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self.timezone)
 
     def _load_instances(self) -> None:
         """Load instances from storage."""
@@ -84,7 +91,7 @@ class InstanceManager:
                     }
                     for inst in self._instances.values()
                 ],
-                "last_updated": datetime.now().isoformat(),
+                "last_updated": self._now().isoformat(),
             }
 
             with open(self.instances_file, "w") as f:
@@ -128,8 +135,8 @@ class InstanceManager:
             name=name,
             settings=settings,
             enabled=True,
-            created_at=datetime.now(),
-            updated_at=datetime.now(),
+            created_at=self._now(),
+            updated_at=self._now(),
         )
 
         self._instances[instance.id] = instance
@@ -218,7 +225,7 @@ class InstanceManager:
         if name is not None:
             instance.name = name
 
-        instance.updated_at = datetime.now()
+        instance.updated_at = self._now()
         self._save_instances()
 
         logger.info(f"Updated instance {instance.name} ({instance_id})")
@@ -280,7 +287,7 @@ class InstanceManager:
                 logger.warning(f"Plugin on_enable failed: {e}")
 
         instance.enabled = True
-        instance.updated_at = datetime.now()
+        instance.updated_at = self._now()
         self._save_instances()
 
         logger.info(f"Enabled instance {instance.name} ({instance_id})")
@@ -313,7 +320,7 @@ class InstanceManager:
                 logger.warning(f"Plugin on_disable failed: {e}")
 
         instance.enabled = False
-        instance.updated_at = datetime.now()
+        instance.updated_at = self._now()
         self._save_instances()
 
         logger.info(f"Disabled instance {instance.name} ({instance_id})")

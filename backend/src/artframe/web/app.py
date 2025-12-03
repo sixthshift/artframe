@@ -40,15 +40,17 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"
         load_plugins(plugins_dir)
 
+        # Get configured timezone for all managers
+        timezone = controller.config_manager.get_timezone()
+
         # Create instance manager
         storage_dir = Path.home() / ".artframe" / "data"
-        app.state.instance_manager = InstanceManager(storage_dir)
+        app.state.instance_manager = InstanceManager(storage_dir, timezone=timezone)
 
         # Create playlist manager
-        app.state.playlist_manager = PlaylistManager(storage_dir)
+        app.state.playlist_manager = PlaylistManager(storage_dir, timezone=timezone)
 
-        # Create schedule manager and executor with configured timezone
-        timezone = controller.config_manager.get_timezone()
+        # Create schedule manager and executor
         app.state.schedule_manager = ScheduleManager(storage_dir, timezone=timezone)
 
         # Get device config from controller

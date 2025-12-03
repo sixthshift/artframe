@@ -5,6 +5,7 @@ Main controller for Artframe system.
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
+from zoneinfo import ZoneInfo
 
 from .config import ConfigManager
 from .display import DisplayController
@@ -44,15 +45,15 @@ class ArtframeController:
         # Initialize plugin and playlist management using config paths
         data_dir = self.config_manager.get_data_dir()
         timezone = self.config_manager.get_timezone()
-        self.instance_manager = InstanceManager(data_dir)
-        self.playlist_manager = PlaylistManager(data_dir)
+        self.instance_manager = InstanceManager(data_dir, timezone=timezone)
+        self.playlist_manager = PlaylistManager(data_dir, timezone=timezone)
         self.schedule_manager = ScheduleManager(data_dir, timezone=timezone)
 
         # Create device config
         device_config = self._get_device_config()
 
         # Create condition evaluator
-        self.condition_evaluator = ConditionEvaluator()
+        self.condition_evaluator = ConditionEvaluator(timezone=timezone)
 
         # Create unified content orchestrator
         self.orchestrator = ContentOrchestrator(
@@ -74,6 +75,11 @@ class ArtframeController:
         # Track state
         self.running = False
         self.last_update: Optional[datetime] = None
+        self._tz = ZoneInfo(timezone)
+
+    def _now(self) -> datetime:
+        """Get current time in configured timezone."""
+        return datetime.now(self._tz)
 
     def _create_storage_manager(self) -> StorageManager:
         """Create and configure storage manager."""
@@ -83,7 +89,8 @@ class ArtframeController:
     def _create_display_controller(self) -> DisplayController:
         """Create and configure display controller."""
         display_config = self.config_manager.get_display_config()
-        return DisplayController(display_config)
+        timezone = self.config_manager.get_timezone()
+        return DisplayController(display_config, timezone=timezone)
 
     def _get_device_config(self) -> Dict[str, Any]:
         """Get device configuration for image generation."""
@@ -131,7 +138,7 @@ class ArtframeController:
         try:
             success = self.orchestrator.force_refresh(self.display_controller)
             if success:
-                self.last_update = datetime.now()
+                self.last_update = self._now()
             return success
 
         except Exception as e:
