@@ -9,8 +9,8 @@ import {
   useTriggerUpdate,
   useClearDisplay,
 } from '@/queries'
+import { formatDateTime } from '@/utils/date'
 import styles from './Dashboard.module.css'
-import { formatTimestamp } from './Dashboard.utils'
 
 export const Dashboard = () => {
   const { data: status, isLoading: statusLoading } = useSystemStatus()
@@ -105,15 +105,7 @@ export const Dashboard = () => {
                   <>
                     <span class={styles.timeLabel}>Next Update:</span>
                     <span class={styles.timeValue}>
-                      {new Date(scheduler.next_update).toLocaleString('sv-SE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false,
-                      })}
+                      {formatDateTime(scheduler.next_update)}
                     </span>
                   </>
                 )}
@@ -161,7 +153,7 @@ export const Dashboard = () => {
                 </div>
                 <div class={styles.displayInfoItem}>
                   <span class={styles.label}>Last Updated</span>
-                  <span class={styles.value}>{formatTimestamp(display.last_update)}</span>
+                  <span class={styles.value}>{formatDateTime(display.last_update) || 'Never'}</span>
                 </div>
                 <div class={styles.displayInfoItem}>
                   <span class={styles.label}>Status</span>
@@ -189,11 +181,11 @@ export const Dashboard = () => {
                 />
                 <StatusItem
                   label="Last Update"
-                  value={formatTimestamp(status.last_update)}
+                  value={formatDateTime(status.last_update) || 'Never'}
                 />
                 <StatusItem
                   label="Next Scheduled"
-                  value={status.next_scheduled || 'N/A'}
+                  value={formatDateTime(status.next_scheduled) || 'N/A'}
                 />
                 <StatusItem
                   label="Cache Images"
