@@ -10,3 +10,4 @@ When working on this project:
 1. Read technical-spec.md first to understand the current architecture and specifications
 2. Follow the patterns and conventions outlined in the technical specification
 3. Ensure any changes align with the documented technical decisions
+4. If you make changes that require updating the technical-spec.md, you must update it and keep it up to date

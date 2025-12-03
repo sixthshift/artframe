@@ -14,10 +14,8 @@ export default defineConfig({
     }
   },
   build: {
-    // Output to Flask's static directory
-    outDir: '../backend/src/artframe/web/static/dist',
-    
-    // Generate a manifest for Flask to reference
+    outDir: 'dist',
+    emptyOutDir: true,
     manifest: true,
     rollupOptions: {
       input: {
