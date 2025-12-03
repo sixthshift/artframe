@@ -70,12 +70,14 @@ class ContentOrchestrator:
 
         # State tracking
         self.running = False
+        self.paused = False
         self.current_slot: Optional[TimeSlot] = None
         self.current_playlist: Optional[Playlist] = None
         self.current_playlist_index: int = 0
         self.current_item_start: Optional[datetime] = None
         self.last_content_source: Optional[ContentSource] = None
         self.last_displayed_instance_id: Optional[str] = None
+        self.last_refresh: Optional[datetime] = None
 
         # For random mode, track history to avoid immediate repeats
         self._random_history: List[str] = []
@@ -415,6 +417,7 @@ class ContentOrchestrator:
             self.last_displayed_instance_id = instance.id
             self.last_content_source = content_source
             self.current_item_start = datetime.now()
+            self.last_refresh = datetime.now()
 
             return image
 
@@ -616,6 +619,44 @@ class ContentOrchestrator:
         logger.info("Stopping content orchestrator")
         self.running = False
         self._stop_active_plugin()
+
+    def pause(self) -> None:
+        """Pause automatic updates."""
+        logger.info("Pausing content orchestrator")
+        self.paused = True
+
+    def resume(self) -> None:
+        """Resume automatic updates."""
+        logger.info("Resuming content orchestrator")
+        self.paused = False
+
+    def get_next_update_time(self) -> datetime:
+        """
+        Get the next scheduled update time (next hour boundary).
+
+        Returns:
+            datetime: Next update time
+        """
+        from datetime import timedelta
+
+        now = datetime.now()
+        # Next hour starts at minute=0, second=0
+        next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        return next_hour
+
+    def get_scheduler_status(self) -> Dict[str, Any]:
+        """
+        Get scheduler status for API.
+
+        Returns:
+            Dictionary with scheduler state
+        """
+        return {
+            "paused": self.paused,
+            "update_time": f"{datetime.now().hour:02d}:00",  # Current hour slot
+            "next_update": self.get_next_update_time().isoformat(),
+            "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
+        }
 
     def get_current_status(self) -> Dict[str, Any]:
         """
