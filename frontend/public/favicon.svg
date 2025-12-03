@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Outer frame -->
+  <rect x="2" y="4" width="28" height="24" rx="2" fill="none" stroke="#1e293b" stroke-width="2.5"/>
+  <!-- Inner frame border -->
+  <rect x="6" y="8" width="20" height="16" rx="1" fill="none" stroke="#1e293b" stroke-width="1.5"/>
+  <!-- Stylized landscape/art inside -->
+  <path d="M8 20 L12 15 L16 18 L20 12 L24 17 L24 22 L8 22 Z" fill="#f59e0b" opacity="0.8"/>
+  <!-- Sun/circle accent -->
+  <circle cx="21" cy="12" r="2" fill="#f59e0b"/>
+</svg>
