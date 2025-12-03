@@ -5,7 +5,6 @@ import {
   useConnections,
   useSchedulerStatus,
   useCurrentDisplay,
-  useSourceStats,
   useToggleScheduler,
   useTriggerUpdate,
   useClearDisplay,
@@ -18,7 +17,6 @@ export const Dashboard = () => {
   const { data: connections, isLoading: connectionsLoading } = useConnections()
   const { data: scheduler } = useSchedulerStatus()
   const { data: display, isLoading: displayLoading } = useCurrentDisplay()
-  const { data: sourceStats, isLoading: sourceStatsLoading } = useSourceStats()
 
   const toggleScheduler = useToggleScheduler()
   const triggerUpdate = useTriggerUpdate()
@@ -219,34 +217,6 @@ export const Dashboard = () => {
               </div>
             ) : (
               <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load connections</p>
-            )}
-          </Card>
-
-          {/* Source Stats */}
-          <Card title="Source Statistics">
-            {sourceStatsLoading ? (
-              <p class="text-gray-500 italic text-center py-4">Loading source stats...</p>
-            ) : sourceStats ? (
-              <div class="grid grid-cols-2 gap-4">
-                <div class="text-center p-4 bg-gray-50 rounded">
-                  <div class="text-2xl font-bold text-primary-500">{sourceStats.total_photos || 'N/A'}</div>
-                  <div class="text-xs text-gray-500 uppercase tracking-wide">Total Photos</div>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded">
-                  <div class="text-2xl font-bold text-primary-500">{sourceStats.album_name || 'N/A'}</div>
-                  <div class="text-xs text-gray-500 uppercase tracking-wide">Album</div>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded">
-                  <div class="text-2xl font-bold text-primary-500">{sourceStats.last_sync || 'Never'}</div>
-                  <div class="text-xs text-gray-500 uppercase tracking-wide">Last Sync</div>
-                </div>
-                <div class="text-center p-4 bg-gray-50 rounded">
-                  <div class="text-2xl font-bold text-primary-500">{sourceStats.provider || 'N/A'}</div>
-                  <div class="text-xs text-gray-500 uppercase tracking-wide">Provider</div>
-                </div>
-              </div>
-            ) : (
-              <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load stats</p>
             )}
           </Card>
         </div>
