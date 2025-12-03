@@ -97,10 +97,6 @@
          transition-transform duration-100 hover:scale-[1.02] hover:shadow-md;
 }
 
-.slotContent.isPlaylist {
-  /* Can add playlist-specific styles if needed */
-}
-
 .slotName {
   @apply truncate max-w-full;
 }

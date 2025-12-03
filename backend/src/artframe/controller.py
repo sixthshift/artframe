@@ -10,11 +10,9 @@ from zoneinfo import ZoneInfo
 from .config import ConfigManager
 from .display import DisplayController
 from .logging import Logger
-from .playlists import PlaylistExecutor, PlaylistManager
-from .playlists.schedule_executor import ScheduleExecutor
 from .playlists.schedule_manager import ScheduleManager
 from .plugins import InstanceManager
-from .scheduling import ConditionEvaluator, ContentOrchestrator
+from .scheduling import ContentOrchestrator
 from .storage import StorageManager
 
 
@@ -42,34 +40,20 @@ class ArtframeController:
         self.storage_manager = self._create_storage_manager()
         self.display_controller = self._create_display_controller()
 
-        # Initialize plugin and playlist management using config paths
+        # Initialize plugin and schedule management using config paths
         data_dir = self.config_manager.get_data_dir()
         timezone = self.config_manager.get_timezone()
         self.instance_manager = InstanceManager(data_dir, timezone=timezone)
-        self.playlist_manager = PlaylistManager(data_dir, timezone=timezone)
         self.schedule_manager = ScheduleManager(data_dir, timezone=timezone)
 
         # Create device config
         device_config = self._get_device_config()
 
-        # Create condition evaluator
-        self.condition_evaluator = ConditionEvaluator(timezone=timezone)
-
         # Create unified content orchestrator
         self.orchestrator = ContentOrchestrator(
             schedule_manager=self.schedule_manager,
-            playlist_manager=self.playlist_manager,
             instance_manager=self.instance_manager,
             device_config=device_config,
-            condition_evaluator=self.condition_evaluator,
-        )
-
-        # Legacy executors (kept for backward compatibility)
-        self.playlist_executor = PlaylistExecutor(
-            self.playlist_manager, self.instance_manager, device_config
-        )
-        self.schedule_executor = ScheduleExecutor(
-            self.schedule_manager, self.instance_manager, device_config
         )
 
         # Track state
@@ -149,8 +133,8 @@ class ArtframeController:
         """
         Run the main scheduled loop with unified content orchestration.
 
-        This runs the ContentOrchestrator which handles both schedule-based
-        and playlist-based content selection.
+        This runs the ContentOrchestrator which handles schedule-based
+        content selection.
         """
         self.logger.log_scheduled_loop_start()
         self.running = True

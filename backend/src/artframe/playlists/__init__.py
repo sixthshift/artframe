@@ -1,8 +1,7 @@
 """
-Playlist management system for Artframe.
+Schedule management system for Artframe.
 """
 
-from .playlist_executor import PlaylistExecutor
-from .playlist_manager import PlaylistManager
+from .schedule_manager import ScheduleManager
 
-__all__ = ["PlaylistManager", "PlaylistExecutor"]
+__all__ = ["ScheduleManager"]

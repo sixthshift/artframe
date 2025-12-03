@@ -49,15 +49,9 @@ export interface SettingsSchema {
   sections: SettingsSection[]
 }
 
-// Playlist types
-export type Playlist = components['schemas']['PlaylistData']
-export type PlaylistItem = components['schemas']['PlaylistItemData']
-export type CreatePlaylistRequest = components['schemas']['PlaylistCreateRequest']
-export type UpdatePlaylistRequest = components['schemas']['PlaylistUpdateRequest']
-
 // Schedule types
 export interface ScheduleSlotData {
-  target_type: 'instance' | 'playlist'
+  target_type: 'instance'
   target_id: string
 }
 
