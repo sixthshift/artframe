@@ -7,7 +7,7 @@ and extensible custom conditions.
 
 import logging
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class ConditionEvaluator:
             timezone: IANA timezone string (e.g. "Australia/Sydney")
         """
         self._tz = ZoneInfo(timezone)
-        self._handlers: Dict[str, Callable[[Dict[str, Any]], bool]] = {
+        self._handlers: dict[str, Callable[[dict[str, Any]], bool]] = {
             "time_of_day": self._eval_time_of_day,
             "day_of_week": self._eval_day_of_week,
             "date_range": self._eval_date_range,
@@ -54,15 +54,13 @@ class ConditionEvaluator:
             "not": self._eval_not,
         }
         # Store for external condition providers (e.g., weather, API status)
-        self._external_providers: Dict[str, Callable[[], Any]] = {}
+        self._external_providers: dict[str, Callable[[], Any]] = {}
 
     def _now(self) -> datetime:
         """Get current time in configured timezone."""
         return datetime.now(self._tz)
 
-    def register_provider(
-        self, name: str, provider: Callable[[], Any]
-    ) -> None:
+    def register_provider(self, name: str, provider: Callable[[], Any]) -> None:
         """
         Register an external condition provider.
 
@@ -77,7 +75,7 @@ class ConditionEvaluator:
         logger.debug(f"Registered condition provider: {name}")
 
     def register_handler(
-        self, condition_type: str, handler: Callable[[Dict[str, Any]], bool]
+        self, condition_type: str, handler: Callable[[dict[str, Any]], bool]
     ) -> None:
         """
         Register a custom condition handler.
@@ -89,7 +87,7 @@ class ConditionEvaluator:
         self._handlers[condition_type] = handler
         logger.debug(f"Registered condition handler: {condition_type}")
 
-    def evaluate(self, conditions: Optional[Dict[str, Any]]) -> bool:
+    def evaluate(self, conditions: Optional[dict[str, Any]]) -> bool:
         """
         Evaluate all conditions. Returns True if all pass (AND logic).
 
@@ -108,14 +106,10 @@ class ConditionEvaluator:
             if handler:
                 try:
                     if not handler(params):
-                        logger.debug(
-                            f"Condition failed: {condition_type} with params {params}"
-                        )
+                        logger.debug(f"Condition failed: {condition_type} with params {params}")
                         return False
                 except Exception as e:
-                    logger.warning(
-                        f"Error evaluating condition {condition_type}: {e}"
-                    )
+                    logger.warning(f"Error evaluating condition {condition_type}: {e}")
                     # Fail open - if condition evaluation fails, allow it
                     continue
             else:
@@ -129,7 +123,7 @@ class ConditionEvaluator:
 
         return True
 
-    def _eval_time_of_day(self, params: Dict[str, Any]) -> bool:
+    def _eval_time_of_day(self, params: dict[str, Any]) -> bool:
         """
         Check if current time is within specified periods.
 
@@ -158,7 +152,7 @@ class ConditionEvaluator:
 
         return False
 
-    def _eval_day_of_week(self, params: Dict[str, Any]) -> bool:
+    def _eval_day_of_week(self, params: dict[str, Any]) -> bool:
         """
         Check if current day is in specified days.
 
@@ -175,7 +169,7 @@ class ConditionEvaluator:
         current_day = self._now().weekday()
         return current_day in days
 
-    def _eval_date_range(self, params: Dict[str, Any]) -> bool:
+    def _eval_date_range(self, params: dict[str, Any]) -> bool:
         """
         Check if current date is within a specified range.
 
@@ -209,7 +203,7 @@ class ConditionEvaluator:
             logger.warning(f"Invalid date format in date_range condition: {e}")
             return True  # Fail open
 
-    def _eval_time_range(self, params: Dict[str, Any]) -> bool:
+    def _eval_time_range(self, params: dict[str, Any]) -> bool:
         """
         Check if current time is within a specified range.
 
@@ -247,7 +241,7 @@ class ConditionEvaluator:
             logger.warning(f"Invalid time format in time_range condition: {e}")
             return True  # Fail open
 
-    def _eval_all_of(self, params: List[Dict[str, Any]]) -> bool:
+    def _eval_all_of(self, params: list[dict[str, Any]]) -> bool:
         """
         Evaluate multiple conditions with AND logic.
 
@@ -262,7 +256,7 @@ class ConditionEvaluator:
 
         return all(self.evaluate(condition) for condition in params)
 
-    def _eval_any_of(self, params: List[Dict[str, Any]]) -> bool:
+    def _eval_any_of(self, params: list[dict[str, Any]]) -> bool:
         """
         Evaluate multiple conditions with OR logic.
 
@@ -277,7 +271,7 @@ class ConditionEvaluator:
 
         return any(self.evaluate(condition) for condition in params)
 
-    def _eval_not(self, params: Dict[str, Any]) -> bool:
+    def _eval_not(self, params: dict[str, Any]) -> bool:
         """
         Negate a condition.
 
@@ -289,7 +283,7 @@ class ConditionEvaluator:
         """
         return not self.evaluate(params)
 
-    def _eval_external(self, provider_name: str, params: Dict[str, Any]) -> bool:
+    def _eval_external(self, provider_name: str, params: dict[str, Any]) -> bool:
         """
         Evaluate a condition using an external provider.
 
@@ -333,7 +327,7 @@ class ConditionEvaluator:
             logger.warning(f"Error evaluating external condition {provider_name}: {e}")
             return True  # Fail open
 
-    def get_current_context(self) -> Dict[str, Any]:
+    def get_current_context(self) -> dict[str, Any]:
         """
         Get the current context for condition evaluation.
 

@@ -9,7 +9,7 @@ import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from ..models import PluginInstance
@@ -39,7 +39,7 @@ class InstanceManager:
         self.timezone = ZoneInfo(timezone)
 
         self.instances_file = self.storage_dir / "plugin_instances.json"
-        self._instances: Dict[str, PluginInstance] = {}
+        self._instances: dict[str, PluginInstance] = {}
 
         # Load existing instances
         self._load_instances()
@@ -55,7 +55,7 @@ class InstanceManager:
             return
 
         try:
-            with open(self.instances_file, "r") as f:
+            with open(self.instances_file) as f:
                 data = json.load(f)
 
             for instance_data in data.get("instances", []):
@@ -103,7 +103,7 @@ class InstanceManager:
             logger.error(f"Failed to save instances: {e}", exc_info=True)
 
     def create_instance(
-        self, plugin_id: str, name: str, settings: Dict[str, Any]
+        self, plugin_id: str, name: str, settings: dict[str, Any]
     ) -> Optional[PluginInstance]:
         """
         Create a new plugin instance.
@@ -163,7 +163,7 @@ class InstanceManager:
         """
         return self._instances.get(instance_id)
 
-    def list_instances(self, plugin_id: Optional[str] = None) -> List[PluginInstance]:
+    def list_instances(self, plugin_id: Optional[str] = None) -> list[PluginInstance]:
         """
         List all instances, optionally filtered by plugin.
 
@@ -184,7 +184,7 @@ class InstanceManager:
         self,
         instance_id: str,
         name: Optional[str] = None,
-        settings: Optional[Dict[str, Any]] = None,
+        settings: Optional[dict[str, Any]] = None,
     ) -> bool:
         """
         Update an existing instance.
@@ -327,7 +327,7 @@ class InstanceManager:
         return True
 
     def test_instance(
-        self, instance_id: str, device_config: Dict[str, Any]
+        self, instance_id: str, device_config: dict[str, Any]
     ) -> tuple[bool, Optional[str]]:
         """
         Test an instance by running its generate_image method.
@@ -364,6 +364,6 @@ class InstanceManager:
         """Get total number of instances."""
         return len(self._instances)
 
-    def get_enabled_instances(self) -> List[PluginInstance]:
+    def get_enabled_instances(self) -> list[PluginInstance]:
         """Get all enabled instances."""
         return [inst for inst in self._instances.values() if inst.enabled]

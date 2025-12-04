@@ -6,7 +6,7 @@ Supports any Waveshare display by dynamically loading the appropriate module.
 import importlib
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from PIL import Image
 
@@ -24,7 +24,7 @@ class WaveshareDriver(DriverInterface):
         # "epd2in13": {"width": 250, "height": 122, "colors": 2},
     }
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize Waveshare driver with configuration."""
         super().__init__(config)
 
@@ -46,7 +46,7 @@ class WaveshareDriver(DriverInterface):
         self.display_count = 0
         self.current_image: Optional[Image.Image] = None
         self.current_image_path: Optional[Path] = None
-        self.last_plugin_info: Dict[str, Any] = {}
+        self.last_plugin_info: dict[str, Any] = {}
 
         # Dynamically import the appropriate Waveshare display module
         self.epd_module = self._load_display_module()
@@ -87,7 +87,8 @@ class WaveshareDriver(DriverInterface):
             module = importlib.import_module(module_name, package="artframe.display.drivers")
             return module
         except ImportError as e:
-            raise DisplayError(f"Failed to load Waveshare display module '{self.model}': {e}")
+            msg = f"Failed to load Waveshare display module '{self.model}': {e}"
+            raise DisplayError(msg) from e
 
     def initialize(self) -> None:
         """Initialize the Waveshare display."""
@@ -116,9 +117,9 @@ class WaveshareDriver(DriverInterface):
             self.initialized = True
 
         except Exception as e:
-            raise DisplayError(f"Failed to initialize Waveshare display: {e}")
+            raise DisplayError(f"Failed to initialize Waveshare display: {e}") from e
 
-    def get_display_size(self) -> Tuple[int, int]:
+    def get_display_size(self) -> tuple[int, int]:
         """Get display dimensions accounting for rotation."""
         spec = self.SUPPORTED_MODELS[self.model]
         width, height = spec["width"], spec["height"]
@@ -129,7 +130,7 @@ class WaveshareDriver(DriverInterface):
             return (width, height)
 
     def display_image(
-        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+        self, image: Image.Image, plugin_info: Optional[dict[str, Any]] = None
     ) -> None:
         """Display an image on the Waveshare display."""
         if not self.initialized:
@@ -164,7 +165,7 @@ class WaveshareDriver(DriverInterface):
             self.epd.display(buffer)
 
         except Exception as e:
-            raise DisplayError(f"Failed to display image: {e}")
+            raise DisplayError(f"Failed to display image: {e}") from e
 
     def clear_display(self) -> None:
         """Clear the display to white."""
@@ -179,7 +180,7 @@ class WaveshareDriver(DriverInterface):
             self.epd.Clear(0x11)
 
         except Exception as e:
-            raise DisplayError(f"Failed to clear display: {e}")
+            raise DisplayError(f"Failed to clear display: {e}") from e
 
     def sleep(self) -> None:
         """Put display into deep sleep mode."""
@@ -189,7 +190,7 @@ class WaveshareDriver(DriverInterface):
         try:
             self.epd.sleep()
         except Exception as e:
-            raise DisplayError(f"Failed to put display to sleep: {e}")
+            raise DisplayError(f"Failed to put display to sleep: {e}") from e
 
     def wake(self) -> None:
         """Wake display from sleep mode."""
@@ -204,7 +205,7 @@ class WaveshareDriver(DriverInterface):
             self.initialized = True
 
         except Exception as e:
-            raise DisplayError(f"Failed to wake display: {e}")
+            raise DisplayError(f"Failed to wake display: {e}") from e
 
     def _prepare_image(self, image: Image.Image) -> Image.Image:
         """Prepare image for display (resize and rotate)."""
@@ -239,6 +240,6 @@ class WaveshareDriver(DriverInterface):
         """Get number of images displayed."""
         return self.display_count
 
-    def get_last_plugin_info(self) -> Dict[str, Any]:
+    def get_last_plugin_info(self) -> dict[str, Any]:
         """Get info about last plugin that generated content."""
         return self.last_plugin_info

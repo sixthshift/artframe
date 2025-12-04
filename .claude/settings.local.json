@@ -49,7 +49,8 @@
       "Bash(__NEW_LINE__ echo -e \"\\n\\n--- /api/update ---\")",
       "Bash(python:*)",
       "Bash(wc:*)",
-      "Bash(PYTHONPATH=src python -m pytest:*)"
+      "Bash(PYTHONPATH=src python -m pytest:*)",
+      "Bash(uv run ruff:*)"
     ],
     "deny": [],
     "ask": []

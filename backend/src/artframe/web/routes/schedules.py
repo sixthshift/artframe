@@ -4,14 +4,13 @@ Schedule management API routes for Artframe dashboard.
 Provides endpoints for slot-based schedule CRUD operations.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from ..dependencies import get_instance_manager, get_schedule_manager
 from ..schemas import (
-    APIResponse,
     APIResponseWithData,
     BulkSlotSetRequest,
     ScheduleCurrentResponse,
@@ -32,7 +31,7 @@ class SlotClearRequest(BaseModel):
 def _serialize_slot(slot, instance_manager):
     """Serialize a time slot with target info."""
     target_name = "Unknown"
-    target_details: Dict[str, Any] = {}
+    target_details: dict[str, Any] = {}
 
     instance = instance_manager.get_instance(slot.target_id)
     if instance:
@@ -64,7 +63,7 @@ def list_schedules(schedule_manager=Depends(get_schedule_manager)):
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/slot", response_model=SlotSetResponse)
@@ -86,7 +85,7 @@ def set_slot(request: SlotSetRequest, schedule_manager=Depends(get_schedule_mana
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/slot", response_model=APIResponseWithData)
@@ -118,7 +117,7 @@ def clear_slot(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/slots/bulk", response_model=APIResponseWithData)
@@ -138,7 +137,7 @@ def bulk_set_slots(request: BulkSlotSetRequest, schedule_manager=Depends(get_sch
 
         return {"success": True, "data": {"count": count}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/current", response_model=ScheduleCurrentResponse)
@@ -169,7 +168,7 @@ def get_current_schedule(
 
         return {"success": True, "data": {"has_content": False, "source_type": "none"}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/clear", response_model=APIResponseWithData)
@@ -180,4 +179,4 @@ def clear_all_schedules(schedule_manager=Depends(get_schedule_manager)):
 
         return {"success": True, "data": {"cleared": count}}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -4,7 +4,7 @@ Mock display driver for development and testing.
 
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from PIL import Image
 
@@ -14,7 +14,7 @@ from .base import DisplayError, DriverInterface
 class MockDriver(DriverInterface):
     """Mock display driver for development/testing."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize mock driver."""
         super().__init__(config)
 
@@ -30,7 +30,7 @@ class MockDriver(DriverInterface):
         self.display_count = 0
         self.current_image: Optional[Image.Image] = None
         self.current_image_path: Optional[Path] = None
-        self.last_plugin_info: Dict[str, Any] = {}
+        self.last_plugin_info: dict[str, Any] = {}
 
     def validate_config(self) -> None:
         """Validate mock driver configuration."""
@@ -47,12 +47,12 @@ class MockDriver(DriverInterface):
         """Initialize mock display (no-op)."""
         print(f"Mock display initialized: {self.width}x{self.height}")
 
-    def get_display_size(self) -> Tuple[int, int]:
+    def get_display_size(self) -> tuple[int, int]:
         """Get mock display dimensions."""
         return (self.width, self.height)
 
     def display_image(
-        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+        self, image: Image.Image, plugin_info: Optional[dict[str, Any]] = None
     ) -> None:
         """Display image (save to file if configured)."""
         try:
@@ -88,7 +88,7 @@ class MockDriver(DriverInterface):
             print(f"Mock display: Displayed image {self.display_count}")
 
         except Exception as e:
-            raise DisplayError(f"Mock display error: {e}")
+            raise DisplayError(f"Mock display error: {e}") from e
 
     def clear_display(self) -> None:
         """Clear mock display."""
@@ -116,7 +116,7 @@ class MockDriver(DriverInterface):
         """Get path to current displayed image (for web serving)."""
         return self.current_image_path
 
-    def get_last_plugin_info(self) -> Dict[str, Any]:
+    def get_last_plugin_info(self) -> dict[str, Any]:
         """Get info about last plugin that generated content."""
         return self.last_plugin_info
 

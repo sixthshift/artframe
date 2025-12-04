@@ -5,7 +5,7 @@ Displays current time and date with customizable formats.
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
@@ -25,7 +25,7 @@ class Clock(BasePlugin):
         """Initialize Clock plugin."""
         super().__init__()
 
-    def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
+    def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate plugin settings.
 
@@ -61,7 +61,7 @@ class Clock(BasePlugin):
         return True, ""
 
     def generate_image(
-        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, settings: dict[str, Any], device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Generate clock display image.
@@ -196,7 +196,7 @@ class Clock(BasePlugin):
             self.logger.warning(f"Failed to load custom font, using default: {e}")
             return ImageFont.load_default()
 
-    def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
+    def _create_error_image(self, error_message: str, device_config: dict[str, Any]) -> Image.Image:
         """Create error image with message."""
         width = device_config["width"]
         height = device_config["height"]
@@ -214,7 +214,7 @@ class Clock(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: Dict[str, Any]) -> str:
+    def get_cache_key(self, settings: dict[str, Any]) -> str:
         """
         Generate cache key for clock content.
 
@@ -233,7 +233,7 @@ class Clock(BasePlugin):
         tz_suffix = f"_{timezone}" if timezone else ""
         return f"clock_{now.strftime('%Y%m%d_%H%M')}{tz_suffix}"
 
-    def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
+    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """
         Get cache time-to-live in seconds.
 
@@ -244,10 +244,10 @@ class Clock(BasePlugin):
     def run_active(
         self,
         display_controller,
-        settings: Dict[str, Any],
-        device_config: Dict[str, Any],
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
         stop_event,
-        plugin_info: Optional[Dict[str, Any]] = None,
+        plugin_info: Optional[dict[str, Any]] = None,
     ) -> None:
         """
         Run the clock's own refresh loop.

@@ -5,7 +5,6 @@ Based on Waveshare epdconfig.py
 
 import logging
 import os
-import sys
 import time
 
 logger = logging.getLogger(__name__)
@@ -50,7 +49,6 @@ class RaspberryPi:
         self.SPI.writebytes2(data)
 
     def module_init(self):
-        import gpiozero
         import spidev
 
         try:
@@ -217,7 +215,7 @@ if os.path.exists("/sys/bus/platform/drivers/gpio-x3"):
     implementation = SunriseX3()
 else:
     try:
-        with open("/proc/cpuinfo", "r") as f:
+        with open("/proc/cpuinfo") as f:
             cpuinfo = f.read()
         if "Raspberry" in cpuinfo:
             implementation = RaspberryPi()

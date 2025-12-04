@@ -8,10 +8,8 @@ version = "1.0.0"
 description = "Raspberry Pi digital photo frame with AI style transformation"
 readme = "README.md"
 requires-python = ">=3.9"
-license = {text = "MIT"}
-authors = [
-    {name = "Artframe Team"}
-]
+license = { text = "MIT" }
+authors = [{ name = "Artframe Team" }]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -43,38 +41,54 @@ dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
     "pytest-mock>=3.11.0",
-    "black>=23.0.0",
+    "ruff>=0.1.0",
     "mypy>=1.5.0",
-    "rope>=1.0.0",
-    "autopep8>=2.0.0",
-    "isort>=5.12.0",
 ]
 
 [project.scripts]
 artframe = "artframe.main:main"
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.black]
+[tool.ruff]
 line-length = 100
-target-version = ["py39", "py310", "py311"]
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.mypy_cache
-  | \.pytest_cache
-  | \.venv
-  | build
-  | dist
-)/
-'''
+target-version = "py39"
+exclude = [
+    ".eggs",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "build",
+    "dist",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+]
+ignore = ["E203", "B008", "B027"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore line length in files with embedded HTML/CSS or quote data
+"src/artframe/web/routes/core.py" = ["E501"]
+"src/artframe/web/routes/spa.py" = ["E501"]
+"src/artframe/plugins/builtin/quote_of_the_day/quote_of_the_day.py" = ["E501"]
+"src/artframe/plugins/base_plugin.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.mypy]
 python_version = "3.9"
@@ -90,12 +104,7 @@ warn_no_return = true
 strict_equality = true
 
 [[tool.mypy.overrides]]
-module = [
-    "RPi.*",
-    "spidev",
-    "schedule",
-    "dataclasses_json",
-]
+module = ["RPi.*", "spidev", "schedule", "dataclasses_json"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -114,11 +123,7 @@ addopts = [
 
 [tool.coverage.run]
 source = ["src/artframe"]
-omit = [
-    "*/tests/*",
-    "*/__pycache__/*",
-    "*/venv/*",
-]
+omit = ["*/tests/*", "*/__pycache__/*", "*/venv/*"]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -131,12 +136,3 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
-
-[tool.isort]
-profile = "black"
-line_length = 100
-multi_line_output = 3
-include_trailing_comma = true
-force_grid_wrap = 0
-use_parentheses = true
-ensure_newline_before_comments = true

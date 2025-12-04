@@ -9,7 +9,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from ..models import TimeSlot
@@ -39,7 +39,7 @@ class ScheduleManager:
         self.timezone = timezone
 
         self.schedules_file = self.storage_dir / "schedules.json"
-        self._slots: Dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
+        self._slots: dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
         self._tz = ZoneInfo(timezone)
 
         # Load existing schedule
@@ -56,7 +56,7 @@ class ScheduleManager:
             return
 
         try:
-            with open(self.schedules_file, "r") as f:
+            with open(self.schedules_file) as f:
                 data = json.load(f)
 
             # Load slots
@@ -180,15 +180,15 @@ class ScheduleManager:
 
         return self.get_slot(day, hour)
 
-    def get_all_slots(self) -> List[TimeSlot]:
+    def get_all_slots(self) -> list[TimeSlot]:
         """Get all assigned slots."""
         return list(self._slots.values())
 
-    def get_slots_for_day(self, day: int) -> List[TimeSlot]:
+    def get_slots_for_day(self, day: int) -> list[TimeSlot]:
         """Get all slots assigned for a specific day."""
         return [slot for slot in self._slots.values() if slot.day == day]
 
-    def get_slots_dict(self) -> Dict[str, Dict[str, str]]:
+    def get_slots_dict(self) -> dict[str, dict[str, str]]:
         """
         Get all slots as a dictionary for JSON serialization.
 
@@ -209,7 +209,7 @@ class ScheduleManager:
 
     def bulk_set_slots(
         self,
-        slots: List[Dict[str, Any]],
+        slots: list[dict[str, Any]],
     ) -> int:
         """
         Set multiple slots at once.

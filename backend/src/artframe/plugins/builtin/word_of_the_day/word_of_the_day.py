@@ -6,7 +6,7 @@ Displays vocabulary words with definitions, pronunciation, and examples.
 
 import random
 from datetime import datetime
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -246,7 +246,7 @@ class WordOfTheDay(BasePlugin):
         """Initialize Word of the Day plugin."""
         super().__init__()
 
-    def validate_settings(self, settings: Dict[str, Any]) -> Tuple[bool, str]:
+    def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate plugin settings.
 
@@ -269,7 +269,7 @@ class WordOfTheDay(BasePlugin):
         return True, ""
 
     def generate_image(
-        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, settings: dict[str, Any], device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Generate word display image.
@@ -367,7 +367,7 @@ class WordOfTheDay(BasePlugin):
             self.logger.error(f"Failed to generate word image: {e}", exc_info=True)
             return self._create_error_image(str(e), device_config)
 
-    def _select_word(self, difficulty: str, daily: bool) -> Tuple[str, str, str, str, str]:
+    def _select_word(self, difficulty: str, daily: bool) -> tuple[str, str, str, str, str]:
         """
         Select a word from the database.
 
@@ -402,7 +402,7 @@ class WordOfTheDay(BasePlugin):
         font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont],
         max_width: int,
         draw: ImageDraw.ImageDraw,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Wrap text to fit within max_width.
 
@@ -417,7 +417,7 @@ class WordOfTheDay(BasePlugin):
         """
         words = text.split()
         lines = []
-        current_line: List[str] = []
+        current_line: list[str] = []
 
         for word in words:
             test_line = " ".join(current_line + [word])
@@ -486,7 +486,7 @@ class WordOfTheDay(BasePlugin):
             self.logger.warning(f"Failed to load custom font, using default: {e}")
             return ImageFont.load_default()
 
-    def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
+    def _create_error_image(self, error_message: str, device_config: dict[str, Any]) -> Image.Image:
         """Create error image with message."""
         width = device_config["width"]
         height = device_config["height"]
@@ -504,7 +504,7 @@ class WordOfTheDay(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: Dict[str, Any]) -> str:
+    def get_cache_key(self, settings: dict[str, Any]) -> str:
         """
         Generate cache key for word content.
 
@@ -523,7 +523,7 @@ class WordOfTheDay(BasePlugin):
             now = datetime.now().strftime("%Y%m%d_%H%M%S")
             return f"word_{difficulty}_{now}"
 
-    def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
+    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """
         Get cache time-to-live in seconds.
 

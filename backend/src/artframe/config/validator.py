@@ -5,7 +5,7 @@ Validates system-level configuration only. Plugin-specific settings
 are validated by the plugins themselves.
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 
 class ConfigValidator:
@@ -15,7 +15,7 @@ class ConfigValidator:
     VALID_LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
     VALID_ROTATIONS = [0, 90, 180, 270]
 
-    def validate(self, config: Dict[str, Any]) -> None:
+    def validate(self, config: dict[str, Any]) -> None:
         """
         Validate system configuration.
 
@@ -25,7 +25,7 @@ class ConfigValidator:
         Raises:
             ValueError: If configuration is invalid
         """
-        errors: List[str] = []
+        errors: list[str] = []
 
         # Root structure
         if "artframe" not in config:
@@ -43,7 +43,7 @@ class ConfigValidator:
         if errors:
             raise ValueError("Invalid configuration:\n  - " + "\n  - ".join(errors))
 
-    def _validate_display(self, artframe: Dict[str, Any]) -> List[str]:
+    def _validate_display(self, artframe: dict[str, Any]) -> list[str]:
         """Validate display configuration."""
         errors = []
 
@@ -56,9 +56,7 @@ class ConfigValidator:
         if "driver" not in display:
             errors.append("display.driver is required")
         elif display["driver"] not in self.VALID_DISPLAY_DRIVERS:
-            errors.append(
-                f"display.driver must be one of: {self.VALID_DISPLAY_DRIVERS}"
-            )
+            errors.append(f"display.driver must be one of: {self.VALID_DISPLAY_DRIVERS}")
 
         # Config section is required
         if "config" not in display:
@@ -78,9 +76,7 @@ class ConfigValidator:
             # Rotation
             if "rotation" in config:
                 if config["rotation"] not in self.VALID_ROTATIONS:
-                    errors.append(
-                        f"display.config.rotation must be one of: {self.VALID_ROTATIONS}"
-                    )
+                    errors.append(f"display.config.rotation must be one of: {self.VALID_ROTATIONS}")
 
             # GPIO pins (for waveshare)
             if "gpio_pins" in config:
@@ -88,7 +84,7 @@ class ConfigValidator:
 
         return errors
 
-    def _validate_gpio_pins(self, gpio_pins: Dict[str, Any]) -> List[str]:
+    def _validate_gpio_pins(self, gpio_pins: dict[str, Any]) -> list[str]:
         """Validate GPIO pin configuration."""
         errors = []
         required_pins = ["busy", "reset", "dc", "cs"]
@@ -99,13 +95,11 @@ class ConfigValidator:
             else:
                 pin_value = gpio_pins[pin_name]
                 if not isinstance(pin_value, int) or pin_value < 0 or pin_value > 40:
-                    errors.append(
-                        f"display.config.gpio_pins.{pin_name} must be 0-40"
-                    )
+                    errors.append(f"display.config.gpio_pins.{pin_name} must be 0-40")
 
         return errors
 
-    def _validate_storage(self, artframe: Dict[str, Any]) -> List[str]:
+    def _validate_storage(self, artframe: dict[str, Any]) -> list[str]:
         """Validate storage configuration."""
         errors = []
 
@@ -132,12 +126,15 @@ class ConfigValidator:
 
         # cache_retention_days
         if "cache_retention_days" in storage:
-            if not isinstance(storage["cache_retention_days"], int) or storage["cache_retention_days"] <= 0:
+            if (
+                not isinstance(storage["cache_retention_days"], int)
+                or storage["cache_retention_days"] <= 0
+            ):
                 errors.append("storage.cache_retention_days must be a positive integer")
 
         return errors
 
-    def _validate_logging(self, artframe: Dict[str, Any]) -> List[str]:
+    def _validate_logging(self, artframe: dict[str, Any]) -> list[str]:
         """Validate logging configuration (optional section)."""
         errors = []
 
@@ -149,9 +146,7 @@ class ConfigValidator:
         # Level
         if "level" in logging_config:
             if logging_config["level"] not in self.VALID_LOG_LEVELS:
-                errors.append(
-                    f"logging.level must be one of: {self.VALID_LOG_LEVELS}"
-                )
+                errors.append(f"logging.level must be one of: {self.VALID_LOG_LEVELS}")
 
         # Dir
         if "dir" in logging_config:
@@ -160,17 +155,23 @@ class ConfigValidator:
 
         # max_size_mb
         if "max_size_mb" in logging_config:
-            if not isinstance(logging_config["max_size_mb"], int) or logging_config["max_size_mb"] <= 0:
+            if (
+                not isinstance(logging_config["max_size_mb"], int)
+                or logging_config["max_size_mb"] <= 0
+            ):
                 errors.append("logging.max_size_mb must be a positive integer")
 
         # backup_count
         if "backup_count" in logging_config:
-            if not isinstance(logging_config["backup_count"], int) or logging_config["backup_count"] < 0:
+            if (
+                not isinstance(logging_config["backup_count"], int)
+                or logging_config["backup_count"] < 0
+            ):
                 errors.append("logging.backup_count must be a non-negative integer")
 
         return errors
 
-    def _validate_web(self, artframe: Dict[str, Any]) -> List[str]:
+    def _validate_web(self, artframe: dict[str, Any]) -> list[str]:
         """Validate web server configuration (optional section)."""
         errors = []
 
@@ -192,7 +193,7 @@ class ConfigValidator:
 
         return errors
 
-    def _validate_scheduler(self, artframe: Dict[str, Any]) -> List[str]:
+    def _validate_scheduler(self, artframe: dict[str, Any]) -> list[str]:
         """Validate scheduler configuration (optional section)."""
         errors = []
 

@@ -4,7 +4,7 @@ Base interface for display drivers.
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from PIL import Image
 
@@ -12,7 +12,7 @@ from PIL import Image
 class DriverInterface(ABC):
     """Abstract base class for display drivers."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: dict[str, Any]):
         """Initialize the display driver with configuration."""
         self.config = config
         self.validate_config()
@@ -28,7 +28,7 @@ class DriverInterface(ABC):
         pass
 
     @abstractmethod
-    def get_display_size(self) -> Tuple[int, int]:
+    def get_display_size(self) -> tuple[int, int]:
         """
         Get display dimensions.
 
@@ -39,7 +39,7 @@ class DriverInterface(ABC):
 
     @abstractmethod
     def display_image(
-        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+        self, image: Image.Image, plugin_info: Optional[dict[str, Any]] = None
     ) -> None:
         """
         Display an image on the screen.
@@ -115,7 +115,7 @@ class DriverInterface(ABC):
         """
         return 0
 
-    def get_last_plugin_info(self) -> Dict[str, Any]:
+    def get_last_plugin_info(self) -> dict[str, Any]:
         """
         Get metadata about the last plugin that generated content.
 

@@ -6,11 +6,11 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 
 def setup_logging(
-    config: Dict[str, Any], cli_level: Optional[str] = None, cli_file: Optional[Path] = None
+    config: dict[str, Any], cli_level: Optional[str] = None, cli_file: Optional[Path] = None
 ) -> None:
     """
     Setup logging configuration from config file with CLI overrides.
@@ -26,7 +26,7 @@ def setup_logging(
     log_level = getattr(logging, level.upper(), logging.INFO)
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
-    handlers: List[logging.Handler] = []
+    handlers: list[logging.Handler] = []
 
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(logging.Formatter(log_format))

@@ -10,7 +10,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type, cast
+from typing import Any, Optional, cast
 
 from .base_plugin import BasePlugin
 
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 
 
 # Global plugin registry
-PLUGIN_CLASSES: Dict[str, BasePlugin] = {}
-PLUGIN_METADATA: Dict[str, "PluginMetadata"] = {}
+PLUGIN_CLASSES: dict[str, BasePlugin] = {}
+PLUGIN_METADATA: dict[str, "PluginMetadata"] = {}
 
 
 @dataclass
@@ -37,10 +37,10 @@ class PluginMetadata:
     author: str = ""  # Optional author
     version: str = "1.0.0"  # Optional version
     icon: Optional[str] = None  # Optional icon filename
-    settings_schema: Optional[Dict[str, Any]] = field(default=None)  # Settings form schema
+    settings_schema: Optional[dict[str, Any]] = field(default=None)  # Settings form schema
 
 
-def discover_plugins(plugins_dir: Path) -> Dict[str, Path]:
+def discover_plugins(plugins_dir: Path) -> dict[str, Path]:
     """
     Discover all plugins in the plugins directory.
 
@@ -56,7 +56,7 @@ def discover_plugins(plugins_dir: Path) -> Dict[str, Path]:
         plugins = discover_plugins(Path('src/artframe/plugins/builtin'))
         # Returns: {'clock': Path('.../clock'), 'weather': Path('.../weather')}
     """
-    discovered: Dict[str, Path] = {}
+    discovered: dict[str, Path] = {}
 
     if not plugins_dir.exists():
         logger.warning(f"Plugins directory not found: {plugins_dir}")
@@ -98,7 +98,7 @@ def load_plugin_metadata(plugin_dir: Path) -> Optional[PluginMetadata]:
     plugin_info_path = plugin_dir / "plugin-info.json"
 
     try:
-        with open(plugin_info_path, "r") as f:
+        with open(plugin_info_path) as f:
             data = json.load(f)
 
         # Required fields
@@ -139,7 +139,7 @@ def load_plugin_metadata(plugin_dir: Path) -> Optional[PluginMetadata]:
         return None
 
 
-def load_plugin_class(plugin_dir: Path, class_name: str) -> Optional[Type[BasePlugin]]:
+def load_plugin_class(plugin_dir: Path, class_name: str) -> Optional[type[BasePlugin]]:
     """
     Dynamically load plugin class from Python module.
 
@@ -188,7 +188,7 @@ def load_plugin_class(plugin_dir: Path, class_name: str) -> Optional[Type[BasePl
             logger.error(f"Plugin {plugin_id}: Class '{class_name}' must inherit from BasePlugin")
             return None
 
-        return cast(Type[BasePlugin], plugin_class)
+        return cast(type[BasePlugin], plugin_class)
 
     except Exception as e:
         logger.error(f"Plugin {plugin_id}: Failed to load module: {e}", exc_info=True)
@@ -295,7 +295,7 @@ def get_plugin_metadata(plugin_id: str) -> Optional[PluginMetadata]:
     return PLUGIN_METADATA.get(plugin_id)
 
 
-def list_plugins() -> List[str]:
+def list_plugins() -> list[str]:
     """
     Get list of all loaded plugin IDs.
 
@@ -309,7 +309,7 @@ def list_plugins() -> List[str]:
     return list(PLUGIN_CLASSES.keys())
 
 
-def list_plugin_metadata() -> List[PluginMetadata]:
+def list_plugin_metadata() -> list[PluginMetadata]:
     """
     Get list of all loaded plugin metadata.
 
