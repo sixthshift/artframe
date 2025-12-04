@@ -82,7 +82,6 @@ class Clock(BasePlugin):
 
             # Get settings with defaults
             time_format = settings.get("time_format", "24h")
-            show_seconds = settings.get("show_seconds", True)
             date_format = settings.get("date_format", "full")
             font_size = settings.get("font_size", "large")
             background_color = settings.get("background_color", "#FFFFFF")
@@ -103,17 +102,11 @@ class Clock(BasePlugin):
             else:
                 now = datetime.now()
 
-            # Format time string
+            # Format time string (never show seconds - rendering is expensive)
             if time_format == "12h":
-                if show_seconds:
-                    time_str = now.strftime("%I:%M:%S %p")
-                else:
-                    time_str = now.strftime("%I:%M %p")
+                time_str = now.strftime("%I:%M %p")
             else:  # 24h
-                if show_seconds:
-                    time_str = now.strftime("%H:%M:%S")
-                else:
-                    time_str = now.strftime("%H:%M")
+                time_str = now.strftime("%H:%M")
 
             # Format date string
             if date_format == "full":
@@ -238,25 +231,16 @@ class Clock(BasePlugin):
         else:
             now = datetime.now()
 
-        show_seconds = settings.get("show_seconds", True)
         tz_suffix = f"_{timezone}" if timezone else ""
-
-        if show_seconds:
-            # Cache per second
-            return f"clock_{now.strftime('%Y%m%d_%H%M%S')}{tz_suffix}"
-        else:
-            # Cache per minute
-            return f"clock_{now.strftime('%Y%m%d_%H%M')}{tz_suffix}"
+        return f"clock_{now.strftime('%Y%m%d_%H%M')}{tz_suffix}"
 
     def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
         """
         Get cache time-to-live in seconds.
 
-        If showing seconds, cache for 1 second.
-        Otherwise, cache for 60 seconds (1 minute).
+        Always returns 60 seconds (1 minute) as rendering is expensive.
         """
-        show_seconds = settings.get("show_seconds", True)
-        return 1 if show_seconds else 60
+        return 60
 
     def run_active(
         self,
