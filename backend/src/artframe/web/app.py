@@ -11,9 +11,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..controller import ArtframeController
-from ..playlists import ScheduleManager
 from ..plugins.instance_manager import InstanceManager
 from ..plugins.plugin_registry import load_plugins
+from ..scheduling import ScheduleManager
 
 
 def create_app(controller: ArtframeController, config: Optional[dict] = None) -> FastAPI:

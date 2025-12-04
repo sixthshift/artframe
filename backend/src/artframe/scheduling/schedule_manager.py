@@ -2,7 +2,7 @@
 Schedule manager for slot-based content scheduling.
 
 Simple timetable model: each hour slot on each day can have
-exactly one content assignment (instance or playlist).
+exactly one content assignment (plugin instance).
 """
 
 import json
@@ -22,7 +22,7 @@ class ScheduleManager:
     Manages slot-based schedule assignments.
 
     Simple model: 7 days x 24 hours = 168 possible slots.
-    Each slot can have one assignment (instance or playlist).
+    Each slot can have one assignment (plugin instance).
     No overlapping, no priorities - just direct slot assignments.
     """
 
@@ -108,8 +108,8 @@ class ScheduleManager:
         Args:
             day: Day of week (0=Monday, 6=Sunday)
             hour: Hour of day (0-23)
-            target_type: "instance" or "playlist"
-            target_id: The ID of the instance or playlist
+            target_type: "instance"
+            target_id: The ID of the plugin instance
 
         Returns:
             The created/updated TimeSlot

@@ -15,9 +15,9 @@ from zoneinfo import ZoneInfo
 from PIL import Image
 
 from ..models import ContentSource, PluginInstance, TimeSlot
-from ..playlists.schedule_manager import ScheduleManager
 from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
+from .schedule_manager import ScheduleManager
 
 logger = logging.getLogger(__name__)
 

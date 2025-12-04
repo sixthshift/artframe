@@ -90,12 +90,6 @@ def config_page():
     return get_spa_index()
 
 
-@router.get("/playlists")
-def playlists_page():
-    """Serve SPA for playlists page."""
-    return get_spa_index()
-
-
 @router.get("/favicon.svg")
 def serve_favicon():
     """Serve the favicon."""

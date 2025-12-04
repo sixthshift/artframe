@@ -11,7 +11,7 @@ Artframe is a Raspberry Pi-based e-ink content display platform with a flexible 
 ### Design Philosophy
 Artframe follows the **"display anything via plugins"** philosophy. Rather than being a single-purpose photo frame, Artframe provides:
 - **Extensible Plugin System** - Anyone can create plugins for new content types
-- **Playlist Management** - Rotate between multiple content sources on flexible schedules
+- **Hourly Scheduling** - Simple slot-based scheduling with weekly recurrence
 - **Instance-Based Configuration** - Run multiple instances of the same plugin with different settings
 - **Universal Display Pipeline** - Common display optimization for all content types
 - **Developer-Friendly API** - Simple plugin interface for rapid development
@@ -20,7 +20,7 @@ Artframe follows the **"display anything via plugins"** philosophy. Rather than 
 The project encompasses:
 - **Plugin Architecture** - Extensible system for content generation plugins
 - **Web Dashboard Interface** - Complete system management via browser
-- **Playlist System** - Schedule and rotate between content sources
+- **Slot-Based Scheduling** - Simple hourly time slots for content assignment
 - **Instance Management** - Multiple configurations per plugin type
 - **E-ink Display Management** - Unified display pipeline with optimization
 - **Form-based Configuration** - Dynamic settings UI per plugin
@@ -66,11 +66,11 @@ The project encompasses:
 | US-01 | As a user, I want to manage the frame entirely through a web interface | Can access dashboard via browser, no SSH needed | MUST |
 | US-02 | As a user, I want to browse and install content plugins | Can view plugin gallery, read descriptions, install plugins | MUST |
 | US-03 | As a user, I want to create multiple instances of the same plugin | Can run same plugin with different configurations (e.g., two photo albums) | MUST |
-| US-04 | As a user, I want to create playlists that rotate between content | Can sequence content with custom timing and order | MUST |
+| US-04 | As a user, I want to schedule content on an hourly basis | Can assign plugin instances to time slots in a weekly schedule | MUST |
 | US-05 | As a user, I want each plugin to have its own settings form | Plugin-specific settings appear dynamically in web UI | MUST |
 | US-06 | As a user, I want to preview content before displaying | Can test-run plugins and see output without affecting display | SHOULD |
 | US-07 | As a user, I want real-time monitoring of system health | Can view CPU, memory, temperature, plugin status, display metrics | SHOULD |
-| US-08 | As a user, I want manual control over display updates | Can trigger immediate refresh or pause playlist | MUST |
+| US-08 | As a user, I want manual control over display updates | Can trigger immediate refresh or pause scheduler | MUST |
 | US-09 | As a user, I want to view system and plugin logs | Can browse and filter logs via web interface | SHOULD |
 | US-10 | As a developer, I want to create custom plugins easily | Can implement ContentPlugin interface and deploy | MUST |
 | US-11 | As a developer, I want to test plugins independently | Can run plugin in test mode with mock display | SHOULD |
@@ -89,29 +89,22 @@ The project encompasses:
    - Plugin metadata (name, author, version, category)
 
 2. **Web Dashboard Interface**
-   - Multi-page navigation (Dashboard, Plugins, Playlists, Display, System)
+   - Multi-page navigation (Dashboard, Plugins, Schedule, Display, System)
    - Plugin gallery with search and categories
    - Instance management (create, edit, delete, duplicate)
-   - Playlist builder with drag-and-drop
+   - Schedule timetable with drag-to-select
    - Real-time system monitoring with 1-second polling
    - Live content preview window
    - Interactive controls for scheduler and manual operations
 
 3. **Slot-Based Scheduling**
    - 7 days × 24 hours = 168 time slots
-   - Each slot can hold one assignment (instance or playlist)
+   - Each slot can hold one plugin instance assignment
    - Bulk assignment for multiple slots at once
    - Default fallback content when no slot is assigned
    - Hour-based granularity for predictable scheduling
 
-4. **Playlist Management**
-   - Create named playlists with multiple content items
-   - Three playback modes: sequential, random, weighted random
-   - Configure display duration per item
-   - Item weights for weighted random selection
-   - Conditional display rules per item
-
-5. **Instance Management**
+4. **Instance Management**
    - Multiple instances per plugin type
    - Named instances for easy identification
    - Per-instance settings persistence
@@ -138,13 +131,13 @@ The project encompasses:
 
 | Scenario | Handling Strategy |
 |----------|------------------|
-| Plugin execution timeout | Kill plugin process, skip to next in playlist, log error |
-| Plugin crashes during execution | Catch exception, display error image, continue playlist |
+| Plugin execution timeout | Kill plugin process, log error, wait for next scheduled slot |
+| Plugin crashes during execution | Catch exception, display error image, continue schedule |
 | Network connectivity loss | Display cached content, retry plugin on next cycle |
 | Plugin dependency missing | Show error in plugin status, prevent instance creation |
 | Invalid plugin configuration | Validate on save, prevent execution until fixed |
 | Display driver crash | Automatic restart with systemd, reload last content |
-| All playlist items fail | Display fallback error screen, alert via log |
+| All scheduled instances fail | Display fallback error screen, alert via log |
 | Corrupted plugin code | Disable plugin automatically, alert in dashboard |
 | Conflicting plugin dependencies | Isolate plugins, document conflicts in plugin metadata |
 | Out of disk space | Auto-purge old cache, alert user, reduce cache limits |
@@ -159,7 +152,7 @@ The project encompasses:
 - Memory usage per plugin: < 256MB
 - Total system memory: < 512MB
 - CPU usage: < 50% sustained
-- Playlist transition: < 3 seconds
+- Schedule transition: < 3 seconds
 
 ### Security
 - Secure credential storage per plugin instance
@@ -178,7 +171,7 @@ The project encompasses:
 - Queue system for plugin execution
 - Efficient caching mechanism for generated content
 - Configurable retention period for cached content
-- Multiple playlists running on schedules
+- Weekly recurring schedules with hourly slots
 
 ### Maintainability
 - Modular plugin architecture with clear interface
@@ -215,7 +208,6 @@ graph TB
                 SYSTEM[system.py - Status/Config/Scheduler]
                 PLUGINS[plugins.py - Plugin & Instance CRUD]
                 SCHEDULES[schedules.py - Slot Management]
-                PLAYLISTS[playlists.py - Playlist CRUD]
                 DISPLAY[display.py - Display Control]
             end
             DEPS[dependencies.py - DI]
@@ -224,7 +216,6 @@ graph TB
 
         ORCHESTRATOR[Content Orchestrator]
         SCHEDULEMGR[Schedule Manager - Slot-Based]
-        PLAYLISTMGR[Playlist Manager]
         INSTANCEMGR[Instance Manager]
         CONFIG[Configuration Manager]
         DISPLAYCTRL[Display Controller]
@@ -262,11 +253,9 @@ graph TB
     SPA --> ORCHESTRATOR
     PLUGINS --> INSTANCEMGR
     SCHEDULES --> SCHEDULEMGR
-    PLAYLISTS --> PLAYLISTMGR
     DISPLAY --> DISPLAYCTRL
 
     ORCHESTRATOR --> SCHEDULEMGR
-    ORCHESTRATOR --> PLAYLISTMGR
     ORCHESTRATOR --> INSTANCEMGR
     ORCHESTRATOR --> DISPLAYCTRL
     INSTANCEMGR --> PLUGINREGISTRY
@@ -292,8 +281,7 @@ graph TB
 | FastAPI Web Server | Web dashboard and REST APIs | `web/app.py`, `web/routes/` (modular) |
 | Content Orchestrator | Plugin-driven scheduling and content display | `scheduling/content_orchestrator.py` |
 | Plugin Registry | Discovery, loading, validation of plugins | `plugins/plugin_registry.py` |
-| Playlist Manager | Manages playlists and playback modes | `playlists/playlist_manager.py` |
-| Schedule Manager | Manages slot-based time scheduling | `playlists/schedule_manager.py` |
+| Schedule Manager | Manages slot-based time scheduling | `scheduling/schedule_manager.py` |
 | Instance Manager | Manages plugin instance configs and lifecycle | `plugins/instance_manager.py` |
 | Configuration Manager | System settings with env-specific configs | `config/manager.py` |
 | Display Controller | Hardware abstraction for e-ink displays | `display/controller.py` |
@@ -329,8 +317,7 @@ graph TB
 
 3. **Content Orchestration Flow (Slot-Based):**
    - ContentOrchestrator checks current hour against schedule slots
-   - If slot has assignment, resolves to instance or playlist
-   - For playlists, selects item based on playback mode (sequential/random/weighted)
+   - If slot has assignment, resolves to plugin instance
    - Plugin's `run_active()` method invoked in dedicated thread
    - Plugin manages its own refresh loop while active
    - On hour boundary, ContentOrchestrator checks for slot change
@@ -340,13 +327,12 @@ graph TB
 4. **Manual Content Update Flow:**
    - User clicks "Refresh" in web UI
    - API calls Orchestrator to generate new content
-   - Orchestrator executes current playlist item immediately
+   - Orchestrator executes current scheduled instance immediately
    - Result displayed on e-ink
-   - Playlist timer resets
 
 5. **Real-time Monitoring Flow:**
    - JavaScript polls system APIs every 1-3 seconds
-   - APIs return: system stats, plugin status, playlist state, display metrics
+   - APIs return: system stats, plugin status, schedule state, display metrics
    - DOM updated with current values
    - Plugin execution progress shown in real-time
 
@@ -385,49 +371,24 @@ erDiagram
         string target_id FK
     }
 
-    PLAYLIST {
-        string id PK
-        string name
-        string playback_mode
-        boolean enabled
-    }
-
-    PLAYLIST_ITEM {
-        int id PK
-        string playlist_id FK
-        string instance_id FK
-        int duration_seconds
-        float weight
-        json conditions
-    }
-
     PLUGIN ||--o{ PLUGIN_INSTANCE : "has"
-    PLUGIN_INSTANCE ||--o{ PLAYLIST_ITEM : "used in"
     PLUGIN_INSTANCE ||--o{ TIME_SLOT : "assigned to"
-    PLAYLIST ||--o{ PLAYLIST_ITEM : "contains"
-    PLAYLIST ||--o{ TIME_SLOT : "assigned to"
 ```
 
 ### Data Structures
 
 ```python
 # Enums
-class PlaybackMode(Enum):
-    SEQUENTIAL = "sequential"
-    RANDOM = "random"
-    WEIGHTED_RANDOM = "weighted_random"
-
 class TargetType(Enum):
     INSTANCE = "instance"
-    PLAYLIST = "playlist"
 
 # Slot-based scheduling
 @dataclass
 class TimeSlot:
     day: int           # 0=Monday, 6=Sunday
     hour: int          # 0-23
-    target_type: str   # "instance" or "playlist"
-    target_id: str     # ID of the target
+    target_type: str   # "instance"
+    target_id: str     # ID of the plugin instance
 
 # Plugin system models
 @dataclass
@@ -447,28 +408,14 @@ class PluginInstance:
     settings: Dict[str, Any]
     enabled: bool
 
-@dataclass
-class PlaylistItem:
-    instance_id: str
-    duration_seconds: int
-    conditions: Optional[Dict[str, Any]] = None
-    weight: float = 1.0  # For weighted random selection
-
-@dataclass
-class Playlist:
-    id: str
-    name: str
-    playback_mode: PlaybackMode
-    items: List[PlaylistItem]
-    enabled: bool
-
 # Content orchestration output
 @dataclass
 class ContentSource:
-    instance_id: str
-    playlist_id: Optional[str]
-    playlist_item_index: Optional[int]
-    duration_seconds: Optional[int]
+    instance: Optional[PluginInstance]
+    duration_seconds: int
+    source_type: str  # "schedule", "default", "none"
+    source_id: Optional[str]
+    source_name: Optional[str]
 ```
 
 ### Core APIs
@@ -491,10 +438,6 @@ class ContentSource:
 | `get_current_slot()` | Get slot for current time | `Optional[TimeSlot]` |
 | `bulk_set_slots(slots)` | Assign multiple slots at once | `None` |
 | `set_default(target_type, target_id)` | Set fallback content | `None` |
-| **Playlist Management** |
-| `create_playlist(name, playback_mode)` | Creates new playlist | `Playlist` |
-| `add_item(playlist_id, instance_id, duration, weight)` | Adds item to playlist | `bool` |
-| `update_playback_mode(playlist_id, mode)` | Changes playback mode | `bool` |
 | **Content Orchestration** |
 | `get_current_content_source()` | Determines what to display now | `Optional[ContentSource]` |
 | `should_update_display(content_source)` | Checks if refresh needed | `bool` |
@@ -543,15 +486,11 @@ class ContentSource:
            return plugin_class(settings)
    ```
 
-3. **Strategy Pattern**
-   - **Purpose:** Different playlist execution strategies
-   - **Implementation:** Pluggable playlist execution modes (sequential, random, conditional)
+3. **Observer Pattern**
+   - **Purpose:** React to configuration and state changes
+   - **Implementation:** Event system for config updates, schedule changes
 
 4. **Observer Pattern**
-   - **Purpose:** React to configuration and state changes
-   - **Implementation:** Event system for config updates, playlist changes
-
-2. **Observer Pattern**
    - **Purpose:** React to configuration changes
    - **Implementation:** Event system for config updates
    ```python
@@ -628,13 +567,6 @@ Artframe exposes a comprehensive REST API organized by domain:
 | `/api/schedules/slots/<day>/<hour>` | DELETE | Clear a slot |
 | `/api/schedules/default` | GET | Get default content |
 | `/api/schedules/default` | POST | Set default content |
-| **Playlist Management** (`/api/playlists/`) |
-| `/api/playlists` | GET | List all playlists |
-| `/api/playlists` | POST | Create new playlist |
-| `/api/playlists/<id>` | GET | Get playlist details |
-| `/api/playlists/<id>` | PUT | Update playlist |
-| `/api/playlists/<id>` | DELETE | Delete playlist |
-| `/api/playlists/<id>/items` | POST | Add item to playlist |
 | **Display Control** (`/api/display/`) |
 | `/api/display/refresh` | POST | Trigger immediate display refresh |
 | `/api/display/status` | GET | Get current display status |
@@ -686,9 +618,8 @@ artframe:
 ```
 
 **Runtime Data Storage:**
-Plugin instances, playlists, and schedules are stored as JSON in `~/.artframe/data/`:
+Plugin instances and schedules are stored as JSON in `~/.artframe/data/`:
 - `plugin_instances.json` - All plugin instances with settings
-- `playlists.json` - Playlist definitions
 - `schedules.json` - Time slot assignments and default content
 
 ### External Integrations
