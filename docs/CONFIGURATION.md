@@ -6,7 +6,7 @@ Artframe separates configuration into **three distinct layers**:
 
 1. **System Configuration** - Hardware and core system settings (config.yaml)
 2. **Plugin Configuration** - Plugin instance settings (managed via web UI)
-3. **Playlist Configuration** - Content orchestration (managed via web UI)
+3. **Schedule Configuration** - Hourly slot assignments (managed via web UI)
 
 ## 1. System Configuration (config.yaml)
 
@@ -95,27 +95,33 @@ From the **Plugin Instances** tab, you can:
 - **Test** - Test run the instance
 - **Delete** - Remove the instance
 
-## 3. Playlist Configuration
+## 3. Schedule Configuration
 
-Orchestrates which plugin instances run and when. Managed through the **Playlists** tab (coming soon).
+Controls which plugin instances run at which times. Managed through the **Schedule** tab in the web UI.
 
 ### Location
-- Storage: `~/.artframe/data/playlists.json`
+- Storage: `~/.artframe/data/schedules.json`
 - **Managed through web UI**
 
 ### Concept
 
-A **playlist** is a sequence of plugin instances with timing and scheduling rules.
+A simple **timetable model**: 7 days x 24 hours = 168 hourly time slots. Each slot can have one plugin instance assigned. The schedule repeats weekly.
 
-### Example Playlist
+### Example Schedule
 
 ```
-"Daily Rotation" playlist:
-  - Family Photos (Ghibli) - 1 hour
-  - Family Photos (Original) - 1 hour
-  - Weather Dashboard - 30 minutes
-  Schedule: Always running
+Monday 9:00  - Family Photos instance
+Monday 10:00 - Weather Dashboard instance
+Monday 11:00 - Clock instance
+...
 ```
+
+### Using the Schedule UI
+
+1. Navigate to **Schedule** tab
+2. Click on any hour slot to assign a plugin instance
+3. Drag to select multiple slots for bulk assignment
+4. The currently active slot is highlighted
 
 ## Migration from Old Configuration
 
@@ -146,20 +152,19 @@ If you were using:
                │
                ▼
 ┌─────────────────────────────────────┐
-│   3. Playlists (Web UI)             │
-│   - Arrange instances               │
-│   - Set display duration            │
-│   - Schedule playlists              │
+│   3. Schedule (Web UI)              │
+│   - Assign instances to time slots  │
+│   - Weekly recurring schedule       │
 └─────────────────────────────────────┘
 ```
 
 ## Benefits
 
-✅ **Clear Separation** - System vs plugin configuration
-✅ **Reusability** - Same instance in multiple playlists
-✅ **Flexibility** - Multiple instances of same plugin
-✅ **Maintainability** - Plugins define their own settings
-✅ **User-Friendly** - Web UI for all plugin configuration
+- **Clear Separation** - System vs plugin configuration
+- **Flexibility** - Multiple instances of same plugin
+- **Maintainability** - Plugins define their own settings
+- **User-Friendly** - Web UI for all plugin configuration
+- **Simple Scheduling** - Hourly slots, easy to understand
 
 ## Web UI Pages
 
@@ -176,8 +181,8 @@ Plugin management:
 - **Available Plugins** - Browse and create instances
 - **Plugin Instances** - Manage existing instances
 
-### Playlists Tab (Coming Soon)
-Content orchestration:
-- Create playlists
-- Arrange instances
-- Set schedules
+### Schedule Tab
+Content scheduling:
+- Weekly timetable view
+- Assign instances to hourly slots
+- Bulk selection for quick scheduling

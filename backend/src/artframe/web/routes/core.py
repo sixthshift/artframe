@@ -155,7 +155,6 @@ def api_index():
                 <div class="endpoint-list">
                     <a class="endpoint" href="/api/plugins" target="_blank"><span class="method get">GET</span>/api/plugins</a>
                     <a class="endpoint" href="/api/schedules" target="_blank"><span class="method get">GET</span>/api/schedules</a>
-                    <a class="endpoint" href="/api/playlists" target="_blank"><span class="method get">GET</span>/api/playlists</a>
                 </div>
             </div>
             <div class="endpoint-group">

@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class ConditionEvaluator:
     """
-    Evaluates display conditions for schedule entries and playlist items.
+    Evaluates display conditions for schedule entries.
 
     Conditions are dictionaries where each key is a condition type and
     the value contains the parameters for that condition.

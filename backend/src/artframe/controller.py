@@ -10,9 +10,8 @@ from zoneinfo import ZoneInfo
 from .config import ConfigManager
 from .display import DisplayController
 from .logging import Logger
-from .playlists.schedule_manager import ScheduleManager
 from .plugins import InstanceManager
-from .scheduling import ContentOrchestrator
+from .scheduling import ContentOrchestrator, ScheduleManager
 from .storage import StorageManager
 
 

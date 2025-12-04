@@ -11,8 +11,8 @@ from fastapi import Request
 
 if TYPE_CHECKING:
     from ..controller import ArtframeController
-    from ..playlists.schedule_manager import ScheduleManager
     from ..plugins.instance_manager import InstanceManager
+    from ..scheduling import ScheduleManager
 
 
 def get_app_state(request: Request):
