@@ -9,12 +9,12 @@ import logging
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from PIL import Image
 
-from ..models import ContentSource, PluginInstance, TimeSlot
+from ..models import ContentSource, TimeSlot
 from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
 from .schedule_manager import ScheduleManager
@@ -37,7 +37,7 @@ class ContentOrchestrator:
         self,
         schedule_manager: ScheduleManager,
         instance_manager: InstanceManager,
-        device_config: Dict[str, Any],
+        device_config: dict[str, Any],
     ):
         """
         Initialize content orchestrator.
@@ -223,9 +223,7 @@ class ContentOrchestrator:
                 content_source = self.get_current_content_source()
 
                 # Check if we need to switch plugins
-                new_instance_id = (
-                    content_source.instance.id if content_source.instance else None
-                )
+                new_instance_id = content_source.instance.id if content_source.instance else None
 
                 if new_instance_id != self._active_instance_id:
                     # Plugin changed - stop old one, start new one
@@ -262,9 +260,7 @@ class ContentOrchestrator:
         # Add a small buffer to ensure we're past the boundary
         return seconds_until_next + 1
 
-    def _switch_active_plugin(
-        self, content_source: ContentSource, display_controller
-    ) -> None:
+    def _switch_active_plugin(self, content_source: ContentSource, display_controller) -> None:
         """
         Switch to a new active plugin.
 
@@ -320,9 +316,9 @@ class ContentOrchestrator:
         self,
         plugin,
         display_controller,
-        settings: Dict[str, Any],
-        device_config: Dict[str, Any],
-        plugin_info: Dict[str, Any],
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
+        plugin_info: dict[str, Any],
     ) -> None:
         """Wrapper to run plugin's run_active method."""
         try:
@@ -371,9 +367,7 @@ class ContentOrchestrator:
                     metadata = get_plugin_metadata(content_source.instance.plugin_id)
                     plugin_info = {
                         "plugin_name": (
-                            metadata.display_name
-                            if metadata
-                            else content_source.instance.plugin_id
+                            metadata.display_name if metadata else content_source.instance.plugin_id
                         ),
                         "instance_name": content_source.instance.name,
                         "instance_id": content_source.instance.id,
@@ -418,7 +412,7 @@ class ContentOrchestrator:
         next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
         return next_hour
 
-    def get_scheduler_status(self) -> Dict[str, Any]:
+    def get_scheduler_status(self) -> dict[str, Any]:
         """
         Get scheduler status for API.
 
@@ -436,7 +430,7 @@ class ContentOrchestrator:
             "timezone": self.schedule_manager.timezone,
         }
 
-    def get_current_status(self) -> Dict[str, Any]:
+    def get_current_status(self) -> dict[str, Any]:
         """
         Get current orchestrator status for API/UI.
 
@@ -445,7 +439,7 @@ class ContentOrchestrator:
         """
         content_source = self.get_current_content_source()
 
-        status: Dict[str, Any] = {
+        status: dict[str, Any] = {
             "running": self.running,
             "source_type": content_source.source_type,
             "source_name": content_source.source_name,

@@ -8,7 +8,7 @@ Inspired by InkyPi's plugin system with Artframe enhancements.
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from PIL import Image
 
@@ -39,7 +39,7 @@ class BasePlugin(ABC):
 
     @abstractmethod
     def generate_image(
-        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, settings: dict[str, Any], device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Generate content image for display.
@@ -91,7 +91,7 @@ class BasePlugin(ABC):
 
         return self._plugin_dir
 
-    def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
+    def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate plugin settings.
 
@@ -116,7 +116,7 @@ class BasePlugin(ABC):
         """
         return True, ""
 
-    def get_cache_key(self, settings: Dict[str, Any]) -> Optional[str]:
+    def get_cache_key(self, settings: dict[str, Any]) -> Optional[str]:
         """
         Generate cache key for this content.
 
@@ -137,7 +137,7 @@ class BasePlugin(ABC):
         """
         return None  # No caching by default
 
-    def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
+    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """
         Get cache time-to-live in seconds.
 
@@ -155,7 +155,7 @@ class BasePlugin(ABC):
         """
         return 0  # No caching by default
 
-    def on_enable(self, settings: Dict[str, Any]) -> None:
+    def on_enable(self, settings: dict[str, Any]) -> None:
         """
         Called when plugin instance is enabled.
 
@@ -174,7 +174,7 @@ class BasePlugin(ABC):
         """
         pass
 
-    def on_disable(self, settings: Dict[str, Any]) -> None:
+    def on_disable(self, settings: dict[str, Any]) -> None:
         """
         Called when plugin instance is disabled.
 
@@ -196,10 +196,10 @@ class BasePlugin(ABC):
     def run_active(
         self,
         display_controller,
-        settings: Dict[str, Any],
-        device_config: Dict[str, Any],
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
         stop_event,
-        plugin_info: Optional[Dict[str, Any]] = None,
+        plugin_info: Optional[dict[str, Any]] = None,
     ) -> None:
         """
         Run while this plugin is the active content source.
@@ -238,7 +238,7 @@ class BasePlugin(ABC):
         stop_event.wait()
 
     def on_settings_change(
-        self, old_settings: Dict[str, Any], new_settings: Dict[str, Any]
+        self, old_settings: dict[str, Any], new_settings: dict[str, Any]
     ) -> None:
         """
         Called when instance settings are updated.

@@ -197,8 +197,8 @@ class EPD:
 
     def Clear(self):
         self.send_command(0x10)
-        for i in range(0, int(self.width / 4 * self.height)):
-            for j in range(0, 4):
+        for _i in range(0, int(self.width / 4 * self.height)):
+            for _j in range(0, 4):
                 self.send_data(0x33)
         self.send_command(0x12)
         self.ReadBusy()

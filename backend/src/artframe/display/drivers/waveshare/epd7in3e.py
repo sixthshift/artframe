@@ -7,11 +7,10 @@ MIT License
 """
 
 import logging
-from PIL import Image
+import os
 
 # Import epdconfig from parent directory
 import sys
-import os
 
 picdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "pic")
 libdir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "lib")
@@ -232,7 +231,7 @@ class EPD:
     def Clear(self, color=0x11):
         """Clear display to specified color"""
         self.send_command(0x13)
-        for i in range(0, int(self.width * self.height / 2)):
+        for _i in range(0, int(self.width * self.height / 2)):
             self.send_data(color)
 
         self.TurnOnDisplay()

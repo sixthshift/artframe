@@ -31,20 +31,22 @@ def list_plugins():
 
         plugins_data = []
         for metadata in list_plugin_metadata():
-            plugins_data.append({
-                "id": metadata.plugin_id,
-                "display_name": metadata.display_name,
-                "class_name": metadata.class_name,
-                "description": metadata.description,
-                "author": metadata.author,
-                "version": metadata.version,
-                "icon": metadata.icon,
-                "settings_schema": metadata.settings_schema,
-            })
+            plugins_data.append(
+                {
+                    "id": metadata.plugin_id,
+                    "display_name": metadata.display_name,
+                    "class_name": metadata.class_name,
+                    "description": metadata.description,
+                    "author": metadata.author,
+                    "version": metadata.version,
+                    "icon": metadata.icon,
+                    "settings_schema": metadata.settings_schema,
+                }
+            )
 
         return {"success": True, "data": plugins_data}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Instance Management =====
@@ -60,19 +62,21 @@ def list_instances(instance_manager=Depends(get_instance_manager)):
 
         instances_data = []
         for inst in instances:
-            instances_data.append({
-                "id": inst.id,
-                "plugin_id": inst.plugin_id,
-                "name": inst.name,
-                "settings": inst.settings,
-                "enabled": inst.enabled,
-                "created_at": inst.created_at.isoformat(),
-                "updated_at": inst.updated_at.isoformat(),
-            })
+            instances_data.append(
+                {
+                    "id": inst.id,
+                    "plugin_id": inst.plugin_id,
+                    "name": inst.name,
+                    "settings": inst.settings,
+                    "enabled": inst.enabled,
+                    "created_at": inst.created_at.isoformat(),
+                    "updated_at": inst.updated_at.isoformat(),
+                }
+            )
 
         return {"success": True, "data": instances_data}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/instances", response_model=InstanceResponse)
@@ -103,7 +107,7 @@ def create_instance(request: InstanceCreateRequest, instance_manager=Depends(get
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/instances/{instance_id}", response_model=InstanceResponse)
@@ -130,7 +134,7 @@ def get_instance(instance_id: str, instance_manager=Depends(get_instance_manager
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/instances/{instance_id}", response_model=InstanceResponse)
@@ -165,7 +169,7 @@ def update_instance(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.delete("/instances/{instance_id}", response_model=APIResponse)
@@ -181,7 +185,7 @@ def delete_instance(instance_id: str, instance_manager=Depends(get_instance_mana
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/instances/{instance_id}/enable", response_model=APIResponse)
@@ -197,7 +201,7 @@ def enable_instance(instance_id: str, instance_manager=Depends(get_instance_mana
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/instances/{instance_id}/disable", response_model=APIResponse)
@@ -213,7 +217,7 @@ def disable_instance(instance_id: str, instance_manager=Depends(get_instance_man
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/instances/{instance_id}/test", response_model=APIResponse)
@@ -233,7 +237,7 @@ def test_instance(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Plugin Details =====
@@ -266,4 +270,4 @@ def get_plugin(plugin_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

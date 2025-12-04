@@ -4,7 +4,7 @@ Display controller for managing e-ink display operations.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Optional, Union, cast
 from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
@@ -16,7 +16,7 @@ from .drivers import DriverInterface
 class DisplayController:
     """Controls display operations and manages display state."""
 
-    def __init__(self, config: Dict[str, Any], timezone: str = "UTC"):
+    def __init__(self, config: dict[str, Any], timezone: str = "UTC"):
         """
         Initialize display controller.
 
@@ -65,7 +65,7 @@ class DisplayController:
         except Exception as e:
             self.state.status = "error"
             self.state.error_count += 1
-            raise DisplayError(f"Failed to initialize display: {e}")
+            raise DisplayError(f"Failed to initialize display: {e}") from e
 
     def display_styled_image(self, styled_image: StyledImage, show_metadata: bool = True) -> None:
         """
@@ -97,10 +97,10 @@ class DisplayController:
         except Exception as e:
             self.state.status = "error"
             self.state.error_count += 1
-            raise DisplayError(f"Failed to display image: {e}")
+            raise DisplayError(f"Failed to display image: {e}") from e
 
     def display_image(
-        self, image: Image.Image, plugin_info: Optional[Dict[str, Any]] = None
+        self, image: Image.Image, plugin_info: Optional[dict[str, Any]] = None
     ) -> None:
         """
         Display a PIL Image directly.
@@ -124,7 +124,7 @@ class DisplayController:
         except Exception as e:
             self.state.status = "error"
             self.state.error_count += 1
-            raise DisplayError(f"Failed to display image: {e}")
+            raise DisplayError(f"Failed to display image: {e}") from e
 
     def display_image_file(self, image_path: Path, title: Optional[str] = None) -> None:
         """
@@ -156,7 +156,7 @@ class DisplayController:
         except Exception as e:
             self.state.status = "error"
             self.state.error_count += 1
-            raise DisplayError(f"Failed to display image file: {e}")
+            raise DisplayError(f"Failed to display image file: {e}") from e
 
     def clear_display(self) -> None:
         """Clear the display."""
@@ -172,7 +172,7 @@ class DisplayController:
         except Exception as e:
             self.state.status = "error"
             self.state.error_count += 1
-            raise DisplayError(f"Failed to clear display: {e}")
+            raise DisplayError(f"Failed to clear display: {e}") from e
 
     def show_error_message(self, message: str) -> None:
         """
@@ -190,7 +190,7 @@ class DisplayController:
             font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)
-            except (OSError, IOError):
+            except OSError:
                 font = ImageFont.load_default()
 
             # Calculate text position
@@ -219,7 +219,7 @@ class DisplayController:
             self.driver.sleep()
             self.state.status = "sleeping"
         except Exception as e:
-            raise DisplayError(f"Failed to put display to sleep: {e}")
+            raise DisplayError(f"Failed to put display to sleep: {e}") from e
 
     def wake(self) -> None:
         """Wake display from low power mode."""
@@ -227,7 +227,7 @@ class DisplayController:
             self.driver.wake()
             self.state.status = "idle"
         except Exception as e:
-            raise DisplayError(f"Failed to wake display: {e}")
+            raise DisplayError(f"Failed to wake display: {e}") from e
 
     def get_display_size(self) -> tuple[int, int]:
         """Get display dimensions."""
@@ -248,7 +248,7 @@ class DisplayController:
             font: Union[ImageFont.FreeTypeFont, ImageFont.ImageFont]
             try:
                 font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
-            except (OSError, IOError):
+            except OSError:
                 font = ImageFont.load_default()
 
             # Prepare metadata text
@@ -295,7 +295,7 @@ class DisplayController:
                 font = ImageFont.truetype(
                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20
                 )
-            except (OSError, IOError):
+            except OSError:
                 font = ImageFont.load_default()
 
             # Calculate position (top center)

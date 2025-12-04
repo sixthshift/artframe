@@ -5,7 +5,7 @@ Configuration manager for Artframe.
 import os
 import re
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 import yaml
 
@@ -28,8 +28,8 @@ class ConfigManager:
             config_path: Path to configuration file. Defaults to config/artframe-laptop.yaml
         """
         self.config_path = config_path or Path("config/artframe-laptop.yaml")
-        self._config: Dict[str, Any] = {}
-        self._observers: List[Callable[[str, Any], None]] = []
+        self._config: dict[str, Any] = {}
+        self._observers: list[Callable[[str, Any], None]] = []
         self.validator = ConfigValidator()
         self._load_config()
 
@@ -39,7 +39,7 @@ class ConfigManager:
             raise FileNotFoundError(f"Configuration file not found: {self.config_path}")
 
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.config_path) as f:
                 self._config = yaml.safe_load(f)
 
             # Expand environment variables
@@ -49,9 +49,9 @@ class ConfigManager:
             self.validator.validate(self._config)
 
         except yaml.YAMLError as e:
-            raise ValueError(f"Invalid YAML in configuration file: {e}")
+            raise ValueError(f"Invalid YAML in configuration file: {e}") from e
         except Exception as e:
-            raise ValueError(f"Failed to load configuration: {e}")
+            raise ValueError(f"Failed to load configuration: {e}") from e
 
     def _expand_env_vars(self, config: Any) -> Any:
         """Recursively expand environment variables in configuration."""
@@ -60,9 +60,11 @@ class ConfigManager:
         elif isinstance(config, list):
             return [self._expand_env_vars(item) for item in config]
         elif isinstance(config, str):
+
             def replace_env_var(match):
                 var_name = match.group(1)
                 return os.environ.get(var_name, match.group(0))
+
             return re.sub(r"\$\{([^}]+)\}", replace_env_var, config)
         else:
             return config
@@ -93,25 +95,25 @@ class ConfigManager:
     # Section getters - return raw config sections
     # ================================================================
 
-    def get_display_config(self) -> Dict[str, Any]:
+    def get_display_config(self) -> dict[str, Any]:
         """Get display configuration section."""
-        return cast(Dict[str, Any], self.get("artframe.display", {}))
+        return cast(dict[str, Any], self.get("artframe.display", {}))
 
-    def get_storage_config(self) -> Dict[str, Any]:
+    def get_storage_config(self) -> dict[str, Any]:
         """Get storage configuration section."""
-        return cast(Dict[str, Any], self.get("artframe.storage", {}))
+        return cast(dict[str, Any], self.get("artframe.storage", {}))
 
-    def get_logging_config(self) -> Dict[str, Any]:
+    def get_logging_config(self) -> dict[str, Any]:
         """Get logging configuration section."""
-        return cast(Dict[str, Any], self.get("artframe.logging", {}))
+        return cast(dict[str, Any], self.get("artframe.logging", {}))
 
-    def get_web_config(self) -> Dict[str, Any]:
+    def get_web_config(self) -> dict[str, Any]:
         """Get web server configuration section."""
-        return cast(Dict[str, Any], self.get("artframe.web", {}))
+        return cast(dict[str, Any], self.get("artframe.web", {}))
 
-    def get_scheduler_config(self) -> Dict[str, Any]:
+    def get_scheduler_config(self) -> dict[str, Any]:
         """Get scheduler configuration section."""
-        return cast(Dict[str, Any], self.get("artframe.scheduler", {}))
+        return cast(dict[str, Any], self.get("artframe.scheduler", {}))
 
     # ================================================================
     # Path getters - return expanded Path objects
@@ -187,7 +189,7 @@ class ConfigManager:
         """Revert in-memory configuration to what's saved on disk."""
         self._load_config()
 
-    def update_config(self, new_config: Dict[str, Any]) -> None:
+    def update_config(self, new_config: dict[str, Any]) -> None:
         """
         Update in-memory configuration (validates but does not save to file).
 
@@ -230,7 +232,7 @@ class ConfigManager:
         with open(self.config_path, "w") as f:
             yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
 
-    def _deep_merge(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    def _deep_merge(self, base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
         """Deep merge two dictionaries."""
         result = base.copy()
         for key, value in override.items():
@@ -241,7 +243,7 @@ class ConfigManager:
         return result
 
     def _notify_changes(
-        self, old_config: Dict[str, Any], new_config: Dict[str, Any], prefix: str = ""
+        self, old_config: dict[str, Any], new_config: dict[str, Any], prefix: str = ""
     ) -> None:
         """Recursively notify observers of configuration changes."""
         for key, value in new_config.items():
@@ -258,6 +260,6 @@ class ConfigManager:
                         observer(full_key, value)
 
     @property
-    def config(self) -> Dict[str, Any]:
+    def config(self) -> dict[str, Any]:
         """Get read-only copy of current configuration."""
         return self._config.copy()

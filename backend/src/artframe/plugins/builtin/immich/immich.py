@@ -10,7 +10,7 @@ import json
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from PIL import Image
@@ -34,10 +34,10 @@ class Immich(BasePlugin):
         self._sync_dir: Optional[Path] = None
         self._photos_dir: Optional[Path] = None
         self._metadata_file: Optional[Path] = None
-        self._metadata: Optional[Dict[str, Any]] = None
+        self._metadata: Optional[dict[str, Any]] = None
         self._current_index = 0
 
-    def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
+    def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate plugin settings.
 
@@ -68,7 +68,7 @@ class Immich(BasePlugin):
 
         return True, ""
 
-    def on_enable(self, settings: Dict[str, Any]) -> None:
+    def on_enable(self, settings: dict[str, Any]) -> None:
         """Initialize plugin when enabled."""
         self.session = requests.Session()
         self.session.headers.update(
@@ -80,7 +80,7 @@ class Immich(BasePlugin):
 
         self.logger.info("Immich plugin enabled")
 
-    def on_disable(self, settings: Dict[str, Any]) -> None:
+    def on_disable(self, settings: dict[str, Any]) -> None:
         """Cleanup when plugin is disabled."""
         if self.session:
             self.session.close()
@@ -112,7 +112,7 @@ class Immich(BasePlugin):
 
         if self._metadata_file.exists():
             try:
-                with open(self._metadata_file, "r") as f:
+                with open(self._metadata_file) as f:
                     self._metadata = json.load(f)
                 if self._metadata:
                     self.logger.debug(
@@ -141,7 +141,7 @@ class Immich(BasePlugin):
         return {"last_sync": None, "album_id": None, "synced_assets": {}, "sync_count": 0}
 
     def generate_image(
-        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, settings: dict[str, Any], device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Generate image from synced photos.
@@ -361,7 +361,7 @@ class Immich(BasePlugin):
 
         except requests.RequestException as e:
             self.logger.error(f"Failed to fetch assets from server: {e}")
-            raise RuntimeError(f"Failed to fetch from Immich: {e}")
+            raise RuntimeError(f"Failed to fetch from Immich: {e}") from e
 
     def _download_asset(self, immich_url, asset):
         """
@@ -584,7 +584,7 @@ class Immich(BasePlugin):
 
         return safe_name
 
-    def get_cache_key(self, settings: Dict[str, Any]) -> Optional[str]:
+    def get_cache_key(self, settings: dict[str, Any]) -> Optional[str]:
         """
         Photos are cached locally, so no need for system cache.
 
@@ -592,6 +592,6 @@ class Immich(BasePlugin):
         """
         return None
 
-    def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
+    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """No caching needed - photos are stored locally."""
         return 0

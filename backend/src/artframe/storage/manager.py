@@ -4,7 +4,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Optional, cast
 
 from ..logging.logger import Logger
 from ..models import Photo, StorageStats, StyledImage
@@ -30,12 +30,12 @@ class StorageManager:
         # Load or initialize index
         self._index = self._load_index()
 
-    def _load_index(self) -> Dict[str, Any]:
+    def _load_index(self) -> dict[str, Any]:
         """Load the storage index from disk."""
         if self.index_file.exists():
             try:
-                with open(self.index_file, "r") as f:
-                    return cast(Dict[str, Any], json.load(f))
+                with open(self.index_file) as f:
+                    return cast(dict[str, Any], json.load(f))
             except (json.JSONDecodeError, OSError) as e:
                 self.logger.warning(f"Failed to load index, starting fresh: {e}")
 
@@ -96,7 +96,7 @@ class StorageManager:
             metadata=photo_info["metadata"],
         )
 
-    def get_all_photos(self) -> List[Photo]:
+    def get_all_photos(self) -> list[Photo]:
         """Get all stored photos."""
         photos = []
         for photo_id in self._index["photos"]:

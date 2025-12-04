@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class TargetType(str, Enum):
@@ -23,7 +23,7 @@ class Photo:
     source_url: str
     retrieved_at: datetime
     original_path: Path
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @dataclass
@@ -34,7 +34,7 @@ class StyledImage:
     style_name: str
     styled_path: Path
     created_at: datetime
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 @dataclass
@@ -65,7 +65,7 @@ class PluginInstance:
     id: str
     plugin_id: str
     name: str
-    settings: Dict[str, Any]
+    settings: dict[str, Any]
     enabled: bool
     created_at: datetime
     updated_at: datetime

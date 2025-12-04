@@ -7,7 +7,7 @@ These are the main control endpoints at /api/* level.
 
 import os
 import signal
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import HTMLResponse
@@ -224,7 +224,7 @@ def get_status(controller=Depends(get_controller)):
         status = controller.get_status()
         return {"success": True, "data": status}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/connections", response_model=APIResponseWithData)
@@ -234,7 +234,7 @@ def test_connections(controller=Depends(get_controller)):
         connections = controller.test_connections()
         return {"success": True, "data": connections}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Display Control =====
@@ -250,7 +250,7 @@ def trigger_update(controller=Depends(get_controller)):
             "message": "Update completed successfully" if success else "Update failed",
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/clear", response_model=APIResponse)
@@ -260,7 +260,7 @@ def clear_display(controller=Depends(get_controller)):
         controller.display_controller.clear_display()
         return {"success": True, "message": "Display cleared"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Configuration =====
@@ -273,11 +273,11 @@ def get_config(controller=Depends(get_controller)):
         config = controller.config_manager.config
         return {"success": True, "data": config}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.put("/config", response_model=APIResponse)
-def update_config(new_config: Dict[str, Any], controller=Depends(get_controller)):
+def update_config(new_config: dict[str, Any], controller=Depends(get_controller)):
     """Update in-memory configuration (validation only, not saved)."""
     try:
         if not new_config:
@@ -290,9 +290,9 @@ def update_config(new_config: Dict[str, Any], controller=Depends(get_controller)
             "message": "Configuration updated in memory (not saved to file yet)",
         }
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid configuration: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid configuration: {e}") from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/config/save", response_model=APIResponseWithData)
@@ -306,7 +306,7 @@ def save_config(controller=Depends(get_controller)):
             "data": {"restart_required": True},
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}") from e
 
 
 @router.post("/config/revert", response_model=APIResponse)
@@ -316,7 +316,7 @@ def revert_config(controller=Depends(get_controller)):
         controller.config_manager.revert_to_file()
         return {"success": True, "message": "Configuration reverted to saved version"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Restart =====
@@ -329,7 +329,7 @@ def restart():
         os.kill(os.getpid(), signal.SIGTERM)
         return {"success": True, "message": "Restart initiated"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 # ===== Scheduler Control =====
@@ -342,7 +342,7 @@ def get_scheduler_status(controller=Depends(get_controller)):
         status = controller.orchestrator.get_scheduler_status()
         return {"success": True, "data": status}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/scheduler/pause", response_model=SchedulerStatusResponse)
@@ -356,7 +356,7 @@ def pause_scheduler(controller=Depends(get_controller)):
             "status": controller.orchestrator.get_scheduler_status(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/scheduler/resume", response_model=SchedulerStatusResponse)
@@ -370,4 +370,4 @@ def resume_scheduler(controller=Depends(get_controller)):
             "status": controller.orchestrator.get_scheduler_status(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

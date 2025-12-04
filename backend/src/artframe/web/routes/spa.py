@@ -101,12 +101,12 @@ def serve_favicon():
         return FileResponse(favicon_path, media_type="image/svg+xml")
 
     # Fallback to inline SVG
-    svg_content = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+    svg_content = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <rect x="2" y="4" width="28" height="24" rx="2" fill="none" stroke="#1e293b" stroke-width="2.5"/>
   <rect x="6" y="8" width="20" height="16" rx="1" fill="none" stroke="#1e293b" stroke-width="1.5"/>
   <path d="M8 20 L12 15 L16 18 L20 12 L24 17 L24 22 L8 22 Z" fill="#f59e0b" opacity="0.8"/>
   <circle cx="21" cy="12" r="2" fill="#f59e0b"/>
-</svg>'''
+</svg>"""
     from fastapi.responses import Response
 
     return Response(content=svg_content, media_type="image/svg+xml")

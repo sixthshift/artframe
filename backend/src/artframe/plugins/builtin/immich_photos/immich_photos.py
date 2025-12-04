@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from PIL import Image
@@ -32,7 +32,7 @@ class ImmichPhotos(BasePlugin):
         super().__init__()
         self.session: Optional[requests.Session] = None
 
-    def validate_settings(self, settings: Dict[str, Any]) -> tuple[bool, str]:
+    def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
         Validate plugin settings.
 
@@ -70,7 +70,7 @@ class ImmichPhotos(BasePlugin):
 
         return True, ""
 
-    def on_enable(self, settings: Dict[str, Any]) -> None:
+    def on_enable(self, settings: dict[str, Any]) -> None:
         """Initialize HTTP session when plugin is enabled."""
         self.session = requests.Session()
         self.session.headers.update(
@@ -78,7 +78,7 @@ class ImmichPhotos(BasePlugin):
         )
         self.logger.info("Immich Photos plugin enabled")
 
-    def on_disable(self, settings: Dict[str, Any]) -> None:
+    def on_disable(self, settings: dict[str, Any]) -> None:
         """Close HTTP session when plugin is disabled."""
         if self.session:
             self.session.close()
@@ -86,7 +86,7 @@ class ImmichPhotos(BasePlugin):
         self.logger.info("Immich Photos plugin disabled")
 
     def generate_image(
-        self, settings: Dict[str, Any], device_config: Dict[str, Any]
+        self, settings: dict[str, Any], device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Generate image from Immich photo with optional AI styling.
@@ -133,7 +133,7 @@ class ImmichPhotos(BasePlugin):
             # Return error image
             return self._create_error_image(str(e), device_config)
 
-    def _fetch_photo_from_immich(self, settings: Dict[str, Any]) -> Dict[str, Any]:
+    def _fetch_photo_from_immich(self, settings: dict[str, Any]) -> dict[str, Any]:
         """
         Fetch photo metadata from Immich.
 
@@ -153,7 +153,7 @@ class ImmichPhotos(BasePlugin):
         if self.session is None:
             raise RuntimeError("Session not initialized. Plugin must be enabled first.")
 
-        photo_data: Optional[Dict[str, Any]] = None
+        photo_data: Optional[dict[str, Any]] = None
 
         try:
             if album_id:
@@ -205,9 +205,9 @@ class ImmichPhotos(BasePlugin):
             return photo_data
 
         except requests.RequestException as e:
-            raise RuntimeError(f"Failed to fetch from Immich: {e}")
+            raise RuntimeError(f"Failed to fetch from Immich: {e}") from e
 
-    def _select_photo(self, assets: list, mode: str) -> Dict[str, Any]:
+    def _select_photo(self, assets: list, mode: str) -> dict[str, Any]:
         """Select photo based on strategy."""
         from typing import cast
 
@@ -215,15 +215,15 @@ class ImmichPhotos(BasePlugin):
             raise RuntimeError("No photos available")
 
         if mode == "random":
-            return cast(Dict[str, Any], random.choice(assets))
+            return cast(dict[str, Any], random.choice(assets))
         elif mode == "newest":
-            return cast(Dict[str, Any], max(assets, key=lambda a: a.get("fileCreatedAt", "")))
+            return cast(dict[str, Any], max(assets, key=lambda a: a.get("fileCreatedAt", "")))
         elif mode == "oldest":
-            return cast(Dict[str, Any], min(assets, key=lambda a: a.get("fileCreatedAt", "")))
+            return cast(dict[str, Any], min(assets, key=lambda a: a.get("fileCreatedAt", "")))
         else:
-            return cast(Dict[str, Any], assets[0])
+            return cast(dict[str, Any], assets[0])
 
-    def _download_photo(self, settings: Dict[str, Any], photo_data: Dict[str, Any]) -> Image.Image:
+    def _download_photo(self, settings: dict[str, Any], photo_data: dict[str, Any]) -> Image.Image:
         """
         Download photo from Immich.
 
@@ -253,12 +253,12 @@ class ImmichPhotos(BasePlugin):
             return image
 
         except requests.RequestException as e:
-            raise RuntimeError(f"Failed to download photo: {e}")
+            raise RuntimeError(f"Failed to download photo: {e}") from e
         except Exception as e:
-            raise RuntimeError(f"Failed to load image: {e}")
+            raise RuntimeError(f"Failed to load image: {e}") from e
 
     def _apply_ai_style(
-        self, settings: Dict[str, Any], image: Image.Image, device_config: Dict[str, Any]
+        self, settings: dict[str, Any], image: Image.Image, device_config: dict[str, Any]
     ) -> Image.Image:
         """
         Apply AI style transformation to image.
@@ -360,11 +360,11 @@ class ImmichPhotos(BasePlugin):
                     raise RuntimeError(f"Unknown job status: {status}")
 
             except requests.RequestException as e:
-                raise RuntimeError(f"Failed to check job status: {e}")
+                raise RuntimeError(f"Failed to check job status: {e}") from e
 
         raise RuntimeError(f"AI job timeout after {timeout} seconds")
 
-    def _fit_to_display(self, image: Image.Image, device_config: Dict[str, Any]) -> Image.Image:
+    def _fit_to_display(self, image: Image.Image, device_config: dict[str, Any]) -> Image.Image:
         """
         Resize and fit image to display dimensions.
 
@@ -403,7 +403,7 @@ class ImmichPhotos(BasePlugin):
 
         return canvas
 
-    def _create_error_image(self, error_message: str, device_config: Dict[str, Any]) -> Image.Image:
+    def _create_error_image(self, error_message: str, device_config: dict[str, Any]) -> Image.Image:
         """Create error image with message."""
         from PIL import ImageDraw, ImageFont
 
@@ -424,7 +424,7 @@ class ImmichPhotos(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: Dict[str, Any]) -> str:
+    def get_cache_key(self, settings: dict[str, Any]) -> str:
         """
         Generate cache key for content.
 
@@ -435,6 +435,6 @@ class ImmichPhotos(BasePlugin):
         style = settings.get("ai_style", "none") if use_ai else "none"
         return f"immich_{date}_{style}"
 
-    def get_cache_ttl(self, settings: Dict[str, Any]) -> int:
+    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """Cache for 24 hours (one day)."""
         return 86400  # 24 hours in seconds

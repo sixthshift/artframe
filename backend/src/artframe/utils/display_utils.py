@@ -3,10 +3,10 @@ Display utilities for aspect ratio and orientation calculations.
 """
 
 from fractions import Fraction
-from typing import Any, Dict, Tuple
+from typing import Any
 
 
-def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, Any]:
+def get_display_info(width: int, height: int, rotation: int = 0) -> dict[str, Any]:
     """
     Get display information including orientation and aspect ratio.
 
@@ -68,7 +68,7 @@ def get_display_info(width: int, height: int, rotation: int = 0) -> Dict[str, An
     }
 
 
-def format_style_prompt(prompt: str, display_config: Dict[str, Any]) -> str:
+def format_style_prompt(prompt: str, display_config: dict[str, Any]) -> str:
     """
     Format a style prompt with display-specific information.
 
@@ -99,7 +99,7 @@ def format_style_prompt(prompt: str, display_config: Dict[str, Any]) -> str:
 
 def get_crop_params(
     source_width: int, source_height: int, target_width: int, target_height: int
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """
     Calculate crop parameters to fit source image to target display.
 

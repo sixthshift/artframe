@@ -5,7 +5,7 @@ Note: With FastAPI, most types are now defined as Pydantic models in schemas.py.
 This module is kept for any shared type definitions.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 # Type alias for settings dictionary
-SettingsDict = Dict[str, Any]
+SettingsDict = dict[str, Any]

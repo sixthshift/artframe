@@ -31,7 +31,7 @@ def get_info():
         # Try to get temperature (Raspberry Pi)
         temp = None
         try:
-            with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            with open("/sys/class/thermal/thermal_zone0/temp") as f:
                 temp = round(int(f.read()) / 1000, 1)
         except Exception:
             pass
@@ -48,7 +48,7 @@ def get_info():
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/logs", response_model=SystemLogsResponse)
@@ -72,7 +72,7 @@ def get_logs():
             ],
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/logs/export")
@@ -88,4 +88,4 @@ def export_logs():
             headers={"Content-Disposition": "attachment;filename=artframe-logs.txt"},
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

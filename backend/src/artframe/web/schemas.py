@@ -4,11 +4,9 @@ Pydantic schemas for Artframe API requests and responses.
 These schemas provide automatic validation and OpenAPI documentation.
 """
 
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
-
 
 # ===== Base Response Schema =====
 
@@ -63,7 +61,7 @@ class StatusResponse(APIResponse):
 class ConfigResponse(APIResponse):
     """Response for /api/config endpoint."""
 
-    data: Optional[Dict[str, Any]] = None
+    data: Optional[dict[str, Any]] = None
 
 
 class ConfigUpdateRequest(BaseModel):
@@ -88,7 +86,7 @@ class ConnectionResult(BaseModel):
 class ConnectionsResponse(APIResponse):
     """Response for /api/connections endpoint."""
 
-    data: Optional[List[ConnectionResult]] = None
+    data: Optional[list[ConnectionResult]] = None
 
 
 # ===== Scheduler Schemas =====
@@ -150,7 +148,7 @@ class SettingsField(BaseModel):
     help: Optional[str] = None
     required: bool = False
     default: Optional[Any] = None
-    options: Optional[List[Dict[str, Any]]] = None
+    options: Optional[list[dict[str, Any]]] = None
     min: Optional[float] = None
     max: Optional[float] = None
     placeholder: Optional[str] = None
@@ -160,13 +158,13 @@ class SettingsSection(BaseModel):
     """Schema for a settings section containing fields."""
 
     title: str
-    fields: List[SettingsField] = Field(default_factory=list)
+    fields: list[SettingsField] = Field(default_factory=list)
 
 
 class SettingsSchema(BaseModel):
     """Schema for plugin settings with sections."""
 
-    sections: List[SettingsSection] = Field(default_factory=list)
+    sections: list[SettingsSection] = Field(default_factory=list)
 
 
 class PluginData(BaseModel):
@@ -185,7 +183,7 @@ class PluginData(BaseModel):
 class PluginsListResponse(APIResponse):
     """Response for /api/plugins endpoint."""
 
-    data: Optional[List[PluginData]] = None
+    data: Optional[list[PluginData]] = None
 
 
 class PluginResponse(APIResponse):
@@ -203,7 +201,7 @@ class InstanceData(BaseModel):
     id: str
     plugin_id: str
     name: str
-    settings: Dict[str, Any] = Field(default_factory=dict)
+    settings: dict[str, Any] = Field(default_factory=dict)
     enabled: bool
     created_at: str
     updated_at: str
@@ -212,7 +210,7 @@ class InstanceData(BaseModel):
 class InstancesListResponse(APIResponse):
     """Response for /api/plugins/instances endpoint."""
 
-    data: Optional[List[InstanceData]] = None
+    data: Optional[list[InstanceData]] = None
 
 
 class InstanceResponse(APIResponse):
@@ -226,14 +224,14 @@ class InstanceCreateRequest(BaseModel):
 
     plugin_id: str
     name: str
-    settings: Dict[str, Any] = Field(default_factory=dict)
+    settings: dict[str, Any] = Field(default_factory=dict)
 
 
 class InstanceUpdateRequest(BaseModel):
     """Request body for updating a plugin instance."""
 
     name: Optional[str] = None
-    settings: Optional[Dict[str, Any]] = None
+    settings: Optional[dict[str, Any]] = None
 
 
 # ===== Schedule Schemas =====
@@ -248,13 +246,13 @@ class SlotData(BaseModel):
     target_type: str
     target_id: str
     target_name: str = "Unknown"
-    target_details: Dict[str, Any] = Field(default_factory=dict)
+    target_details: dict[str, Any] = Field(default_factory=dict)
 
 
 class ScheduleSlotsResponse(APIResponse):
     """Response for /api/schedules endpoint."""
 
-    slots: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    slots: dict[str, dict[str, Any]] = Field(default_factory=dict)
     slot_count: int = 0
 
 
@@ -270,13 +268,13 @@ class SlotSetRequest(BaseModel):
 class SlotSetResponse(APIResponse):
     """Response for setting a slot."""
 
-    slot: Optional[Dict[str, Any]] = None
+    slot: Optional[dict[str, Any]] = None
 
 
 class BulkSlotSetRequest(BaseModel):
     """Request body for bulk setting slots."""
 
-    slots: List[SlotSetRequest]
+    slots: list[SlotSetRequest]
 
 
 class ScheduleCurrentData(BaseModel):
@@ -287,7 +285,7 @@ class ScheduleCurrentData(BaseModel):
     target_type: Optional[str] = None
     target_id: Optional[str] = None
     target_name: Optional[str] = None
-    instance: Optional[Dict[str, Any]] = None
+    instance: Optional[dict[str, Any]] = None
     day: Optional[int] = None
     hour: Optional[int] = None
 
@@ -329,4 +327,4 @@ class LogEntry(BaseModel):
 class SystemLogsResponse(APIResponse):
     """Response for /api/system/logs endpoint."""
 
-    data: Optional[List[LogEntry]] = None
+    data: Optional[list[LogEntry]] = None

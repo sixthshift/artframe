@@ -29,7 +29,9 @@ def get_current(controller=Depends(get_controller)):
             "success": True,
             "data": {
                 "image_id": display_state.current_image_id,
-                "last_update": display_state.last_refresh.isoformat() if display_state.last_refresh else None,
+                "last_update": display_state.last_refresh.isoformat()
+                if display_state.last_refresh
+                else None,
                 "plugin_name": plugin_info.get("plugin_name", "Unknown"),
                 "instance_name": plugin_info.get("instance_name", "Unknown"),
                 "status": display_state.status,
@@ -38,7 +40,7 @@ def get_current(controller=Depends(get_controller)):
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/preview")
@@ -53,7 +55,8 @@ def get_preview(controller=Depends(get_controller)):
                 image_path = Path(image_path)
 
             if not image_path.is_absolute():
-                project_root = Path(__file__).parent.parent.parent.parent
+                # Resolve relative to backend/ directory (5 levels up from routes/display.py)
+                project_root = Path(__file__).parent.parent.parent.parent.parent
                 image_path = (project_root / image_path).resolve()
 
             if image_path.exists():
@@ -65,8 +68,9 @@ def get_preview(controller=Depends(get_controller)):
         raise
     except Exception as e:
         import traceback
+
         error_detail = f"{str(e)}\n{traceback.format_exc()}"
-        raise HTTPException(status_code=500, detail=error_detail)
+        raise HTTPException(status_code=500, detail=error_detail) from e
 
 
 @router.get("/history", response_model=APIResponseWithData)
@@ -85,10 +89,12 @@ def get_health(controller=Depends(get_controller)):
             "success": True,
             "data": {
                 "refresh_count": 0,  # TODO: Track refresh count
-                "last_refresh": display_state.last_refresh.isoformat() if display_state.last_refresh else None,
+                "last_refresh": display_state.last_refresh.isoformat()
+                if display_state.last_refresh
+                else None,
                 "status": display_state.status,
                 "error_count": display_state.error_count,
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

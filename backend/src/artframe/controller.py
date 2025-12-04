@@ -4,7 +4,7 @@ Main controller for Artframe system.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from .config import ConfigManager
@@ -75,7 +75,7 @@ class ArtframeController:
         timezone = self.config_manager.get_timezone()
         return DisplayController(display_config, timezone=timezone)
 
-    def _get_device_config(self) -> Dict[str, Any]:
+    def _get_device_config(self) -> dict[str, Any]:
         """Get device configuration for image generation."""
         width, height = self.config_manager.get_display_dimensions()
         display_config = self.config_manager.get_display_config().get("config", {})
@@ -159,7 +159,7 @@ class ArtframeController:
         self.running = False
         self.orchestrator.stop()
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get current system status."""
         storage_stats = self.storage_manager.get_storage_stats()
         display_state = self.display_controller.get_state()
@@ -188,7 +188,7 @@ class ArtframeController:
             },
         }
 
-    def test_connections(self) -> Dict[str, bool]:
+    def test_connections(self) -> dict[str, bool]:
         """
         Test system connections.
 
