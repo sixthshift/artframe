@@ -5,7 +5,6 @@ Simple timetable model: each hour slot on each day can have
 exactly one content assignment (plugin instance).
 """
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -13,6 +12,7 @@ from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from ..models import TimeSlot
+from ..utils import ensure_dir, load_json, now_in_tz, save_json
 
 logger = logging.getLogger(__name__)
 
@@ -34,66 +34,52 @@ class ScheduleManager:
             storage_dir: Directory for storing schedule data
             timezone: IANA timezone string (e.g. "Australia/Sydney")
         """
-        self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.storage_dir = ensure_dir(Path(storage_dir))
         self.timezone = timezone
 
         self.schedules_file = self.storage_dir / "schedules.json"
         self._slots: dict[str, TimeSlot] = {}  # key: "day-hour" -> TimeSlot
         self._tz = ZoneInfo(timezone)
 
+        # Convenience method for current time
+        self._now = lambda: now_in_tz(self._tz)
+
         # Load existing schedule
         self._load_schedule()
 
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self._tz)
-
     def _load_schedule(self) -> None:
         """Load schedule from storage."""
-        if not self.schedules_file.exists():
+        data = load_json(self.schedules_file)
+        if data is None:
             logger.info("No existing schedule found")
             return
 
-        try:
-            with open(self.schedules_file) as f:
-                data = json.load(f)
+        # Load slots
+        slots_data = data.get("slots", {})
+        for key, slot_data in slots_data.items():
+            self._slots[key] = TimeSlot.from_key(
+                key,
+                target_type=slot_data["target_type"],
+                target_id=slot_data["target_id"],
+            )
 
-            # Load slots
-            slots_data = data.get("slots", {})
-            for key, slot_data in slots_data.items():
-                self._slots[key] = TimeSlot.from_key(
-                    key,
-                    target_type=slot_data["target_type"],
-                    target_id=slot_data["target_id"],
-                )
-
-            logger.info(f"Loaded {len(self._slots)} schedule slots")
-
-        except Exception as e:
-            logger.error(f"Failed to load schedule: {e}", exc_info=True)
+        logger.info(f"Loaded {len(self._slots)} schedule slots")
 
     def _save_schedule(self) -> None:
         """Save schedule to storage."""
-        try:
-            data = {
-                "slots": {
-                    key: {
-                        "target_type": slot.target_type,
-                        "target_id": slot.target_id,
-                    }
-                    for key, slot in self._slots.items()
-                },
-                "last_updated": self._now().isoformat(),
-            }
+        data = {
+            "slots": {
+                key: {
+                    "target_type": slot.target_type,
+                    "target_id": slot.target_id,
+                }
+                for key, slot in self._slots.items()
+            },
+            "last_updated": self._now().isoformat(),
+        }
 
-            with open(self.schedules_file, "w") as f:
-                json.dump(data, f, indent=2)
-
+        if save_json(self.schedules_file, data):
             logger.debug("Saved schedule")
-
-        except Exception as e:
-            logger.error(f"Failed to save schedule: {e}", exc_info=True)
 
     def set_slot(
         self,

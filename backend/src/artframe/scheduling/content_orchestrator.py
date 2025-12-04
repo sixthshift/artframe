@@ -17,6 +17,7 @@ from PIL import Image
 from ..models import ContentSource, TimeSlot
 from ..plugins import get_plugin, get_plugin_metadata
 from ..plugins.instance_manager import InstanceManager
+from ..utils import now_in_tz, seconds_until_next_hour
 from .schedule_manager import ScheduleManager
 
 logger = logging.getLogger(__name__)
@@ -63,14 +64,13 @@ class ContentOrchestrator:
         # Timezone from schedule manager
         self._tz = ZoneInfo(self.schedule_manager.timezone)
 
+        # Convenience method for current time
+        self._now = lambda: now_in_tz(self._tz)
+
         # Plugin-driven refresh: track active plugin thread
         self._active_plugin_thread: Optional[threading.Thread] = None
         self._active_plugin_stop_event: Optional[threading.Event] = None
         self._active_instance_id: Optional[str] = None
-
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self._tz)
 
     def get_current_content_source(self) -> ContentSource:
         """
@@ -230,7 +230,7 @@ class ContentOrchestrator:
                     self._switch_active_plugin(content_source, display_controller)
 
                 # Sleep until next hour boundary
-                sleep_seconds = self._seconds_until_next_hour()
+                sleep_seconds = seconds_until_next_hour(self._tz)
                 logger.debug(f"Sleeping {sleep_seconds}s until next hour")
 
                 # Sleep in chunks so we can respond to stop signals
@@ -250,15 +250,6 @@ class ContentOrchestrator:
         # Stop any active plugin
         self._stop_active_plugin()
         logger.info("Content orchestrator loop stopped")
-
-    def _seconds_until_next_hour(self) -> int:
-        """Calculate seconds until the next hour boundary."""
-        now = self._now()
-        # Next hour starts at minute=0, second=0
-        seconds_into_hour = now.minute * 60 + now.second
-        seconds_until_next = 3600 - seconds_into_hour
-        # Add a small buffer to ensure we're past the boundary
-        return seconds_until_next + 1
 
     def _switch_active_plugin(self, content_source: ContentSource, display_controller) -> None:
         """

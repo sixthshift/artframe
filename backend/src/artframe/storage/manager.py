@@ -1,13 +1,13 @@
 """Storage manager for local photo and styled image storage."""
 
-import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from ..logging.logger import Logger
 from ..models import Photo, StorageStats, StyledImage
+from ..utils import ensure_dir, load_json, save_json
 
 
 class StorageManager:
@@ -15,14 +15,9 @@ class StorageManager:
 
     def __init__(self, storage_dir: Path):
         self.storage_dir = Path(storage_dir)
-        self.photos_dir = self.storage_dir / "photos"
-        self.styled_dir = self.storage_dir / "styled"
-        self.metadata_dir = self.storage_dir / "metadata"
-
-        # Create directories
-        self.photos_dir.mkdir(parents=True, exist_ok=True)
-        self.styled_dir.mkdir(parents=True, exist_ok=True)
-        self.metadata_dir.mkdir(parents=True, exist_ok=True)
+        self.photos_dir = ensure_dir(self.storage_dir / "photos")
+        self.styled_dir = ensure_dir(self.storage_dir / "styled")
+        self.metadata_dir = ensure_dir(self.storage_dir / "metadata")
 
         self.index_file = self.metadata_dir / "index.json"
         self.logger = Logger(__name__)
@@ -32,23 +27,17 @@ class StorageManager:
 
     def _load_index(self) -> dict[str, Any]:
         """Load the storage index from disk."""
-        if self.index_file.exists():
-            try:
-                with open(self.index_file) as f:
-                    return cast(dict[str, Any], json.load(f))
-            except (json.JSONDecodeError, OSError) as e:
-                self.logger.warning(f"Failed to load index, starting fresh: {e}")
+        default_index = {
+            "photos": {},
+            "styled_images": {},
+            "last_updated": datetime.now().isoformat(),
+        }
+        return load_json(self.index_file, default_index) or default_index
 
-        return {"photos": {}, "styled_images": {}, "last_updated": datetime.now().isoformat()}
-
-    def _save_index(self):
+    def _save_index(self) -> None:
         """Save the storage index to disk."""
         self._index["last_updated"] = datetime.now().isoformat()
-        try:
-            with open(self.index_file, "w") as f:
-                json.dump(self._index, f, indent=2)
-        except OSError as e:
-            self.logger.error(f"Failed to save index: {e}")
+        save_json(self.index_file, self._index)
 
     def store_photo(self, photo: Photo) -> bool:
         """Store a photo locally."""

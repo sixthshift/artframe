@@ -13,6 +13,7 @@ from .logging import Logger
 from .plugins import InstanceManager
 from .scheduling import ContentOrchestrator, ScheduleManager
 from .storage import StorageManager
+from .utils import now_in_tz
 
 
 class ArtframeController:
@@ -59,10 +60,7 @@ class ArtframeController:
         self.running = False
         self.last_update: Optional[datetime] = None
         self._tz = ZoneInfo(timezone)
-
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self._tz)
+        self._now = lambda: now_in_tz(self._tz)
 
     def _create_storage_manager(self) -> StorageManager:
         """Create and configure storage manager."""
