@@ -86,21 +86,20 @@ class Clock(BasePlugin):
             font_size = settings.get("font_size", "large")
             background_color = settings.get("background_color", "#FFFFFF")
             text_color = settings.get("text_color", "#000000")
-            timezone = settings.get("timezone")  # e.g., "America/New_York", "Europe/London"
+            # Use plugin timezone if set, otherwise fall back to system timezone
+            timezone = settings.get("timezone") or device_config.get("timezone", "UTC")
 
             # Create image
             image = Image.new("RGB", (width, height), background_color)
             draw = ImageDraw.Draw(image)
 
-            # Get current time (with timezone if specified)
-            if timezone:
-                try:
-                    tz = ZoneInfo(timezone)
-                    now = datetime.now(tz)
-                except Exception:
-                    now = datetime.now()
-            else:
-                now = datetime.now()
+            # Get current time in configured timezone
+            try:
+                tz = ZoneInfo(timezone)
+                now = datetime.now(tz)
+            except Exception:
+                self.logger.warning(f"Invalid timezone '{timezone}', falling back to UTC")
+                now = datetime.now(ZoneInfo("UTC"))
 
             # Format time string (never show seconds - rendering is expensive)
             if time_format == "12h":
