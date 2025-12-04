@@ -10,6 +10,8 @@ from datetime import datetime
 from typing import Any, Callable, Optional
 from zoneinfo import ZoneInfo
 
+from ..utils import now_in_tz
+
 logger = logging.getLogger(__name__)
 
 
@@ -44,6 +46,7 @@ class ConditionEvaluator:
             timezone: IANA timezone string (e.g. "Australia/Sydney")
         """
         self._tz = ZoneInfo(timezone)
+        self._now = lambda: now_in_tz(self._tz)
         self._handlers: dict[str, Callable[[dict[str, Any]], bool]] = {
             "time_of_day": self._eval_time_of_day,
             "day_of_week": self._eval_day_of_week,
@@ -55,10 +58,6 @@ class ConditionEvaluator:
         }
         # Store for external condition providers (e.g., weather, API status)
         self._external_providers: dict[str, Callable[[], Any]] = {}
-
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self._tz)
 
     def register_provider(self, name: str, provider: Callable[[], Any]) -> None:
         """

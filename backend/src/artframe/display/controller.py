@@ -2,7 +2,6 @@
 Display controller for managing e-ink display operations.
 """
 
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional, Union, cast
 from zoneinfo import ZoneInfo
@@ -10,6 +9,7 @@ from zoneinfo import ZoneInfo
 from PIL import Image, ImageDraw, ImageFont
 
 from ..models import DisplayState, StyledImage
+from ..utils import now_in_tz
 from .drivers import DriverInterface
 
 
@@ -26,6 +26,7 @@ class DisplayController:
         """
         self.config = config
         self.timezone = ZoneInfo(timezone)
+        self._now = lambda: now_in_tz(self.timezone)
         self.driver = self._create_driver()
         self.state = DisplayState(
             current_image_id=None,
@@ -51,10 +52,6 @@ class DisplayController:
             return cast(DriverInterface, MockDriver(driver_config))
         else:
             raise ValueError(f"Unknown display driver: {driver_name}")
-
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self.timezone)
 
     def initialize(self) -> None:
         """Initialize the display hardware."""

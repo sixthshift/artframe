@@ -4,7 +4,6 @@ Instance manager for plugin instances.
 Manages creation, storage, and lifecycle of plugin instances.
 """
 
-import json
 import logging
 import uuid
 from datetime import datetime
@@ -13,6 +12,7 @@ from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
 from ..models import PluginInstance
+from ..utils import ensure_dir, load_json, now_in_tz, save_json
 from .plugin_registry import get_plugin
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,9 @@ class InstanceManager:
             storage_dir: Directory for storing instance data
             timezone: Timezone for timestamps (e.g., "Australia/Sydney")
         """
-        self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.storage_dir = ensure_dir(Path(storage_dir))
         self.timezone = ZoneInfo(timezone)
+        self._now = lambda: now_in_tz(self.timezone)
 
         self.instances_file = self.storage_dir / "plugin_instances.json"
         self._instances: dict[str, PluginInstance] = {}
@@ -44,63 +44,47 @@ class InstanceManager:
         # Load existing instances
         self._load_instances()
 
-    def _now(self) -> datetime:
-        """Get current time in configured timezone."""
-        return datetime.now(self.timezone)
-
     def _load_instances(self) -> None:
         """Load instances from storage."""
-        if not self.instances_file.exists():
+        data = load_json(self.instances_file)
+        if data is None:
             logger.info("No existing instances found")
             return
 
-        try:
-            with open(self.instances_file) as f:
-                data = json.load(f)
+        for instance_data in data.get("instances", []):
+            instance = PluginInstance(
+                id=instance_data["id"],
+                plugin_id=instance_data["plugin_id"],
+                name=instance_data["name"],
+                settings=instance_data["settings"],
+                enabled=instance_data["enabled"],
+                created_at=datetime.fromisoformat(instance_data["created_at"]),
+                updated_at=datetime.fromisoformat(instance_data["updated_at"]),
+            )
+            self._instances[instance.id] = instance
 
-            for instance_data in data.get("instances", []):
-                instance = PluginInstance(
-                    id=instance_data["id"],
-                    plugin_id=instance_data["plugin_id"],
-                    name=instance_data["name"],
-                    settings=instance_data["settings"],
-                    enabled=instance_data["enabled"],
-                    created_at=datetime.fromisoformat(instance_data["created_at"]),
-                    updated_at=datetime.fromisoformat(instance_data["updated_at"]),
-                )
-                self._instances[instance.id] = instance
-
-            logger.info(f"Loaded {len(self._instances)} plugin instances")
-
-        except Exception as e:
-            logger.error(f"Failed to load instances: {e}", exc_info=True)
+        logger.info(f"Loaded {len(self._instances)} plugin instances")
 
     def _save_instances(self) -> None:
         """Save instances to storage."""
-        try:
-            data = {
-                "instances": [
-                    {
-                        "id": inst.id,
-                        "plugin_id": inst.plugin_id,
-                        "name": inst.name,
-                        "settings": inst.settings,
-                        "enabled": inst.enabled,
-                        "created_at": inst.created_at.isoformat(),
-                        "updated_at": inst.updated_at.isoformat(),
-                    }
-                    for inst in self._instances.values()
-                ],
-                "last_updated": self._now().isoformat(),
-            }
+        data = {
+            "instances": [
+                {
+                    "id": inst.id,
+                    "plugin_id": inst.plugin_id,
+                    "name": inst.name,
+                    "settings": inst.settings,
+                    "enabled": inst.enabled,
+                    "created_at": inst.created_at.isoformat(),
+                    "updated_at": inst.updated_at.isoformat(),
+                }
+                for inst in self._instances.values()
+            ],
+            "last_updated": self._now().isoformat(),
+        }
 
-            with open(self.instances_file, "w") as f:
-                json.dump(data, f, indent=2)
-
+        if save_json(self.instances_file, data):
             logger.debug("Saved plugin instances")
-
-        except Exception as e:
-            logger.error(f"Failed to save instances: {e}", exc_info=True)
 
     def create_instance(
         self, plugin_id: str, name: str, settings: dict[str, Any]
