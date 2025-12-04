@@ -50,7 +50,8 @@
       "Bash(python:*)",
       "Bash(wc:*)",
       "Bash(PYTHONPATH=src python -m pytest:*)",
-      "Bash(uv run ruff:*)"
+      "Bash(uv run ruff:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
     "ask": []

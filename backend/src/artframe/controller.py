@@ -191,7 +191,7 @@ class ArtframeController:
         Test system connections.
 
         Note: Plugin connection testing is now done per-instance
-        via the /api/plugins/instances/{id}/test endpoint.
+        via the /api/instances/{id}/test endpoint.
         """
         return {
             "display": True,  # If we got here, display controller initialized

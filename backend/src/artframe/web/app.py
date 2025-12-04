@@ -82,12 +82,25 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     )
 
     # Import and include routers
-    from .routes import core, display, plugins, schedules, spa, system
+    from .routes import (
+        config,
+        core,
+        display,
+        instances,
+        plugins,
+        scheduler,
+        schedules,
+        spa,
+        system,
+    )
 
     app.include_router(core.router)
+    app.include_router(config.router)
+    app.include_router(scheduler.router)
     app.include_router(system.router)
     app.include_router(display.router)
     app.include_router(plugins.router)
+    app.include_router(instances.router)
     app.include_router(schedules.router)
     app.include_router(spa.router)
 

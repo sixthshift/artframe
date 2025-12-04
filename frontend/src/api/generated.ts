@@ -12,35 +12,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Status
-         * @description Get current system status as JSON.
+         * Get Status
+         * @description Get current system status.
          */
-        get: operations["api_status_api_status_get"];
+        get: operations["get_status_api_status_get"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api Config
-         * @description Get current configuration as JSON.
-         */
-        get: operations["api_config_api_config_get"];
-        /**
-         * Api Update Config
-         * @description Update in-memory configuration (validation only, not saved).
-         */
-        put: operations["api_update_config_api_config_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -56,10 +32,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Connections
+         * Test Connections
          * @description Test all external connections.
          */
-        get: operations["api_connections_api_connections_get"];
+        get: operations["test_connections_api_connections_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -78,10 +54,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Trigger Update
+         * Trigger Update
          * @description Trigger immediate photo update.
          */
-        post: operations["api_trigger_update_api_update_post"];
+        post: operations["trigger_update_api_update_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -98,10 +74,34 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Clear Display
+         * Clear Display
          * @description Clear the display.
          */
-        post: operations["api_clear_display_api_clear_post"];
+        post: operations["clear_display_api_clear_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Config
+         * @description Get current configuration.
+         */
+        get: operations["get_config_api_config_get"];
+        /**
+         * Update Config
+         * @description Update in-memory configuration (validation only, not saved).
+         */
+        put: operations["update_config_api_config_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -118,10 +118,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Save Config
+         * Save Config
          * @description Save current in-memory configuration to YAML file.
          */
-        post: operations["api_save_config_api_config_save_post"];
+        post: operations["save_config_api_config_save_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -138,10 +138,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Revert Config
+         * Revert Config
          * @description Revert in-memory config to what's on disk.
          */
-        post: operations["api_revert_config_api_config_revert_post"];
+        post: operations["revert_config_api_config_revert_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -158,10 +158,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Restart
+         * Restart
          * @description Restart the application.
          */
-        post: operations["api_restart_api_restart_post"];
+        post: operations["restart_api_restart_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -176,10 +176,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Scheduler Status
+         * Get Scheduler Status
          * @description Get scheduler status.
          */
-        get: operations["api_scheduler_status_api_scheduler_status_get"];
+        get: operations["get_scheduler_status_api_scheduler_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -198,10 +198,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Scheduler Pause
-         * @description Pause automatic updates (daily e-ink refresh still occurs).
+         * Pause Scheduler
+         * @description Pause automatic updates.
          */
-        post: operations["api_scheduler_pause_api_scheduler_pause_post"];
+        post: operations["pause_scheduler_api_scheduler_pause_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -218,17 +218,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Scheduler Resume
+         * Resume Scheduler
          * @description Resume automatic updates.
          */
-        post: operations["api_scheduler_resume_api_scheduler_resume_post"];
+        post: operations["resume_scheduler_api_scheduler_resume_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/source/stats": {
+    "/api/system/info": {
         parameters: {
             query?: never;
             header?: never;
@@ -236,13 +236,50 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Source Stats
-         * @description Get source statistics.
-         *
-         *     DEPRECATED: Sources are now managed as plugins.
-         *     Use /api/plugins/instances for plugin instance information.
+         * Get Info
+         * @description Get system information (CPU, memory, disk, temperature).
          */
-        get: operations["api_source_stats_api_source_stats_get"];
+        get: operations["get_info_api_system_info_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Logs
+         * @description Get system logs.
+         */
+        get: operations["get_logs_api_system_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/system/logs/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Logs
+         * @description Export system logs as text file.
+         */
+        get: operations["export_logs_api_system_logs_export_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -259,10 +296,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Display Current
+         * Get Current
          * @description Get current display information.
          */
-        get: operations["api_display_current_api_display_current_get"];
+        get: operations["get_current_api_display_current_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -279,10 +316,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Display Preview
-         * @description Serve the current display preview image (if available).
+         * Get Preview
+         * @description Serve the current display preview image.
          */
-        get: operations["api_display_preview_api_display_preview_get"];
+        get: operations["get_preview_api_display_preview_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -299,10 +336,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Display History
+         * Get History
          * @description Get display history.
          */
-        get: operations["api_display_history_api_display_history_get"];
+        get: operations["get_history_api_display_history_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -319,10 +356,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Display Health
+         * Get Health
          * @description Get e-ink display health metrics.
          */
-        get: operations["api_display_health_api_display_health_get"];
+        get: operations["get_health_api_display_health_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -339,30 +376,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Plugins List
+         * List Plugins
          * @description Get list of all available plugins.
          */
-        get: operations["api_plugins_list_api_plugins_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/plugins/{plugin_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api Plugin Details
-         * @description Get details for a specific plugin.
-         */
-        get: operations["api_plugin_details_api_plugins__plugin_id__get"];
+        get: operations["list_plugins_api_plugins_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -379,16 +396,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Instances List
+         * List Instances
          * @description Get list of all plugin instances.
          */
-        get: operations["api_instances_list_api_plugins_instances_get"];
+        get: operations["list_instances_api_plugins_instances_get"];
         put?: never;
         /**
-         * Api Instances Create
+         * Create Instance
          * @description Create a new plugin instance.
          */
-        post: operations["api_instances_create_api_plugins_instances_post"];
+        post: operations["create_instance_api_plugins_instances_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -403,21 +420,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Instance Details
+         * Get Instance
          * @description Get details for a specific instance.
          */
-        get: operations["api_instance_details_api_plugins_instances__instance_id__get"];
+        get: operations["get_instance_api_plugins_instances__instance_id__get"];
         /**
-         * Api Instance Update
+         * Update Instance
          * @description Update an instance.
          */
-        put: operations["api_instance_update_api_plugins_instances__instance_id__put"];
+        put: operations["update_instance_api_plugins_instances__instance_id__put"];
         post?: never;
         /**
-         * Api Instance Delete
+         * Delete Instance
          * @description Delete an instance.
          */
-        delete: operations["api_instance_delete_api_plugins_instances__instance_id__delete"];
+        delete: operations["delete_instance_api_plugins_instances__instance_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -433,10 +450,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Instance Enable
+         * Enable Instance
          * @description Enable an instance.
          */
-        post: operations["api_instance_enable_api_plugins_instances__instance_id__enable_post"];
+        post: operations["enable_instance_api_plugins_instances__instance_id__enable_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -453,10 +470,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Instance Disable
+         * Disable Instance
          * @description Disable an instance.
          */
-        post: operations["api_instance_disable_api_plugins_instances__instance_id__disable_post"];
+        post: operations["disable_instance_api_plugins_instances__instance_id__disable_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -473,10 +490,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Instance Test
+         * Test Instance
          * @description Test run a plugin instance.
          */
-        post: operations["api_instance_test_api_plugins_instances__instance_id__test_post"];
+        post: operations["test_instance_api_plugins_instances__instance_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plugins/{plugin_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Plugin
+         * @description Get details for a specific plugin.
+         */
+        get: operations["get_plugin_api_plugins__plugin_id__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -491,10 +528,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Schedules List
+         * List Schedules
          * @description Get all schedule slots.
          */
-        get: operations["api_schedules_list_api_schedules_get"];
+        get: operations["list_schedules_api_schedules_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -513,15 +550,15 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Schedule Set Slot
+         * Set Slot
          * @description Set a single time slot.
          */
-        post: operations["api_schedule_set_slot_api_schedules_slot_post"];
+        post: operations["set_slot_api_schedules_slot_post"];
         /**
-         * Api Schedule Clear Slot
+         * Clear Slot
          * @description Clear a single time slot.
          */
-        delete: operations["api_schedule_clear_slot_api_schedules_slot_delete"];
+        delete: operations["clear_slot_api_schedules_slot_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -537,10 +574,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Schedule Bulk Set
+         * Bulk Set Slots
          * @description Set multiple slots at once.
          */
-        post: operations["api_schedule_bulk_set_api_schedules_slots_bulk_post"];
+        post: operations["bulk_set_slots_api_schedules_slots_bulk_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -555,10 +592,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Api Schedule Current
+         * Get Current Schedule
          * @description Get what's currently scheduled for right now.
          */
-        get: operations["api_schedule_current_api_schedules_current_get"];
+        get: operations["get_current_schedule_api_schedules_current_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -577,70 +614,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Api Schedule Clear All
+         * Clear All Schedules
          * @description Clear all schedule slots.
          */
-        post: operations["api_schedule_clear_all_api_schedules_clear_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/system/info": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api System Info
-         * @description Get system information.
-         */
-        get: operations["api_system_info_api_system_info_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/system/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api System Logs
-         * @description Get system logs.
-         */
-        get: operations["api_system_logs_api_system_logs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/system/logs/export": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Api System Logs Export
-         * @description Export system logs as text file.
-         */
-        get: operations["api_system_logs_export_api_system_logs_export_get"];
-        put?: never;
-        post?: never;
+        post: operations["clear_all_schedules_api_schedules_clear_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -739,6 +716,26 @@ export interface paths {
          * @description Serve SPA for config page.
          */
         get: operations["config_page_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/favicon.svg": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Serve Favicon
+         * @description Serve the favicon.
+         */
+        get: operations["serve_favicon_favicon_svg_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -991,10 +988,7 @@ export interface components {
             version: string;
             /** Icon */
             icon?: string | null;
-            /** Settings Schema */
-            settings_schema?: {
-                [key: string]: components["schemas"]["SettingsField"];
-            };
+            settings_schema?: components["schemas"]["SettingsSchema"] | null;
         };
         /**
          * PluginResponse
@@ -1064,29 +1058,6 @@ export interface components {
             data?: components["schemas"]["ScheduleCurrentData"] | null;
         };
         /**
-         * ScheduleSlotsResponse
-         * @description Response for /api/schedules endpoint.
-         */
-        ScheduleSlotsResponse: {
-            /** Success */
-            success: boolean;
-            /** Message */
-            message?: string | null;
-            /** Error */
-            error?: string | null;
-            /** Slots */
-            slots?: {
-                [key: string]: {
-                    [key: string]: unknown;
-                };
-            };
-            /**
-             * Slot Count
-             * @default 0
-             */
-            slot_count: number;
-        };
-        /**
          * SchedulerStatus
          * @description Scheduler status information.
          */
@@ -1097,6 +1068,12 @@ export interface components {
             next_update?: string | null;
             /** Last Update */
             last_update?: string | null;
+            /** Current Time */
+            current_time?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Update Time */
+            update_time?: string | null;
         };
         /**
          * SchedulerStatusResponse
@@ -1117,12 +1094,16 @@ export interface components {
          * @description Schema for a single settings field.
          */
         SettingsField: {
+            /** Key */
+            key: string;
             /** Type */
             type: string;
             /** Label */
             label: string;
             /** Description */
             description?: string | null;
+            /** Help */
+            help?: string | null;
             /**
              * Required
              * @default false
@@ -1132,7 +1113,7 @@ export interface components {
             default?: unknown | null;
             /** Options */
             options?: {
-                [key: string]: string;
+                [key: string]: unknown;
             }[] | null;
             /** Min */
             min?: number | null;
@@ -1140,6 +1121,24 @@ export interface components {
             max?: number | null;
             /** Placeholder */
             placeholder?: string | null;
+        };
+        /**
+         * SettingsSchema
+         * @description Schema for plugin settings with sections.
+         */
+        SettingsSchema: {
+            /** Sections */
+            sections?: components["schemas"]["SettingsSection"][];
+        };
+        /**
+         * SettingsSection
+         * @description Schema for a settings section containing fields.
+         */
+        SettingsSection: {
+            /** Title */
+            title: string;
+            /** Fields */
+            fields?: components["schemas"]["SettingsField"][];
         };
         /**
          * SlotClearRequest
@@ -1247,7 +1246,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    api_status_api_status_get: {
+    get_status_api_status_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1267,7 +1266,7 @@ export interface operations {
             };
         };
     };
-    api_config_api_config_get: {
+    test_connections_api_connections_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1287,7 +1286,67 @@ export interface operations {
             };
         };
     };
-    api_update_config_api_config_put: {
+    trigger_update_api_update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponse"];
+                };
+            };
+        };
+    };
+    clear_display_api_clear_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponse"];
+                };
+            };
+        };
+    };
+    get_config_api_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIResponseWithData"];
+                };
+            };
+        };
+    };
+    update_config_api_config_put: {
         parameters: {
             query?: never;
             header?: never;
@@ -1322,7 +1381,7 @@ export interface operations {
             };
         };
     };
-    api_connections_api_connections_get: {
+    save_config_api_config_save_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1342,7 +1401,7 @@ export interface operations {
             };
         };
     };
-    api_trigger_update_api_update_post: {
+    revert_config_api_config_revert_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1362,7 +1421,7 @@ export interface operations {
             };
         };
     };
-    api_clear_display_api_clear_post: {
+    restart_api_restart_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1382,67 +1441,7 @@ export interface operations {
             };
         };
     };
-    api_save_config_api_config_save_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIResponseWithData"];
-                };
-            };
-        };
-    };
-    api_revert_config_api_config_revert_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIResponse"];
-                };
-            };
-        };
-    };
-    api_restart_api_restart_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["APIResponse"];
-                };
-            };
-        };
-    };
-    api_scheduler_status_api_scheduler_status_get: {
+    get_scheduler_status_api_scheduler_status_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1462,7 +1461,7 @@ export interface operations {
             };
         };
     };
-    api_scheduler_pause_api_scheduler_pause_post: {
+    pause_scheduler_api_scheduler_pause_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1482,7 +1481,7 @@ export interface operations {
             };
         };
     };
-    api_scheduler_resume_api_scheduler_resume_post: {
+    resume_scheduler_api_scheduler_resume_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1502,7 +1501,7 @@ export interface operations {
             };
         };
     };
-    api_source_stats_api_source_stats_get: {
+    get_info_api_system_info_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1517,12 +1516,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIResponseWithData"];
+                    "application/json": components["schemas"]["SystemInfoResponse"];
                 };
             };
         };
     };
-    api_display_current_api_display_current_get: {
+    get_logs_api_system_logs_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1537,12 +1536,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DisplayCurrentResponse"];
+                    "application/json": components["schemas"]["SystemLogsResponse"];
                 };
             };
         };
     };
-    api_display_preview_api_display_preview_get: {
+    export_logs_api_system_logs_export_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1562,7 +1561,47 @@ export interface operations {
             };
         };
     };
-    api_display_history_api_display_history_get: {
+    get_current_api_display_current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisplayCurrentResponse"];
+                };
+            };
+        };
+    };
+    get_preview_api_display_preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_history_api_display_history_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1582,7 +1621,7 @@ export interface operations {
             };
         };
     };
-    api_display_health_api_display_health_get: {
+    get_health_api_display_health_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1602,7 +1641,7 @@ export interface operations {
             };
         };
     };
-    api_plugins_list_api_plugins_get: {
+    list_plugins_api_plugins_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1622,38 +1661,7 @@ export interface operations {
             };
         };
     };
-    api_plugin_details_api_plugins__plugin_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plugin_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PluginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    api_instances_list_api_plugins_instances_get: {
+    list_instances_api_plugins_instances_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1673,7 +1681,7 @@ export interface operations {
             };
         };
     };
-    api_instances_create_api_plugins_instances_post: {
+    create_instance_api_plugins_instances_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1706,7 +1714,7 @@ export interface operations {
             };
         };
     };
-    api_instance_details_api_plugins_instances__instance_id__get: {
+    get_instance_api_plugins_instances__instance_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1737,7 +1745,7 @@ export interface operations {
             };
         };
     };
-    api_instance_update_api_plugins_instances__instance_id__put: {
+    update_instance_api_plugins_instances__instance_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -1772,7 +1780,7 @@ export interface operations {
             };
         };
     };
-    api_instance_delete_api_plugins_instances__instance_id__delete: {
+    delete_instance_api_plugins_instances__instance_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -1803,7 +1811,7 @@ export interface operations {
             };
         };
     };
-    api_instance_enable_api_plugins_instances__instance_id__enable_post: {
+    enable_instance_api_plugins_instances__instance_id__enable_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1834,7 +1842,7 @@ export interface operations {
             };
         };
     };
-    api_instance_disable_api_plugins_instances__instance_id__disable_post: {
+    disable_instance_api_plugins_instances__instance_id__disable_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1865,7 +1873,7 @@ export interface operations {
             };
         };
     };
-    api_instance_test_api_plugins_instances__instance_id__test_post: {
+    test_instance_api_plugins_instances__instance_id__test_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1896,7 +1904,38 @@ export interface operations {
             };
         };
     };
-    api_schedules_list_api_schedules_get: {
+    get_plugin_api_plugins__plugin_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plugin_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PluginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_schedules_api_schedules_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1911,12 +1950,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScheduleSlotsResponse"];
+                    "application/json": components["schemas"]["APIResponseWithData"];
                 };
             };
         };
     };
-    api_schedule_set_slot_api_schedules_slot_post: {
+    set_slot_api_schedules_slot_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1949,7 +1988,7 @@ export interface operations {
             };
         };
     };
-    api_schedule_clear_slot_api_schedules_slot_delete: {
+    clear_slot_api_schedules_slot_delete: {
         parameters: {
             query?: {
                 day?: number | null;
@@ -1985,7 +2024,7 @@ export interface operations {
             };
         };
     };
-    api_schedule_bulk_set_api_schedules_slots_bulk_post: {
+    bulk_set_slots_api_schedules_slots_bulk_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2018,7 +2057,7 @@ export interface operations {
             };
         };
     };
-    api_schedule_current_api_schedules_current_get: {
+    get_current_schedule_api_schedules_current_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2038,7 +2077,7 @@ export interface operations {
             };
         };
     };
-    api_schedule_clear_all_api_schedules_clear_post: {
+    clear_all_schedules_api_schedules_clear_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2054,66 +2093,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIResponseWithData"];
-                };
-            };
-        };
-    };
-    api_system_info_api_system_info_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemInfoResponse"];
-                };
-            };
-        };
-    };
-    api_system_logs_api_system_logs_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemLogsResponse"];
-                };
-            };
-        };
-    };
-    api_system_logs_export_api_system_logs_export_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
         };
@@ -2199,6 +2178,26 @@ export interface operations {
         };
     };
     config_page_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    serve_favicon_favicon_svg_get: {
         parameters: {
             query?: never;
             header?: never;
