@@ -208,13 +208,13 @@ class InstanceData(BaseModel):
 
 
 class InstancesListResponse(APIResponse):
-    """Response for /api/plugins/instances endpoint."""
+    """Response for /api/instances endpoint."""
 
     data: Optional[list[InstanceData]] = None
 
 
 class InstanceResponse(APIResponse):
-    """Response for /api/plugins/instances/<id> endpoint."""
+    """Response for /api/instances/<id> endpoint."""
 
     data: Optional[InstanceData] = None
 

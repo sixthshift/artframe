@@ -81,7 +81,7 @@ export type SchedulerStatus = components['schemas']['SchedulerStatus'] & {
   update_time?: string
 }
 
-// System status (from /api/status endpoint)
+// System status (from /api/system/status endpoint)
 // Note: Some fields may not be present depending on backend version
 export interface SystemStatus {
   // Current backend fields
@@ -105,7 +105,7 @@ export interface SystemStatus {
   }
 }
 
-// Connection status (from /api/connections endpoint)
+// Connection status (from /api/system/connections endpoint)
 // Returns a dict of service name -> connected boolean
 export type ConnectionStatus = Record<string, boolean>
 

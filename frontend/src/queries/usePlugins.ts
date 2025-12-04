@@ -40,14 +40,14 @@ export function usePlugin(id: string) {
 export function useInstances() {
   return useQuery({
     queryKey: instanceKeys.list(),
-    queryFn: () => get<PluginInstance[]>('/plugins/instances'),
+    queryFn: () => get<PluginInstance[]>('/instances'),
   })
 }
 
 export function useInstance(id: string) {
   return useQuery({
     queryKey: instanceKeys.detail(id),
-    queryFn: () => get<PluginInstance>(`/plugins/instances/${id}`),
+    queryFn: () => get<PluginInstance>(`/instances/${id}`),
     enabled: !!id,
   })
 }
@@ -58,7 +58,7 @@ export function useCreateInstance() {
 
   return useMutation({
     mutationFn: (data: CreateInstanceRequest) =>
-      post<PluginInstance>('/plugins/instances', data),
+      post<PluginInstance>('/instances', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instanceKeys.list() })
     },
@@ -70,7 +70,7 @@ export function useUpdateInstance() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateInstanceRequest }) =>
-      put<PluginInstance>(`/plugins/instances/${id}`, data),
+      put<PluginInstance>(`/instances/${id}`, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: instanceKeys.list() })
       queryClient.invalidateQueries({ queryKey: instanceKeys.detail(id) })
@@ -82,7 +82,7 @@ export function useDeleteInstance() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (id: string) => del(`/plugins/instances/${id}`),
+    mutationFn: (id: string) => del(`/instances/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instanceKeys.list() })
     },
@@ -94,7 +94,7 @@ export function useToggleInstance() {
 
   return useMutation({
     mutationFn: ({ id, enable }: { id: string; enable: boolean }) =>
-      post(`/plugins/instances/${id}/${enable ? 'enable' : 'disable'}`),
+      post(`/instances/${id}/${enable ? 'enable' : 'disable'}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: instanceKeys.list() })
     },
@@ -103,6 +103,6 @@ export function useToggleInstance() {
 
 export function useTestInstance() {
   return useMutation({
-    mutationFn: (id: string) => post(`/plugins/instances/${id}/test`),
+    mutationFn: (id: string) => post(`/instances/${id}/test`),
   })
 }

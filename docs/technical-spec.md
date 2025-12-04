@@ -555,11 +555,15 @@ Artframe exposes a comprehensive REST API organized by domain:
 | **Plugin Management** (`/api/plugins/`) |
 | `/api/plugins` | GET | List all available plugins |
 | `/api/plugins/<id>` | GET | Get plugin details and settings schema |
-| `/api/plugins/instances` | GET | List all plugin instances |
-| `/api/plugins/instances` | POST | Create new plugin instance |
-| `/api/plugins/instances/<id>` | GET | Get instance details |
-| `/api/plugins/instances/<id>` | PUT | Update instance settings |
-| `/api/plugins/instances/<id>` | DELETE | Delete instance |
+| **Instance Management** (`/api/instances/`) |
+| `/api/instances` | GET | List all plugin instances |
+| `/api/instances` | POST | Create new plugin instance |
+| `/api/instances/<id>` | GET | Get instance details |
+| `/api/instances/<id>` | PUT | Update instance settings |
+| `/api/instances/<id>` | DELETE | Delete instance |
+| `/api/instances/<id>/enable` | POST | Enable instance |
+| `/api/instances/<id>/disable` | POST | Disable instance |
+| `/api/instances/<id>/test` | POST | Test run instance |
 | **Schedule Management** (`/api/schedules/`) |
 | `/api/schedules/slots` | GET | Get all schedule slots |
 | `/api/schedules/slots` | POST | Set a single slot assignment |

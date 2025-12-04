@@ -31,7 +31,7 @@ export const displayKeys = {
 export function useSystemStatus() {
   return useQuery({
     queryKey: systemKeys.status(),
-    queryFn: () => get<SystemStatus>('/status'),
+    queryFn: () => get<SystemStatus>('/system/status'),
     refetchInterval: 10000,
   })
 }
@@ -47,7 +47,7 @@ export function useSystemInfo() {
 export function useConnections() {
   return useQuery({
     queryKey: systemKeys.connections(),
-    queryFn: () => get<ConnectionStatus>('/connections'),
+    queryFn: () => get<ConnectionStatus>('/system/connections'),
     refetchInterval: 10000,
   })
 }
@@ -104,11 +104,11 @@ export function useToggleScheduler() {
   })
 }
 
-export function useTriggerUpdate() {
+export function useTriggerRefresh() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => post('/update'),
+    mutationFn: () => post('/display/refresh'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: displayKeys.current() })
       queryClient.invalidateQueries({ queryKey: systemKeys.status() })
@@ -120,7 +120,7 @@ export function useClearDisplay() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: () => post('/clear'),
+    mutationFn: () => post('/display/clear'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: displayKeys.current() })
     },

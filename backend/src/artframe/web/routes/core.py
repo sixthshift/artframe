@@ -1,28 +1,13 @@
 """
 Core API routes for Artframe dashboard.
 
-Provides endpoints for status, config, connections, update, clear, restart, and scheduler.
-These are the main control endpoints at /api/* level.
+Provides the API explorer index page at /api.
 """
 
-import os
-import signal
-from typing import Any
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
 
-from ..dependencies import get_controller
-from ..schemas import (
-    APIResponse,
-    APIResponseWithData,
-    SchedulerStatusResponse,
-)
-
 router = APIRouter(prefix="/api", tags=["Core"])
-
-
-# ===== API Index =====
 
 
 @router.get("", response_class=HTMLResponse, include_in_schema=False)
@@ -84,7 +69,7 @@ def api_index():
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">System Status</span>
-                    <a class="card-link" href="/api/status" target="_blank">/api/status</a>
+                    <a class="card-link" href="/api/system/status" target="_blank">/api/system/status</a>
                 </div>
                 <pre id="status" class="loading">Loading...</pre>
             </div>
@@ -105,7 +90,7 @@ def api_index():
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">Connections</span>
-                    <a class="card-link" href="/api/connections" target="_blank">/api/connections</a>
+                    <a class="card-link" href="/api/system/connections" target="_blank">/api/system/connections</a>
                 </div>
                 <pre id="connections" class="loading">Loading...</pre>
             </div>
@@ -128,12 +113,12 @@ def api_index():
         <div class="endpoints">
             <h2>All Endpoints</h2>
             <div class="endpoint-group">
-                <div class="endpoint-group-title">Core</div>
+                <div class="endpoint-group-title">System</div>
                 <div class="endpoint-list">
-                    <a class="endpoint" href="/api/status" target="_blank"><span class="method get">GET</span>/api/status</a>
-                    <a class="endpoint" href="/api/connections" target="_blank"><span class="method get">GET</span>/api/connections</a>
-                    <a class="endpoint" href="/api/config" target="_blank"><span class="method get">GET</span>/api/config</a>
+                    <a class="endpoint" href="/api/system/status" target="_blank"><span class="method get">GET</span>/api/system/status</a>
+                    <a class="endpoint" href="/api/system/connections" target="_blank"><span class="method get">GET</span>/api/system/connections</a>
                     <a class="endpoint" href="/api/system/info" target="_blank"><span class="method get">GET</span>/api/system/info</a>
+                    <a class="endpoint" href="/api/config" target="_blank"><span class="method get">GET</span>/api/config</a>
                 </div>
             </div>
             <div class="endpoint-group">
@@ -154,6 +139,7 @@ def api_index():
                 <div class="endpoint-group-title">Content</div>
                 <div class="endpoint-list">
                     <a class="endpoint" href="/api/plugins" target="_blank"><span class="method get">GET</span>/api/plugins</a>
+                    <a class="endpoint" href="/api/instances" target="_blank"><span class="method get">GET</span>/api/instances</a>
                     <a class="endpoint" href="/api/schedules" target="_blank"><span class="method get">GET</span>/api/schedules</a>
                 </div>
             </div>
@@ -185,11 +171,11 @@ def api_index():
 
         async function init() {
             const results = await Promise.all([
-                fetchAndDisplay('/api/status', 'status'),
+                fetchAndDisplay('/api/system/status', 'status'),
                 fetchAndDisplay('/api/display/current', 'display'),
                 fetchAndDisplay('/api/scheduler/status', 'scheduler'),
                 fetchAndDisplay('/api/config', 'config'),
-                fetchAndDisplay('/api/connections', 'connections'),
+                fetchAndDisplay('/api/system/connections', 'connections'),
                 fetchAndDisplay('/api/plugins', 'plugins'),
             ]);
 
@@ -212,162 +198,3 @@ def api_index():
 </html>
 """
     return HTMLResponse(content=html)
-
-
-# ===== Status & Connections =====
-
-
-@router.get("/status", response_model=APIResponseWithData)
-def get_status(controller=Depends(get_controller)):
-    """Get current system status."""
-    try:
-        status = controller.get_status()
-        return {"success": True, "data": status}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.get("/connections", response_model=APIResponseWithData)
-def test_connections(controller=Depends(get_controller)):
-    """Test all external connections."""
-    try:
-        connections = controller.test_connections()
-        return {"success": True, "data": connections}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-# ===== Display Control =====
-
-
-@router.post("/update", response_model=APIResponse)
-def trigger_update(controller=Depends(get_controller)):
-    """Trigger immediate photo update."""
-    try:
-        success = controller.manual_refresh()
-        return {
-            "success": success,
-            "message": "Update completed successfully" if success else "Update failed",
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/clear", response_model=APIResponse)
-def clear_display(controller=Depends(get_controller)):
-    """Clear the display."""
-    try:
-        controller.display_controller.clear_display()
-        return {"success": True, "message": "Display cleared"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-# ===== Configuration =====
-
-
-@router.get("/config", response_model=APIResponseWithData)
-def get_config(controller=Depends(get_controller)):
-    """Get current configuration."""
-    try:
-        config = controller.config_manager.config
-        return {"success": True, "data": config}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.put("/config", response_model=APIResponse)
-def update_config(new_config: dict[str, Any], controller=Depends(get_controller)):
-    """Update in-memory configuration (validation only, not saved)."""
-    try:
-        if not new_config:
-            raise HTTPException(status_code=400, detail="No configuration data provided")
-
-        controller.config_manager.update_config(new_config)
-
-        return {
-            "success": True,
-            "message": "Configuration updated in memory (not saved to file yet)",
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid configuration: {e}") from e
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/config/save", response_model=APIResponseWithData)
-def save_config(controller=Depends(get_controller)):
-    """Save current in-memory configuration to YAML file."""
-    try:
-        controller.config_manager.save_to_file(backup=True)
-        return {
-            "success": True,
-            "message": "Configuration saved to file. Restart required for changes to take effect.",
-            "data": {"restart_required": True},
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save configuration: {e}") from e
-
-
-@router.post("/config/revert", response_model=APIResponse)
-def revert_config(controller=Depends(get_controller)):
-    """Revert in-memory config to what's on disk."""
-    try:
-        controller.config_manager.revert_to_file()
-        return {"success": True, "message": "Configuration reverted to saved version"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-# ===== Restart =====
-
-
-@router.post("/restart", response_model=APIResponse)
-def restart():
-    """Restart the application."""
-    try:
-        os.kill(os.getpid(), signal.SIGTERM)
-        return {"success": True, "message": "Restart initiated"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-# ===== Scheduler Control =====
-
-
-@router.get("/scheduler/status", response_model=SchedulerStatusResponse)
-def get_scheduler_status(controller=Depends(get_controller)):
-    """Get scheduler status."""
-    try:
-        status = controller.orchestrator.get_scheduler_status()
-        return {"success": True, "data": status}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/scheduler/pause", response_model=SchedulerStatusResponse)
-def pause_scheduler(controller=Depends(get_controller)):
-    """Pause automatic updates."""
-    try:
-        controller.orchestrator.pause()
-        return {
-            "success": True,
-            "message": "Scheduler paused",
-            "status": controller.orchestrator.get_scheduler_status(),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
-
-
-@router.post("/scheduler/resume", response_model=SchedulerStatusResponse)
-def resume_scheduler(controller=Depends(get_controller)):
-    """Resume automatic updates."""
-    try:
-        controller.orchestrator.resume()
-        return {
-            "success": True,
-            "message": "Scheduler resumed",
-            "status": controller.orchestrator.get_scheduler_status(),
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e

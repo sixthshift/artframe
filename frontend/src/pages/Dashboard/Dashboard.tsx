@@ -6,7 +6,7 @@ import {
   useSchedulerStatus,
   useCurrentDisplay,
   useToggleScheduler,
-  useTriggerUpdate,
+  useTriggerRefresh,
   useClearDisplay,
 } from '@/queries'
 import { formatDateTime } from '@/utils/date'
@@ -19,7 +19,7 @@ export const Dashboard = () => {
   const { data: display, isLoading: displayLoading } = useCurrentDisplay()
 
   const toggleScheduler = useToggleScheduler()
-  const triggerUpdate = useTriggerUpdate()
+  const triggerRefresh = useTriggerRefresh()
   const clearDisplay = useClearDisplay()
 
   const handleToggleScheduler = async () => {
@@ -34,12 +34,12 @@ export const Dashboard = () => {
     }
   }
 
-  const handleTriggerUpdate = async () => {
+  const handleTriggerRefresh = async () => {
     try {
-      await triggerUpdate.mutateAsync()
-      showToast('Update completed successfully', 'success')
+      await triggerRefresh.mutateAsync()
+      showToast('Refresh completed successfully', 'success')
     } catch {
-      showToast('Update failed', 'error')
+      showToast('Refresh failed', 'error')
     }
   }
 
@@ -60,10 +60,10 @@ export const Dashboard = () => {
         <div class={styles.controls}>
           <Button
             variant="primary"
-            onClick={handleTriggerUpdate}
-            loading={triggerUpdate.isPending}
+            onClick={handleTriggerRefresh}
+            loading={triggerRefresh.isPending}
           >
-            🔄 Update Now
+            🔄 Refresh Now
           </Button>
           <Button
             variant="secondary"

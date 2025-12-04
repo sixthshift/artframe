@@ -1,19 +1,42 @@
 """
 System API routes for Artframe dashboard.
 
-Provides endpoints for system info and logs at /api/system/*.
+Provides endpoints for system info, status, connections, and logs at /api/system/*.
 """
 
+import os
 import platform
+import signal
 import time
 from datetime import timedelta
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 
-from ..schemas import SystemInfoResponse, SystemLogsResponse
+from ..dependencies import get_controller
+from ..schemas import APIResponse, APIResponseWithData, SystemInfoResponse, SystemLogsResponse
 
 router = APIRouter(prefix="/api/system", tags=["System"])
+
+
+@router.get("/status", response_model=APIResponseWithData)
+def get_status(controller=Depends(get_controller)):
+    """Get current system status."""
+    try:
+        status = controller.get_status()
+        return {"success": True, "data": status}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/connections", response_model=APIResponseWithData)
+def test_connections(controller=Depends(get_controller)):
+    """Test all external connections."""
+    try:
+        connections = controller.test_connections()
+        return {"success": True, "data": connections}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/info", response_model=SystemInfoResponse)
@@ -87,5 +110,15 @@ def export_logs():
             content=logs_text,
             headers={"Content-Disposition": "attachment;filename=artframe-logs.txt"},
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/restart", response_model=APIResponse)
+def restart():
+    """Restart the application."""
+    try:
+        os.kill(os.getpid(), signal.SIGTERM)
+        return {"success": True, "message": "Restart initiated"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e

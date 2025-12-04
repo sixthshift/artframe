@@ -1,7 +1,7 @@
 """
 Display API routes for Artframe dashboard.
 
-Provides endpoints for display info, preview, history, and health at /api/display/*.
+Provides endpoints for display info, preview, control, and health at /api/display/*.
 """
 
 from pathlib import Path
@@ -10,7 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 
 from ..dependencies import get_controller
-from ..schemas import APIResponseWithData, DisplayCurrentResponse, DisplayHealthResponse
+from ..schemas import (
+    APIResponse,
+    APIResponseWithData,
+    DisplayCurrentResponse,
+    DisplayHealthResponse,
+)
 
 router = APIRouter(prefix="/api/display", tags=["Display"])
 
@@ -96,5 +101,28 @@ def get_health(controller=Depends(get_controller)):
                 "error_count": display_state.error_count,
             },
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/refresh", response_model=APIResponse)
+def trigger_refresh(controller=Depends(get_controller)):
+    """Trigger immediate display refresh."""
+    try:
+        success = controller.manual_refresh()
+        return {
+            "success": success,
+            "message": "Refresh completed successfully" if success else "Refresh failed",
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/clear", response_model=APIResponse)
+def clear_display(controller=Depends(get_controller)):
+    """Clear the display."""
+    try:
+        controller.display_controller.clear_display()
+        return {"success": True, "message": "Display cleared"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
