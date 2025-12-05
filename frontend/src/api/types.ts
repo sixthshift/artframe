@@ -100,8 +100,8 @@ export interface SystemStatus {
     newest_image?: string
   }
   display_state?: {
-    status: string
-    error_count: number
+    current_image_id?: string
+    last_refresh?: string
   }
 }
 

@@ -44,8 +44,6 @@ class DisplayState:
     current_image_id: Optional[str]
     last_refresh: Optional[datetime]
     next_scheduled: Optional[datetime]
-    error_count: int = 0
-    status: str = "idle"  # idle, updating, error
 
 
 @dataclass

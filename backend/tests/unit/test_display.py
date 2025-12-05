@@ -144,15 +144,12 @@ class TestDisplayController:
         controller = DisplayController(mock_display_config)
         assert controller.config == mock_display_config
         assert isinstance(controller.driver, MockDriver)
-        assert controller.state.status == "idle"
 
     def test_initialize(self, mock_display_config):
         """Test display initialization."""
         controller = DisplayController(mock_display_config)
         controller.initialize()
-
-        assert controller.state.status == "ready"
-        assert controller.state.error_count == 0
+        # Should not raise exception
 
     def test_display_styled_image(self, mock_display_config, sample_styled_image):
         """Test displaying a styled image."""
@@ -163,7 +160,6 @@ class TestDisplayController:
 
         assert controller.state.current_image_id == sample_styled_image.original_photo_id
         assert controller.state.last_refresh is not None
-        assert controller.state.status == "idle"
 
     def test_display_image_file(self, mock_display_config, sample_photo):
         """Test displaying an image file."""
@@ -184,7 +180,6 @@ class TestDisplayController:
 
         assert controller.state.current_image_id is None
         assert controller.state.last_refresh is not None
-        assert controller.state.status == "idle"
 
     def test_error_handling(self, mock_display_config, temp_dir):
         """Test error handling in display operations."""
@@ -217,9 +212,6 @@ class TestDisplayController:
         with pytest.raises(Exception):  # DisplayError should be raised
             controller.display_styled_image(styled_image)
 
-        assert controller.state.status == "error"
-        assert controller.state.error_count > 0
-
     def test_show_error_message(self, mock_display_config):
         """Test showing error message on display."""
         controller = DisplayController(mock_display_config)
@@ -233,11 +225,9 @@ class TestDisplayController:
         controller = DisplayController(mock_display_config)
         controller.initialize()
 
+        # These should not raise exceptions
         controller.sleep()
-        assert controller.state.status == "sleeping"
-
         controller.wake()
-        assert controller.state.status == "idle"
 
     def test_get_display_size(self, mock_display_config):
         """Test getting display size."""
@@ -251,8 +241,6 @@ class TestDisplayController:
         state = controller.get_state()
 
         assert state.current_image_id is None
-        assert state.status == "idle"
-        assert state.error_count == 0
 
     def test_create_unknown_driver(self):
         """Test error when creating unknown driver."""
