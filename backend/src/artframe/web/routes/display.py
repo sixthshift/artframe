@@ -39,7 +39,6 @@ def get_current(controller=Depends(get_controller)):
                 else None,
                 "plugin_name": plugin_info.get("plugin_name", "Unknown"),
                 "instance_name": plugin_info.get("instance_name", "Unknown"),
-                "status": display_state.status,
                 "has_preview": preview_path is not None,
                 "display_count": driver.get_display_count(),
             },
@@ -97,8 +96,6 @@ def get_health(controller=Depends(get_controller)):
                 "last_refresh": display_state.last_refresh.isoformat()
                 if display_state.last_refresh
                 else None,
-                "status": display_state.status,
-                "error_count": display_state.error_count,
             },
         }
     except Exception as e:

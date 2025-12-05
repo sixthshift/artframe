@@ -155,12 +155,6 @@ export const Dashboard = () => {
                   <span class={styles.label}>Last Updated</span>
                   <span class={styles.value}>{formatDateTime(display.last_update) || 'Never'}</span>
                 </div>
-                <div class={styles.displayInfoItem}>
-                  <span class={styles.label}>Status</span>
-                  <span class={clsx(styles.value, display.status === 'ready' && 'text-emerald-600')}>
-                    {display.status}
-                  </span>
-                </div>
               </div>
             )}
           </Card>
@@ -186,23 +180,6 @@ export const Dashboard = () => {
                 <StatusItem
                   label="Next Scheduled"
                   value={formatDateTime(status.next_scheduled) || 'N/A'}
-                />
-                <StatusItem
-                  label="Cache Images"
-                  value={status.cache_stats?.total_images ?? 'N/A'}
-                />
-                <StatusItem
-                  label="Cache Size"
-                  value={status.cache_stats ? `${status.cache_stats.total_size_mb} MB` : 'N/A'}
-                />
-                <StatusItem
-                  label="Display Status"
-                  value={status.display_state?.status ?? status.display_status ?? 'Unknown'}
-                />
-                <StatusItem
-                  label="Display Errors"
-                  value={status.display_state?.error_count ?? 0}
-                  status={(status.display_state?.error_count ?? 0) > 0 ? 'error' : 'success'}
                 />
               </StatusGrid>
             ) : (

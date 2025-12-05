@@ -109,7 +109,6 @@ class DisplayCurrentData(BaseModel):
     last_update: Optional[str] = None
     plugin_name: str = "Unknown"
     instance_name: str = "Unknown"
-    status: str
     has_preview: bool
     display_count: int = 0
 
@@ -125,8 +124,6 @@ class DisplayHealthData(BaseModel):
 
     refresh_count: int = 0
     last_refresh: Optional[str] = None
-    status: str
-    error_count: int = 0
 
 
 class DisplayHealthResponse(APIResponse):

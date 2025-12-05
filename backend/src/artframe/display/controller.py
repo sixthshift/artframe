@@ -32,8 +32,6 @@ class DisplayController:
             current_image_id=None,
             last_refresh=None,
             next_scheduled=None,
-            error_count=0,
-            status="idle",
         )
 
     def _create_driver(self) -> DriverInterface:
@@ -57,11 +55,7 @@ class DisplayController:
         """Initialize the display hardware."""
         try:
             self.driver.initialize()
-            self.state.status = "ready"
-            self.state.error_count = 0
         except Exception as e:
-            self.state.status = "error"
-            self.state.error_count += 1
             raise DisplayError(f"Failed to initialize display: {e}") from e
 
     def display_styled_image(self, styled_image: StyledImage, show_metadata: bool = True) -> None:
@@ -73,8 +67,6 @@ class DisplayController:
             show_metadata: Whether to show metadata overlay
         """
         try:
-            self.state.status = "updating"
-
             # Load image
             image: Image.Image = Image.open(styled_image.styled_path).convert("RGB")
 
@@ -88,12 +80,8 @@ class DisplayController:
             # Update state
             self.state.current_image_id = styled_image.original_photo_id
             self.state.last_refresh = self._now()
-            self.state.status = "idle"
-            self.state.error_count = 0
 
         except Exception as e:
-            self.state.status = "error"
-            self.state.error_count += 1
             raise DisplayError(f"Failed to display image: {e}") from e
 
     def display_image(
@@ -107,20 +95,14 @@ class DisplayController:
             plugin_info: Optional metadata about the plugin that generated the image
         """
         try:
-            self.state.status = "updating"
-
             # Display image via driver
             self.driver.display_image(image, plugin_info)
 
             # Update state
             self.state.current_image_id = plugin_info.get("instance_id") if plugin_info else None
             self.state.last_refresh = self._now()
-            self.state.status = "idle"
-            self.state.error_count = 0
 
         except Exception as e:
-            self.state.status = "error"
-            self.state.error_count += 1
             raise DisplayError(f"Failed to display image: {e}") from e
 
     def display_image_file(self, image_path: Path, title: Optional[str] = None) -> None:
@@ -132,8 +114,6 @@ class DisplayController:
             title: Optional title to display
         """
         try:
-            self.state.status = "updating"
-
             # Load image
             image: Image.Image = Image.open(image_path).convert("RGB")
 
@@ -147,28 +127,19 @@ class DisplayController:
             # Update state
             self.state.current_image_id = str(image_path)
             self.state.last_refresh = self._now()
-            self.state.status = "idle"
-            self.state.error_count = 0
 
         except Exception as e:
-            self.state.status = "error"
-            self.state.error_count += 1
             raise DisplayError(f"Failed to display image file: {e}") from e
 
     def clear_display(self) -> None:
         """Clear the display."""
         try:
-            self.state.status = "updating"
             self.driver.clear_display()
 
             self.state.current_image_id = None
             self.state.last_refresh = self._now()
-            self.state.status = "idle"
-            self.state.error_count = 0
 
         except Exception as e:
-            self.state.status = "error"
-            self.state.error_count += 1
             raise DisplayError(f"Failed to clear display: {e}") from e
 
     def show_error_message(self, message: str) -> None:
@@ -214,7 +185,6 @@ class DisplayController:
         """Put display into low power mode."""
         try:
             self.driver.sleep()
-            self.state.status = "sleeping"
         except Exception as e:
             raise DisplayError(f"Failed to put display to sleep: {e}") from e
 
@@ -222,7 +192,6 @@ class DisplayController:
         """Wake display from low power mode."""
         try:
             self.driver.wake()
-            self.state.status = "idle"
         except Exception as e:
             raise DisplayError(f"Failed to wake display: {e}") from e
 

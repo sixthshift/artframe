@@ -61,16 +61,6 @@ export const System = () => {
             <InfoGrid>
               <InfoItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
               <InfoItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
-              <InfoItem
-                label="Status"
-                value={displayHealth.status || 'Unknown'}
-                status={displayHealth.status === 'ready' ? 'success' : 'normal'}
-              />
-              <InfoItem
-                label="Error Count"
-                value={displayHealth.error_count || 0}
-                status={displayHealth.error_count > 0 ? 'error' : 'success'}
-              />
             </InfoGrid>
           ) : (
             <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load e-ink health</p>

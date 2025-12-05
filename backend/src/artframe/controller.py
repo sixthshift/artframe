@@ -177,12 +177,10 @@ class ArtframeController:
                 "storage_directory": storage_stats.storage_directory,
             },
             "display_state": {
-                "status": display_state.status,
                 "current_image_id": display_state.current_image_id,
                 "last_refresh": (
                     display_state.last_refresh.isoformat() if display_state.last_refresh else None
                 ),
-                "error_count": display_state.error_count,
             },
         }
 
