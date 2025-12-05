@@ -35,7 +35,7 @@ class BasePlugin(ABC):
     def __init__(self):
         """Initialize plugin with logger."""
         self.logger = logging.getLogger(self.__class__.__name__)
-        self._plugin_dir = None
+        self._plugin_dir: Optional[Path] = None
 
     @abstractmethod
     def generate_image(
@@ -89,7 +89,10 @@ class BasePlugin(ABC):
             plugin_file = Path(inspect.getfile(self.__class__))
             self._plugin_dir = plugin_file.parent
 
-        return self._plugin_dir
+        # Use local variable for type narrowing
+        plugin_dir = self._plugin_dir
+        assert plugin_dir is not None
+        return plugin_dir
 
     def validate_settings(self, settings: dict[str, Any]) -> tuple[bool, str]:
         """
@@ -193,6 +196,7 @@ class BasePlugin(ABC):
         """
         pass
 
+    @abstractmethod
     def run_active(
         self,
         display_controller,
@@ -204,12 +208,13 @@ class BasePlugin(ABC):
         """
         Run while this plugin is the active content source.
 
-        Override to manage your own refresh loop. The scheduler will call
+        This method MUST be implemented by all plugins. The scheduler calls
         this when your plugin becomes active and expects it to keep running
         until stop_event is set.
 
-        Default implementation: generates image once and waits for stop.
-        Plugins that need periodic updates (like Clock) should override this.
+        Plugins must decide their own refresh behavior:
+        - Static content: generate once, then stop_event.wait()
+        - Periodic refresh: loop with stop_event.wait(timeout=refresh_seconds)
 
         Args:
             display_controller: DisplayController to push images to
@@ -218,24 +223,20 @@ class BasePlugin(ABC):
             stop_event: threading.Event - set when plugin should stop
             plugin_info: Optional metadata about the plugin/instance for display tracking
 
-        Example (Clock plugin):
+        Example (static content):
+            def run_active(self, display_controller, settings, device_config, stop_event, plugin_info):
+                image = self.generate_image(settings, device_config)
+                display_controller.display_image(image, plugin_info)
+                stop_event.wait()  # Wait forever until stopped
+
+        Example (periodic refresh):
             def run_active(self, display_controller, settings, device_config, stop_event, plugin_info):
                 while not stop_event.is_set():
                     image = self.generate_image(settings, device_config)
                     display_controller.display_image(image, plugin_info)
-                    # Wait 60 seconds or until stopped
-                    stop_event.wait(timeout=60)
+                    stop_event.wait(timeout=60)  # Refresh every 60 seconds
         """
-        # Default: generate once and wait
-        try:
-            image = self.generate_image(settings, device_config)
-            if image:
-                display_controller.display_image(image, plugin_info)
-        except Exception as e:
-            self.logger.error(f"Failed to generate/display image: {e}")
-
-        # Wait until stopped
-        stop_event.wait()
+        raise NotImplementedError("Plugins must implement run_active()")
 
     def on_settings_change(
         self, old_settings: dict[str, Any], new_settings: dict[str, Any]
