@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { Card, Button, InfoGrid, InfoItem } from '@/components'
+import { Card, Button, StatusGrid, StatusItem } from '@/components'
 import {
   useSystemInfo,
   useDisplayHealth,
@@ -40,14 +40,14 @@ export const System = () => {
           {systemLoading ? (
             <p class="text-gray-500 italic text-center py-4">Loading...</p>
           ) : systemInfo ? (
-            <InfoGrid>
-              <InfoItem label="CPU Usage" value={`${systemInfo.cpu_percent || 'N/A'}%`} />
-              <InfoItem label="Memory" value={`${systemInfo.memory_percent || 'N/A'}%`} />
-              <InfoItem label="Temperature" value={`${systemInfo.temperature || 'N/A'}°C`} />
-              <InfoItem label="Disk Usage" value={`${systemInfo.disk_percent || 'N/A'}%`} />
-              <InfoItem label="Uptime" value={systemInfo.uptime || 'N/A'} />
-              <InfoItem label="Platform" value={systemInfo.platform || 'N/A'} />
-            </InfoGrid>
+            <StatusGrid>
+              <StatusItem label="CPU Usage" value={`${systemInfo.cpu_percent || 'N/A'}%`} />
+              <StatusItem label="Memory" value={`${systemInfo.memory_percent || 'N/A'}%`} />
+              <StatusItem label="Temperature" value={`${systemInfo.temperature || 'N/A'}°C`} />
+              <StatusItem label="Disk Usage" value={`${systemInfo.disk_percent || 'N/A'}%`} />
+              <StatusItem label="Uptime" value={systemInfo.uptime || 'N/A'} />
+              <StatusItem label="Platform" value={systemInfo.platform || 'N/A'} />
+            </StatusGrid>
           ) : (
             <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load system info</p>
           )}
@@ -58,10 +58,10 @@ export const System = () => {
           {healthLoading ? (
             <p class="text-gray-500 italic text-center py-4">Loading...</p>
           ) : displayHealth ? (
-            <InfoGrid>
-              <InfoItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
-              <InfoItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
-            </InfoGrid>
+            <StatusGrid>
+              <StatusItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
+              <StatusItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
+            </StatusGrid>
           ) : (
             <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load e-ink health</p>
           )}
@@ -72,12 +72,12 @@ export const System = () => {
           {statusLoading ? (
             <p class="text-gray-500 italic text-center py-4">Loading...</p>
           ) : status ? (
-            <InfoGrid>
-              <InfoItem label="Total Images" value={status.cache_stats?.total_images ?? 0} />
-              <InfoItem label="Cache Size" value={`${status.cache_stats?.total_size_mb ?? 0} MB`} />
-              <InfoItem label="Oldest Image" value={status.cache_stats?.oldest_image ?? 'N/A'} />
-              <InfoItem label="Newest Image" value={status.cache_stats?.newest_image ?? 'N/A'} />
-            </InfoGrid>
+            <StatusGrid>
+              <StatusItem label="Total Images" value={status.cache_stats?.total_images ?? 0} />
+              <StatusItem label="Cache Size" value={`${status.cache_stats?.total_size_mb ?? 0} MB`} />
+              <StatusItem label="Oldest Image" value={status.cache_stats?.oldest_image ?? 'N/A'} />
+              <StatusItem label="Newest Image" value={status.cache_stats?.newest_image ?? 'N/A'} />
+            </StatusGrid>
           ) : (
             <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load cache stats</p>
           )}
