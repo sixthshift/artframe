@@ -71,6 +71,7 @@ class ContentOrchestrator:
         self._active_plugin_thread: Optional[threading.Thread] = None
         self._active_plugin_stop_event: Optional[threading.Event] = None
         self._active_instance_id: Optional[str] = None
+        self._display_controller = None  # Set when run_loop starts
 
     def get_current_content_source(self) -> ContentSource:
         """
@@ -214,6 +215,7 @@ class ContentOrchestrator:
         Args:
             display_controller: DisplayController instance
         """
+        self._display_controller = display_controller
         self.running = True
         logger.info("Content orchestrator loop started (hourly schedule checks)")
 
@@ -393,15 +395,47 @@ class ContentOrchestrator:
 
     def get_next_update_time(self) -> datetime:
         """
-        Get the next scheduled update time (next hour boundary).
+        Get the next time the display will update.
+
+        Returns the earlier of:
+        - Next schedule change (when a different plugin takes over)
+        - Next plugin refresh (when current plugin regenerates content)
 
         Returns:
             datetime: Next update time in configured timezone
         """
         now = self._now()
-        # Next hour starts at minute=0, second=0
-        next_hour = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-        return next_hour
+        candidates: list[datetime] = []
+
+        # 1. Next schedule change (when a different instance takes over)
+        next_schedule_change = self.schedule_manager.get_next_schedule_change(now)
+        if next_schedule_change:
+            candidates.append(next_schedule_change)
+
+        # 2. Next plugin refresh (current plugin's internal refresh)
+        # Get last_refresh from display controller (plugins update it directly)
+        last_refresh = None
+        if self._display_controller:
+            last_refresh = self._display_controller.state.last_refresh
+
+        if self._active_instance_id and last_refresh:
+            instance = self.instance_manager.get_instance(self._active_instance_id)
+            if instance:
+                plugin = get_plugin(instance.plugin_id)
+                if plugin:
+                    refresh_interval = plugin.get_refresh_interval(instance.settings)
+                    if refresh_interval > 0:
+                        next_plugin_refresh = last_refresh + timedelta(seconds=refresh_interval)
+                        # Only include if in the future
+                        if next_plugin_refresh > now:
+                            candidates.append(next_plugin_refresh)
+
+        # Return earliest
+        if candidates:
+            return min(candidates)
+
+        # Fallback: next hour (for display purposes when nothing is scheduled)
+        return now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
 
     def get_scheduler_status(self) -> dict[str, Any]:
         """
@@ -412,11 +446,16 @@ class ContentOrchestrator:
         """
         now = self._now()
 
+        # Get last_refresh from display controller (source of truth)
+        last_refresh = None
+        if self._display_controller:
+            last_refresh = self._display_controller.state.last_refresh
+
         return {
             "paused": self.paused,
             "update_time": f"{now.hour:02d}:00",  # Current hour slot
             "next_update": self.get_next_update_time().isoformat(),
-            "last_refresh": self.last_refresh.isoformat() if self.last_refresh else None,
+            "last_update": last_refresh.isoformat() if last_refresh else None,
             "current_time": now.isoformat(),
             "timezone": self.schedule_manager.timezone,
         }

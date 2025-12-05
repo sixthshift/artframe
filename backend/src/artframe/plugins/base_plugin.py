@@ -158,6 +158,27 @@ class BasePlugin(ABC):
         """
         return 0  # No caching by default
 
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
+        """
+        Get display refresh interval in seconds.
+
+        This determines how often the plugin regenerates content while active.
+        By default returns get_cache_ttl(), but can be overridden for plugins
+        that have different refresh needs (e.g., slideshows).
+
+        Args:
+            settings: Plugin instance settings
+
+        Returns:
+            int: Seconds between display refreshes (0 = never refresh)
+
+        Example:
+            def get_refresh_interval(self, settings):
+                # Refresh every 5 minutes for slideshow
+                return settings.get('refresh_interval_minutes', 5) * 60
+        """
+        return self.get_cache_ttl(settings)
+
     def on_enable(self, settings: dict[str, Any]) -> None:
         """
         Called when plugin instance is enabled.
