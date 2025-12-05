@@ -438,3 +438,34 @@ class ImmichPhotos(BasePlugin):
     def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """Cache for 24 hours (one day)."""
         return 86400  # 24 hours in seconds
+
+    def run_active(
+        self,
+        display_controller,
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
+        stop_event,
+        plugin_info: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Run the photo display with daily refresh.
+
+        Shows one photo per day (with optional AI styling).
+        Refreshes every 24 hours to show a new photo.
+        """
+        refresh_interval = self.get_cache_ttl(settings)  # 24 hours
+
+        self.logger.info(f"Immich Photos starting with {refresh_interval}s refresh interval")
+
+        while not stop_event.is_set():
+            try:
+                image = self.generate_image(settings, device_config)
+                if image:
+                    display_controller.display_image(image, plugin_info)
+                    self.logger.debug("Immich Photos display updated")
+            except Exception as e:
+                self.logger.error(f"Failed to update Immich Photos display: {e}")
+
+            stop_event.wait(timeout=refresh_interval)
+
+        self.logger.info("Immich Photos stopped")

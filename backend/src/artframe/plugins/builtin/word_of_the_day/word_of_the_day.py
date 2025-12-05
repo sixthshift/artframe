@@ -6,7 +6,7 @@ Displays vocabulary words with definitions, pronunciation, and examples.
 
 import random
 from datetime import datetime
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -532,3 +532,37 @@ class WordOfTheDay(BasePlugin):
         """
         daily_word = settings.get("daily_word", True)
         return 86400 if daily_word else 0  # 24 hours or 0
+
+    def run_active(
+        self,
+        display_controller,
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
+        stop_event,
+        plugin_info: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Run the word display with daily refresh.
+
+        Refreshes every 24 hours to show the next day's word.
+        If daily_word is False, refreshes every hour with a new random word.
+        """
+        # Use cache_ttl as refresh interval, minimum 1 hour
+        refresh_interval = self.get_cache_ttl(settings)
+        if refresh_interval <= 0:
+            refresh_interval = 3600  # 1 hour default for random words
+
+        self.logger.info(f"Word of the Day starting with {refresh_interval}s refresh interval")
+
+        while not stop_event.is_set():
+            try:
+                image = self.generate_image(settings, device_config)
+                if image:
+                    display_controller.display_image(image, plugin_info)
+                    self.logger.debug("Word of the Day display updated")
+            except Exception as e:
+                self.logger.error(f"Failed to update word display: {e}")
+
+            stop_event.wait(timeout=refresh_interval)
+
+        self.logger.info("Word of the Day stopped")

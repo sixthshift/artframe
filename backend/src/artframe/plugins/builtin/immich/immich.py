@@ -66,6 +66,11 @@ class Immich(BasePlugin):
         if not isinstance(sync_interval, (int, float)) or sync_interval < 1:
             return False, "Sync interval must be at least 1 hour"
 
+        # Validate display refresh interval
+        refresh_interval = settings.get("refresh_interval_minutes", 5)
+        if not isinstance(refresh_interval, (int, float)) or refresh_interval < 1:
+            return False, "Refresh interval must be at least 1 minute"
+
         return True, ""
 
     def on_enable(self, settings: dict[str, Any]) -> None:
@@ -595,3 +600,37 @@ class Immich(BasePlugin):
     def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """No caching needed - photos are stored locally."""
         return 0
+
+    def run_active(
+        self,
+        display_controller,
+        settings: dict[str, Any],
+        device_config: dict[str, Any],
+        stop_event,
+        plugin_info: Optional[dict[str, Any]] = None,
+    ) -> None:
+        """
+        Run the photo slideshow.
+
+        Displays photos from the synced collection, rotating at the
+        configured refresh interval. Server sync happens automatically
+        within generate_image based on sync_interval_hours.
+        """
+        # Get refresh interval in seconds (default 5 minutes)
+        refresh_minutes = settings.get("refresh_interval_minutes", 5)
+        refresh_interval = int(refresh_minutes * 60)
+
+        self.logger.info(f"Immich slideshow starting with {refresh_minutes}min refresh interval")
+
+        while not stop_event.is_set():
+            try:
+                image = self.generate_image(settings, device_config)
+                if image:
+                    display_controller.display_image(image, plugin_info)
+                    self.logger.debug("Immich display updated")
+            except Exception as e:
+                self.logger.error(f"Failed to update Immich display: {e}")
+
+            stop_event.wait(timeout=refresh_interval)
+
+        self.logger.info("Immich slideshow stopped")
