@@ -5,24 +5,20 @@ FastAPI application setup for Artframe web dashboard.
 import threading
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..controller import ArtframeController
-from ..plugins.instance_manager import InstanceManager
 from ..plugins.plugin_registry import load_plugins
-from ..scheduling import ScheduleManager
 
 
-def create_app(controller: ArtframeController, config: Optional[dict] = None) -> FastAPI:
+def create_app(controller: ArtframeController) -> FastAPI:
     """
     Create and configure FastAPI application.
 
     Args:
         controller: Artframe controller instance
-        config: Optional configuration
 
     Returns:
         Configured FastAPI application
@@ -38,15 +34,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
         plugins_dir = Path(__file__).parent.parent / "plugins" / "builtin"
         load_plugins(plugins_dir)
 
-        # Get configured timezone for all managers
-        timezone = controller.config_manager.get_timezone()
-
-        # Create instance manager
-        storage_dir = Path.home() / ".artframe" / "data"
-        app.state.instance_manager = InstanceManager(storage_dir, timezone=timezone)
-
-        # Create schedule manager
-        app.state.schedule_manager = ScheduleManager(storage_dir, timezone=timezone)
+        # Use the controller's managers so API and orchestrator share the same state
+        app.state.instance_manager = controller.instance_manager
+        app.state.schedule_manager = controller.schedule_manager
 
         # Start scheduler in background thread
         if not getattr(app.state, "scheduler_started", False):
@@ -74,7 +64,7 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
     # Add CORS middleware for frontend development
     app.add_middleware(
-        CORSMiddleware,
+        CORSMiddleware,  # type: ignore[arg-type]
         allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
@@ -83,7 +73,9 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
 
     # Import and include routers
     from .routes import (
-        config,
+        config as config_routes,
+    )
+    from .routes import (
         core,
         display,
         instances,
@@ -95,7 +87,7 @@ def create_app(controller: ArtframeController, config: Optional[dict] = None) ->
     )
 
     app.include_router(core.router)
-    app.include_router(config.router)
+    app.include_router(config_routes.router)
     app.include_router(scheduler.router)
     app.include_router(system.router)
     app.include_router(display.router)
