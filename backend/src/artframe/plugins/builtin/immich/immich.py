@@ -601,6 +601,11 @@ class Immich(BasePlugin):
         """No caching needed - photos are stored locally."""
         return 0
 
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
+        """Get slideshow refresh interval in seconds."""
+        refresh_minutes = settings.get("refresh_interval_minutes", 5)
+        return int(refresh_minutes * 60)
+
     def run_active(
         self,
         display_controller,

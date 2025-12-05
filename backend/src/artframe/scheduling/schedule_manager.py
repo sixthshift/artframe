@@ -6,7 +6,7 @@ exactly one content assignment (plugin instance).
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -228,3 +228,42 @@ class ScheduleManager:
         self._save_schedule()
         logger.info(f"Cleared all {count} slots")
         return count
+
+    def get_next_schedule_change(self, current_time: Optional[datetime] = None) -> Optional[datetime]:
+        """
+        Find when the schedule changes to a different instance.
+
+        Looks ahead from current time to find the first hour where
+        a different instance (or no instance) is scheduled.
+
+        Args:
+            current_time: Time to start from (defaults to now)
+
+        Returns:
+            datetime when the next change occurs, or None if same instance forever
+        """
+        if current_time is None:
+            current_time = self._now()
+
+        current_slot = self.get_current_slot(current_time)
+        current_target_id = current_slot.target_id if current_slot else None
+
+        # Start from next hour
+        check_time = current_time.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+
+        # Check up to 168 hours (full week) to find a change
+        for _ in range(168):
+            day = check_time.weekday()
+            hour = check_time.hour
+
+            slot = self.get_slot(day, hour)
+            slot_target_id = slot.target_id if slot else None
+
+            # Found a change
+            if slot_target_id != current_target_id:
+                return check_time
+
+            check_time += timedelta(hours=1)
+
+        # Same instance for entire week - no change
+        return None
