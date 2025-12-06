@@ -1,237 +1,34 @@
 """
 Word of the Day plugin for Artframe.
 
-Displays vocabulary words with definitions, pronunciation, and examples.
+Displays vocabulary words with definitions and examples.
 """
 
+import json
 import random
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
 from artframe.plugins.base_plugin import BasePlugin
 
-# Embedded vocabulary database
-# Format: (word, pronunciation, part_of_speech, definition, example)
-VOCABULARY_DATABASE = {
-    "easy": [
-        (
-            "Eloquent",
-            "EL-uh-kwent",
-            "adjective",
-            "Fluent or persuasive in speaking or writing",
-            "She gave an eloquent speech that moved everyone in the audience.",
-        ),
-        (
-            "Benevolent",
-            "buh-NEV-uh-lent",
-            "adjective",
-            "Well-meaning and kindly",
-            "The benevolent old man donated millions to charity.",
-        ),
-        (
-            "Diligent",
-            "DIL-i-jent",
-            "adjective",
-            "Having or showing care in one's work or duties",
-            "She was a diligent student who always completed her homework.",
-        ),
-        (
-            "Humble",
-            "HUM-bul",
-            "adjective",
-            "Having or showing a modest estimate of one's importance",
-            "Despite his success, he remained humble and approachable.",
-        ),
-        (
-            "Serene",
-            "suh-REEN",
-            "adjective",
-            "Calm, peaceful, and untroubled",
-            "The lake was serene in the early morning light.",
-        ),
-        (
-            "Vivid",
-            "VIV-id",
-            "adjective",
-            "Producing powerful feelings or strong images in the mind",
-            "She had vivid memories of her childhood home.",
-        ),
-        (
-            "Candid",
-            "KAN-did",
-            "adjective",
-            "Truthful and straightforward; frank",
-            "I appreciate your candid feedback on my work.",
-        ),
-        (
-            "Novel",
-            "NOV-ul",
-            "adjective",
-            "New or unusual in an interesting way",
-            "The company introduced a novel approach to customer service.",
-        ),
-        (
-            "Zealous",
-            "ZEL-us",
-            "adjective",
-            "Having or showing zeal; fervent",
-            "He was zealous in his pursuit of excellence.",
-        ),
-        (
-            "Lucid",
-            "LOO-sid",
-            "adjective",
-            "Expressed clearly; easy to understand",
-            "Her lucid explanation made the complex topic simple.",
-        ),
-    ],
-    "medium": [
-        (
-            "Serendipity",
-            "ser-en-DIP-i-tee",
-            "noun",
-            "The occurrence of events by chance in a happy way",
-            "It was pure serendipity that we met at the coffee shop.",
-        ),
-        (
-            "Ephemeral",
-            "ih-FEM-er-ul",
-            "adjective",
-            "Lasting for a very short time",
-            "The beauty of cherry blossoms is ephemeral, lasting only a few weeks.",
-        ),
-        (
-            "Juxtapose",
-            "JUK-stuh-poze",
-            "verb",
-            "To place close together for contrasting effect",
-            "The artist juxtaposed light and dark colors in the painting.",
-        ),
-        (
-            "Pragmatic",
-            "prag-MAT-ik",
-            "adjective",
-            "Dealing with things sensibly and realistically",
-            "She took a pragmatic approach to solving the budget crisis.",
-        ),
-        (
-            "Ubiquitous",
-            "yoo-BIK-wi-tus",
-            "adjective",
-            "Present, appearing, or found everywhere",
-            "Smartphones have become ubiquitous in modern society.",
-        ),
-        (
-            "Ameliorate",
-            "uh-MEEL-yuh-rayt",
-            "verb",
-            "To make something bad or unsatisfactory better",
-            "The new policy helped ameliorate working conditions.",
-        ),
-        (
-            "Plethora",
-            "PLETH-er-uh",
-            "noun",
-            "An excess or overabundance of something",
-            "The buffet offered a plethora of delicious dishes.",
-        ),
-        (
-            "Conundrum",
-            "kuh-NUN-drum",
-            "noun",
-            "A confusing and difficult problem or question",
-            "Climate change presents a serious conundrum for policymakers.",
-        ),
-        (
-            "Penchant",
-            "PEN-chunt",
-            "noun",
-            "A strong or habitual liking for something",
-            "She has a penchant for collecting vintage books.",
-        ),
-        (
-            "Fortuitous",
-            "for-TOO-i-tus",
-            "adjective",
-            "Happening by chance, especially in a lucky way",
-            "Our fortuitous meeting led to a lifelong friendship.",
-        ),
-    ],
-    "hard": [
-        (
-            "Obfuscate",
-            "OB-fuh-skayt",
-            "verb",
-            "To deliberately make something unclear or difficult to understand",
-            "The politician tried to obfuscate the issue with technical jargon.",
-        ),
-        (
-            "Perspicacious",
-            "pur-spi-KAY-shus",
-            "adjective",
-            "Having a ready insight into things; shrewd",
-            "Her perspicacious analysis revealed the hidden problems.",
-        ),
-        (
-            "Sanguine",
-            "SANG-gwin",
-            "adjective",
-            "Optimistic or positive, especially in difficult situations",
-            "Despite setbacks, she remained sanguine about the project's success.",
-        ),
-        (
-            "Recalcitrant",
-            "ri-KAL-si-trunt",
-            "adjective",
-            "Having an obstinately uncooperative attitude",
-            "The recalcitrant committee member refused to compromise.",
-        ),
-        (
-            "Erudite",
-            "ER-yoo-dite",
-            "adjective",
-            "Having or showing great knowledge or learning",
-            "The erudite professor could discuss any topic with ease.",
-        ),
-        (
-            "Ineffable",
-            "in-EF-uh-bul",
-            "adjective",
-            "Too great or extreme to be expressed in words",
-            "The beauty of the sunset was ineffable.",
-        ),
-        (
-            "Vicarious",
-            "vy-KAIR-ee-us",
-            "adjective",
-            "Experienced in the imagination through another person",
-            "She lived vicariously through her children's adventures.",
-        ),
-        (
-            "Ebullient",
-            "ih-BUL-yent",
-            "adjective",
-            "Cheerful and full of energy",
-            "His ebullient personality made him popular at parties.",
-        ),
-        (
-            "Magnanimous",
-            "mag-NAN-uh-mus",
-            "adjective",
-            "Generous or forgiving, especially toward a rival",
-            "The champion was magnanimous in victory, praising his opponent.",
-        ),
-        (
-            "Sagacious",
-            "suh-GAY-shus",
-            "adjective",
-            "Having or showing keen mental discernment and good judgment",
-            "The CEO's sagacious decisions saved the company from bankruptcy.",
-        ),
-    ],
-}
+# Load vocabulary from JSON file
+_VOCABULARY_FILE = Path(__file__).parent / "vocabulary.json"
+_VOCABULARY: list[dict[str, Any]] = []
+
+
+def _load_vocabulary() -> list[dict[str, Any]]:
+    """Load vocabulary database from JSON file."""
+    global _VOCABULARY
+    if not _VOCABULARY:
+        try:
+            with open(_VOCABULARY_FILE, "r", encoding="utf-8") as f:
+                _VOCABULARY = json.load(f)
+        except Exception:
+            _VOCABULARY = []
+    return _VOCABULARY
 
 
 class WordOfTheDay(BasePlugin):
@@ -256,11 +53,6 @@ class WordOfTheDay(BasePlugin):
         Returns:
             Tuple of (is_valid, error_message)
         """
-        # Validate difficulty
-        difficulty = settings.get("difficulty", "medium")
-        if difficulty not in ["easy", "medium", "hard", "random"]:
-            return False, "Difficulty must be 'easy', 'medium', 'hard', or 'random'"
-
         # Validate font size
         font_size = settings.get("font_size", "medium")
         if font_size not in ["small", "medium", "large"]:
@@ -289,13 +81,12 @@ class WordOfTheDay(BasePlugin):
             height = device_config["height"]
 
             # Get settings with defaults
-            difficulty = settings.get("difficulty", "medium")
             font_size = settings.get("font_size", "medium")
             background_color = settings.get("background_color", "#FFFFFF")
             text_color = settings.get("text_color", "#000000")
             accent_color = settings.get("accent_color", "#4CAF50")
-            show_pronunciation = settings.get("show_pronunciation", True)
             show_example = settings.get("show_example", True)
+            show_synonyms = settings.get("show_synonyms", True)
             daily_word = settings.get("daily_word", True)
 
             # Create image
@@ -303,9 +94,12 @@ class WordOfTheDay(BasePlugin):
             draw = ImageDraw.Draw(image)
 
             # Select word
-            word, pronunciation, pos, definition, example = self._select_word(
-                difficulty, daily_word
-            )
+            word_data = self._select_word(daily_word)
+            word = word_data["word"]
+            pos = word_data["part_of_speech"]
+            definition = word_data["definition"]
+            example = word_data.get("example")
+            synonyms = word_data.get("synonyms", [])
 
             # Get fonts
             header_font = self._get_font(font_size, "header")
@@ -328,12 +122,6 @@ class WordOfTheDay(BasePlugin):
             # Word (large and bold)
             draw.text((margin, y), word.upper(), fill=text_color, font=word_font)
             y += self._get_line_height(word_font) + 5
-
-            # Pronunciation
-            if show_pronunciation:
-                pronunciation_text = f"/{pronunciation}/"
-                draw.text((margin, y), pronunciation_text, fill=accent_color, font=body_font)
-                y += self._get_line_height(body_font) + 5
 
             # Part of speech (italic style via color)
             draw.text((margin, y), pos, fill=accent_color, font=body_font)
@@ -361,33 +149,48 @@ class WordOfTheDay(BasePlugin):
                     draw.text((margin, y), line, fill=text_color, font=body_font)
                     y += self._get_line_height(body_font)
 
+            # Synonyms
+            if show_synonyms and synonyms:
+                y += 15
+                synonyms_text = "Synonyms: " + ", ".join(synonyms)
+                wrapped_synonyms = self._wrap_text(synonyms_text, body_font, max_width, draw)
+
+                for line in wrapped_synonyms:
+                    draw.text((margin, y), line, fill=accent_color, font=body_font)
+                    y += self._get_line_height(body_font)
+
             return image
 
         except Exception as e:
             self.logger.error(f"Failed to generate word image: {e}", exc_info=True)
             return self._create_error_image(str(e), device_config)
 
-    def _select_word(self, difficulty: str, daily: bool) -> tuple[str, str, str, str, str]:
+    def _select_word(self, daily: bool) -> dict[str, Any]:
         """
-        Select a word from the database.
+        Select a word from the vocabulary database.
 
         Args:
-            difficulty: Word difficulty level
             daily: If True, same word for the whole day
 
         Returns:
-            Tuple of (word, pronunciation, part_of_speech, definition, example)
+            Dictionary with word, part_of_speech, definition, example, synonyms
         """
-        # If random difficulty, pick a random difficulty first
-        if difficulty == "random":
-            difficulty = random.choice(list(VOCABULARY_DATABASE.keys()))
+        words = _load_vocabulary()
 
-        words = VOCABULARY_DATABASE[difficulty]
+        if not words:
+            # Fallback if vocabulary file is missing
+            return {
+                "word": "Vocabulary",
+                "part_of_speech": "noun",
+                "definition": "A list or collection of words and phrases",
+                "example": "Building your vocabulary is important for communication.",
+                "synonyms": ["lexicon", "dictionary", "glossary"],
+            }
 
         if daily:
             # Use day of year as seed for consistency throughout the day
             day_of_year = datetime.now().timetuple().tm_yday
-            random.seed(day_of_year + hash(difficulty))
+            random.seed(day_of_year)
             word = random.choice(words)
             random.seed()  # Reset seed
         else:
@@ -512,16 +315,15 @@ class WordOfTheDay(BasePlugin):
         Otherwise, generate unique key each time.
         """
         daily_word = settings.get("daily_word", True)
-        difficulty = settings.get("difficulty", "medium")
 
         if daily_word:
             # Cache per day
             today = datetime.now().strftime("%Y%m%d")
-            return f"word_{difficulty}_{today}"
+            return f"word_{today}"
         else:
             # Don't cache (new word each time)
             now = datetime.now().strftime("%Y%m%d_%H%M%S")
-            return f"word_{difficulty}_{now}"
+            return f"word_{now}"
 
     def get_cache_ttl(self, settings: dict[str, Any]) -> int:
         """
