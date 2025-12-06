@@ -13,3 +13,11 @@ export function getCurrentDayIndex(): number {
   const jsDay = new Date().getDay()
   return jsDay === 0 ? 6 : jsDay - 1
 }
+
+export function getCurrentHour(): number {
+  return new Date().getHours()
+}
+
+export function getCurrentMinutes(): number {
+  return new Date().getMinutes()
+}

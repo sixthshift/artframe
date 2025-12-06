@@ -12,7 +12,7 @@ import {
 import { useInstances } from '@/queries'
 import type { ScheduleSlots } from '@/api/types'
 import styles from './Schedule.module.css'
-import { DAY_NAMES, getColorForId, getCurrentDayIndex } from './Schedule.utils'
+import { DAY_NAMES, getColorForId, getCurrentDayIndex, getCurrentHour, getCurrentMinutes } from './Schedule.utils'
 
 export const Schedule = () => {
   const { data: scheduleData, isLoading } = useSchedules()
@@ -255,6 +255,7 @@ export const Schedule = () => {
                   const slot = slots[slotKey]
                   const hasContent = !!slot
                   const isSelected = selectedSlots.has(slotKey)
+                  const isCurrentTimeSlot = day === getCurrentDayIndex() && hour === getCurrentHour()
 
                   return (
                     <div
@@ -270,6 +271,12 @@ export const Schedule = () => {
                         >
                           <span class={styles.slotName}>{getSlotInfo(slot).name}</span>
                         </div>
+                      )}
+                      {isCurrentTimeSlot && (
+                        <div
+                          class={styles.timeIndicator}
+                          style={{ top: `${(getCurrentMinutes() / 60) * 100}%` }}
+                        />
                       )}
                     </div>
                   )

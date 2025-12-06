@@ -71,6 +71,7 @@
   @apply border-t border-gray-200;
 }
 
+
 /* Day column slots */
 .dayColumn {
   @apply relative border-r border-b border-gray-100 bg-white cursor-pointer
@@ -88,6 +89,22 @@
 
 .dayColumn.hasContent {
   @apply bg-white;
+}
+
+/* Current time indicator line */
+.timeIndicator {
+  @apply absolute left-0 right-0 pointer-events-none z-30;
+  height: 2px;
+  background-color: #dc2626;
+}
+
+.timeIndicator::before {
+  content: '';
+  @apply absolute -left-1 top-1/2 -translate-y-1/2;
+  width: 8px;
+  height: 8px;
+  background-color: #dc2626;
+  border-radius: 50%;
 }
 
 /* Slot content */
