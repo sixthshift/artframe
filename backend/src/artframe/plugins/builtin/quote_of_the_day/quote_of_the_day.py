@@ -4,122 +4,45 @@ Quote of the Day plugin for Artframe.
 Displays inspirational and thought-provoking quotes.
 """
 
+import json
 import random
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional, Union
 
 from PIL import Image, ImageDraw, ImageFont
 
 from artframe.plugins.base_plugin import BasePlugin
 
-# Embedded quotes database
-QUOTES_DATABASE = {
-    "inspirational": [
-        ("The only way to do great work is to love what you do.", "Steve Jobs"),
-        ("Innovation distinguishes between a leader and a follower.", "Steve Jobs"),
-        (
-            "The future belongs to those who believe in the beauty of their dreams.",
-            "Eleanor Roosevelt",
-        ),
-        ("It does not matter how slowly you go as long as you do not stop.", "Confucius"),
-        ("Everything you've ever wanted is on the other side of fear.", "George Addair"),
-        ("Believe you can and you're halfway there.", "Theodore Roosevelt"),
-        ("The only impossible journey is the one you never begin.", "Tony Robbins"),
-        ("Life is what happens when you're busy making other plans.", "John Lennon"),
-        (
-            "The best time to plant a tree was 20 years ago. The second best time is now.",
-            "Chinese Proverb",
-        ),
-        ("Don't watch the clock; do what it does. Keep going.", "Sam Levenson"),
-    ],
-    "wisdom": [
-        ("The only true wisdom is in knowing you know nothing.", "Socrates"),
-        ("The unexamined life is not worth living.", "Socrates"),
-        ("I think, therefore I am.", "René Descartes"),
-        (
-            "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.",
-            "Ralph Waldo Emerson",
-        ),
-        ("The only way out is through.", "Robert Frost"),
-        (
-            "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
-            "Aristotle",
-        ),
-        ("The mind is everything. What you think you become.", "Buddha"),
-        (
-            "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.",
-            "Albert Einstein",
-        ),
-        ("Be kind, for everyone you meet is fighting a hard battle.", "Plato"),
-        (
-            "In the midst of winter, I found there was, within me, an invincible summer.",
-            "Albert Camus",
-        ),
-    ],
-    "funny": [
-        ("I'm not superstitious, but I am a little stitious.", "Michael Scott"),
-        ("The road to success is dotted with many tempting parking spaces.", "Will Rogers"),
-        (
-            "I find television very educating. Every time somebody turns on the set, I go into the other room and read a book.",
-            "Groucho Marx",
-        ),
-        (
-            "By working faithfully eight hours a day you may eventually get to be boss and work twelve hours a day.",
-            "Robert Frost",
-        ),
-        (
-            "The difference between genius and stupidity is that genius has its limits.",
-            "Albert Einstein",
-        ),
-        (
-            "If you think you are too small to make a difference, try sleeping with a mosquito.",
-            "Dalai Lama",
-        ),
-        (
-            "The trouble with having an open mind, of course, is that people will insist on coming along and trying to put things in it.",
-            "Terry Pratchett",
-        ),
-        (
-            "Age is an issue of mind over matter. If you don't mind, it doesn't matter.",
-            "Mark Twain",
-        ),
-        ("Life is hard. After all, it kills you.", "Katharine Hepburn"),
-        (
-            "Always remember that you are absolutely unique. Just like everyone else.",
-            "Margaret Mead",
-        ),
-    ],
-    "technology": [
-        (
-            "Any sufficiently advanced technology is indistinguishable from magic.",
-            "Arthur C. Clarke",
-        ),
-        (
-            "The advance of technology is based on making it fit in so that you don't really even notice it, so it's part of everyday life.",
-            "Bill Gates",
-        ),
-        ("Technology is best when it brings people together.", "Matt Mullenweg"),
-        ("The great myth of our times is that technology is communication.", "Libby Larsen"),
-        (
-            "It has become appallingly obvious that our technology has exceeded our humanity.",
-            "Albert Einstein",
-        ),
-        ("The real problem is not whether machines think but whether men do.", "B.F. Skinner"),
-        (
-            "We are stuck with technology when what we really want is just stuff that works.",
-            "Douglas Adams",
-        ),
-        ("The computer was born to solve problems that did not exist before.", "Bill Gates"),
-        (
-            "First we thought the PC was a calculator. Then we found out how to turn numbers into letters with ASCII — and we thought it was a typewriter.",
-            "Steve Jobs",
-        ),
-        (
-            "The Internet is becoming the town square for the global village of tomorrow.",
-            "Bill Gates",
-        ),
-    ],
-}
+# Load quotes from JSON file
+_QUOTES_FILE = Path(__file__).parent / "quotes.json"
+_QUOTES: list[dict[str, Any]] = []
+_QUOTES_BY_CATEGORY: dict[str, list[dict[str, Any]]] = {}
+
+
+def _load_quotes() -> list[dict[str, Any]]:
+    """Load quotes database from JSON file."""
+    global _QUOTES, _QUOTES_BY_CATEGORY
+    if not _QUOTES:
+        try:
+            with open(_QUOTES_FILE, "r", encoding="utf-8") as f:
+                _QUOTES = json.load(f)
+            # Build category index
+            for quote in _QUOTES:
+                cat = quote.get("category", "inspirational")
+                if cat not in _QUOTES_BY_CATEGORY:
+                    _QUOTES_BY_CATEGORY[cat] = []
+                _QUOTES_BY_CATEGORY[cat].append(quote)
+        except Exception:
+            _QUOTES = []
+            _QUOTES_BY_CATEGORY = {}
+    return _QUOTES
+
+
+def _get_categories() -> list[str]:
+    """Get available quote categories."""
+    _load_quotes()
+    return list(_QUOTES_BY_CATEGORY.keys())
 
 
 class QuoteOfTheDay(BasePlugin):
@@ -146,10 +69,11 @@ class QuoteOfTheDay(BasePlugin):
         """
         # Validate category
         category = settings.get("category", "inspirational")
-        if category not in ["inspirational", "wisdom", "funny", "technology", "random"]:
+        valid_categories = _get_categories() + ["random"]
+        if category not in valid_categories:
             return (
                 False,
-                "Category must be 'inspirational', 'wisdom', 'funny', 'technology', or 'random'",
+                f"Category must be one of: {', '.join(valid_categories)}",
             )
 
         # Validate font size
@@ -249,23 +173,44 @@ class QuoteOfTheDay(BasePlugin):
         Returns:
             Tuple of (quote_text, author)
         """
-        # If random category, pick a random category first
-        if category == "random":
-            category = random.choice(list(QUOTES_DATABASE.keys()))
-
-        quotes = QUOTES_DATABASE[category]
+        _load_quotes()
 
         if daily:
             # Use day of year as seed for consistency throughout the day
             day_of_year = datetime.now().timetuple().tm_yday
-            random.seed(day_of_year + hash(category))
-            quote = random.choice(quotes)
+            random.seed(day_of_year)
+
+            # If random category, pick one deterministically for the day
+            if category == "random":
+                category = random.choice(list(_QUOTES_BY_CATEGORY.keys()))
+
+            quotes = _QUOTES_BY_CATEGORY.get(category, [])
+
+            if not quotes:
+                random.seed()
+                return (
+                    "The only way to do great work is to love what you do.",
+                    "Steve Jobs",
+                )
+
+            quote_data = random.choice(quotes)
             random.seed()  # Reset seed
         else:
-            # Truly random
-            quote = random.choice(quotes)
+            # Truly random - pick random category if needed
+            if category == "random":
+                category = random.choice(list(_QUOTES_BY_CATEGORY.keys()))
 
-        return quote
+            quotes = _QUOTES_BY_CATEGORY.get(category, [])
+
+            if not quotes:
+                return (
+                    "The only way to do great work is to love what you do.",
+                    "Steve Jobs",
+                )
+
+            quote_data = random.choice(quotes)
+
+        return (quote_data["quote"], quote_data["author"])
 
     def _wrap_text(
         self,
