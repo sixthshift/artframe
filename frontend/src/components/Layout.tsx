@@ -24,10 +24,10 @@ export const Layout = ({ children }: LayoutProps) => {
       <header class={styles.header}>
         <div class={styles.headerContent}>
           <div class={styles.headerTop}>
-            <div class={styles.branding}>
+            <Link href="/" class={styles.branding}>
               <h1>🖼️ Artframe</h1>
               <p>Digital Photo Frame Dashboard</p>
-            </div>
+            </Link>
             <nav class={styles.nav}>
               {navItems.map((item) => (
                 <Link

@@ -15,6 +15,10 @@
   @apply flex justify-between items-center;
 }
 
+.branding {
+  @apply no-underline hover:opacity-90 transition-opacity;
+}
+
 .branding h1 {
   @apply text-3xl font-bold;
 }
