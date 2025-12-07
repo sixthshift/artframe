@@ -181,7 +181,7 @@ success = controller.manual_refresh()
 # Get system status
 status = controller.get_status()
 print(f"Last update: {status['last_update']}")
-print(f"Cache size: {status['cache_stats']['total_size_mb']} MB")
+print(f"Running: {status['running']}")
 ```
 
 ## Hardware Setup 🔧

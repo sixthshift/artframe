@@ -8,7 +8,6 @@ Combines photo retrieval and styling in a single plugin.
 import random
 import tempfile
 import time
-from datetime import datetime
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Optional
@@ -424,19 +423,8 @@ class ImmichPhotos(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: dict[str, Any]) -> str:
-        """
-        Generate cache key for content.
-
-        Cache per day so we show same photo all day.
-        """
-        date = datetime.now().strftime("%Y-%m-%d")
-        use_ai = settings.get("use_ai", False)
-        style = settings.get("ai_style", "none") if use_ai else "none"
-        return f"immich_{date}_{style}"
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """Cache for 24 hours (one day)."""
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
+        """Refresh every 24 hours to show a new photo."""
         return 86400  # 24 hours in seconds
 
     def run_active(
@@ -453,7 +441,7 @@ class ImmichPhotos(BasePlugin):
         Shows one photo per day (with optional AI styling).
         Refreshes every 24 hours to show a new photo.
         """
-        refresh_interval = self.get_cache_ttl(settings)  # 24 hours
+        refresh_interval = self.get_refresh_interval(settings)
 
         self.logger.info(f"Immich Photos starting with {refresh_interval}s refresh interval")
 

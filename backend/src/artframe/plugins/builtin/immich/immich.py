@@ -593,20 +593,12 @@ class Immich(BasePlugin):
 
         return safe_name
 
-    def get_cache_key(self, settings: dict[str, Any]) -> Optional[str]:
-        """
-        Photos are cached locally, so no need for system cache.
-
-        Returns None to disable caching.
-        """
-        return None
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """No caching needed - photos are stored locally."""
-        return 0
-
     def get_refresh_interval(self, settings: dict[str, Any]) -> int:
-        """Get slideshow refresh interval in seconds."""
+        """
+        Get slideshow refresh interval in seconds.
+
+        This plugin manages its own local photo cache in ~/.artframe/plugins/immich/.
+        """
         refresh_minutes = settings.get("refresh_interval_minutes", 5)
         return int(refresh_minutes * 60)
 

@@ -214,30 +214,11 @@ class Clock(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: dict[str, Any]) -> str:
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
         """
-        Generate cache key for clock content.
+        Get refresh interval in seconds.
 
-        Cache per minute so the clock updates every minute.
-        """
-        timezone = settings.get("timezone")
-        if timezone:
-            try:
-                tz = ZoneInfo(timezone)
-                now = datetime.now(tz)
-            except Exception:
-                now = datetime.now()
-        else:
-            now = datetime.now()
-
-        tz_suffix = f"_{timezone}" if timezone else ""
-        return f"clock_{now.strftime('%Y%m%d_%H%M')}{tz_suffix}"
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """
-        Get cache time-to-live in seconds.
-
-        Always returns 60 seconds (1 minute) as rendering is expensive.
+        Returns 60 seconds (1 minute) to update the clock every minute.
         """
         return 60
 
@@ -255,7 +236,7 @@ class Clock(BasePlugin):
         The clock manages its own updates - refreshing every minute
         (or every second if show_seconds is enabled).
         """
-        refresh_interval = self.get_cache_ttl(settings)
+        refresh_interval = self.get_refresh_interval(settings)
         self.logger.info(f"Clock starting with {refresh_interval}s refresh interval")
 
         while not stop_event.is_set():

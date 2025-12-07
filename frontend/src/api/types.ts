@@ -93,12 +93,6 @@ export interface SystemStatus {
   // Legacy fields (for backwards compatibility)
   running?: boolean
   next_scheduled?: string
-  cache_stats?: {
-    total_images: number
-    total_size_mb: number
-    oldest_image?: string
-    newest_image?: string
-  }
   display_state?: {
     current_image_id?: string
     last_refresh?: string

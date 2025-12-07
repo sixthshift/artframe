@@ -132,6 +132,10 @@ class ContentOrchestrator:
         """
         Determine if the display should be updated.
 
+        Note: Each plugin manages its own refresh loop via run_active().
+        This method is only used by force_refresh() to determine if
+        there's a content source change.
+
         Args:
             content_source: The current content source
 
@@ -150,18 +154,6 @@ class ContentOrchestrator:
         if content_source.instance and self.last_displayed_instance_id:
             if content_source.instance.id != self.last_displayed_instance_id:
                 return True
-
-        # Check if plugin's refresh interval (cache_ttl) has elapsed
-        if content_source.instance and self.current_item_start:
-            plugin = get_plugin(content_source.instance.plugin_id)
-            if plugin and hasattr(plugin, "get_cache_ttl"):
-                try:
-                    ttl = plugin.get_cache_ttl(content_source.instance.settings)
-                    elapsed = (self._now() - self.current_item_start).total_seconds()
-                    if elapsed >= ttl:
-                        return True
-                except Exception:
-                    pass  # If TTL check fails, don't force refresh
 
         return False
 

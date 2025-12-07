@@ -119,65 +119,27 @@ class BasePlugin(ABC):
         """
         return True, ""
 
-    def get_cache_key(self, settings: dict[str, Any]) -> Optional[str]:
-        """
-        Generate cache key for this content.
-
-        Override to enable intelligent caching. Return None to disable caching.
-
-        Args:
-            settings: Plugin instance settings
-
-        Returns:
-            str: Unique cache key, or None to disable caching
-
-        Example:
-            def get_cache_key(self, settings):
-                # Cache per location and date
-                location = settings.get('location', 'default')
-                date = datetime.now().strftime('%Y-%m-%d')
-                return f"weather_{location}_{date}"
-        """
-        return None  # No caching by default
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """
-        Get cache time-to-live in seconds.
-
-        Override to specify how long cached content remains valid.
-
-        Args:
-            settings: Plugin instance settings
-
-        Returns:
-            int: Seconds before cache expires (0 = no caching)
-
-        Example:
-            def get_cache_ttl(self, settings):
-                return 1800  # Cache for 30 minutes
-        """
-        return 0  # No caching by default
-
     def get_refresh_interval(self, settings: dict[str, Any]) -> int:
         """
         Get display refresh interval in seconds.
 
         This determines how often the plugin regenerates content while active.
-        By default returns get_cache_ttl(), but can be overridden for plugins
-        that have different refresh needs (e.g., slideshows).
+        Each plugin manages its own refresh loop in run_active().
+
+        Override this to specify your plugin's refresh interval.
 
         Args:
             settings: Plugin instance settings
 
         Returns:
-            int: Seconds between display refreshes (0 = never refresh)
+            int: Seconds between display refreshes (0 = static content, no refresh)
 
         Example:
             def get_refresh_interval(self, settings):
                 # Refresh every 5 minutes for slideshow
                 return settings.get('refresh_interval_minutes', 5) * 60
         """
-        return self.get_cache_ttl(settings)
+        return 0  # Static content by default
 
     def on_enable(self, settings: dict[str, Any]) -> None:
         """

@@ -322,34 +322,15 @@ class QuoteOfTheDay(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: dict[str, Any]) -> str:
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
         """
-        Generate cache key for quote content.
+        Get refresh interval in seconds.
 
-        If daily_quote is True, cache per day.
-        Otherwise, generate unique key each time (no caching).
-        """
-        daily_quote = settings.get("daily_quote", True)
-        category = settings.get("category", "inspirational")
-
-        if daily_quote:
-            # Cache per day
-            today = datetime.now().strftime("%Y%m%d")
-            return f"quote_{category}_{today}"
-        else:
-            # Don't cache (new quote each time)
-            now = datetime.now().strftime("%Y%m%d_%H%M%S")
-            return f"quote_{category}_{now}"
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """
-        Get cache time-to-live in seconds.
-
-        If daily_quote is True, cache for 24 hours.
-        Otherwise, cache for 0 seconds (regenerate each time).
+        If daily_quote is True, refresh every 24 hours.
+        Otherwise, refresh every hour to show new random quotes.
         """
         daily_quote = settings.get("daily_quote", True)
-        return 86400 if daily_quote else 0  # 24 hours or 0
+        return 86400 if daily_quote else 3600  # 24 hours or 1 hour
 
     def run_active(
         self,
@@ -365,10 +346,7 @@ class QuoteOfTheDay(BasePlugin):
         Refreshes every 24 hours to show the next day's quote.
         If daily_quote is False, refreshes every hour with a new random quote.
         """
-        # Use cache_ttl as refresh interval, minimum 1 hour
-        refresh_interval = self.get_cache_ttl(settings)
-        if refresh_interval <= 0:
-            refresh_interval = 3600  # 1 hour default for random quotes
+        refresh_interval = self.get_refresh_interval(settings)
 
         self.logger.info(f"Quote of the Day starting with {refresh_interval}s refresh interval")
 

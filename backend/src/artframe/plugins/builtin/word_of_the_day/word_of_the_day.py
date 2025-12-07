@@ -307,33 +307,15 @@ class WordOfTheDay(BasePlugin):
 
         return image
 
-    def get_cache_key(self, settings: dict[str, Any]) -> str:
+    def get_refresh_interval(self, settings: dict[str, Any]) -> int:
         """
-        Generate cache key for word content.
+        Get refresh interval in seconds.
 
-        If daily_word is True, cache per day.
-        Otherwise, generate unique key each time.
-        """
-        daily_word = settings.get("daily_word", True)
-
-        if daily_word:
-            # Cache per day
-            today = datetime.now().strftime("%Y%m%d")
-            return f"word_{today}"
-        else:
-            # Don't cache (new word each time)
-            now = datetime.now().strftime("%Y%m%d_%H%M%S")
-            return f"word_{now}"
-
-    def get_cache_ttl(self, settings: dict[str, Any]) -> int:
-        """
-        Get cache time-to-live in seconds.
-
-        If daily_word is True, cache for 24 hours.
-        Otherwise, don't cache.
+        If daily_word is True, refresh every 24 hours.
+        Otherwise, refresh every hour to show new random words.
         """
         daily_word = settings.get("daily_word", True)
-        return 86400 if daily_word else 0  # 24 hours or 0
+        return 86400 if daily_word else 3600  # 24 hours or 1 hour
 
     def run_active(
         self,
@@ -349,10 +331,7 @@ class WordOfTheDay(BasePlugin):
         Refreshes every 24 hours to show the next day's word.
         If daily_word is False, refreshes every hour with a new random word.
         """
-        # Use cache_ttl as refresh interval, minimum 1 hour
-        refresh_interval = self.get_cache_ttl(settings)
-        if refresh_interval <= 0:
-            refresh_interval = 3600  # 1 hour default for random words
+        refresh_interval = self.get_refresh_interval(settings)
 
         self.logger.info(f"Word of the Day starting with {refresh_interval}s refresh interval")
 

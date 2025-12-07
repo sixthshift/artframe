@@ -159,7 +159,6 @@ class ArtframeController:
 
     def get_status(self) -> dict[str, Any]:
         """Get current system status."""
-        storage_stats = self.storage_manager.get_storage_stats()
         display_state = self.display_controller.get_state()
 
         # Get orchestrator status
@@ -170,12 +169,6 @@ class ArtframeController:
             "last_update": self.last_update.isoformat() if self.last_update else None,
             "next_scheduled": self.orchestrator.get_next_update_time().isoformat(),
             "orchestrator": orchestrator_status,
-            "storage_stats": {
-                "total_photos": storage_stats.total_photos,
-                "total_styled_images": storage_stats.total_styled_images,
-                "total_size_mb": round(storage_stats.total_size_mb, 2),
-                "storage_directory": storage_stats.storage_directory,
-            },
             "display_state": {
                 "current_image_id": display_state.current_image_id,
                 "last_refresh": (

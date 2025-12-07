@@ -3,7 +3,6 @@ import { Card, Button, StatusGrid, StatusItem } from '@/components'
 import {
   useSystemInfo,
   useDisplayHealth,
-  useSystemStatus,
   useLogs,
 } from '@/queries'
 import { formatDateTime } from '@/utils/date'
@@ -11,7 +10,6 @@ import { formatDateTime } from '@/utils/date'
 export const System = () => {
   const { data: systemInfo, isLoading: systemLoading } = useSystemInfo()
   const { data: displayHealth, isLoading: healthLoading } = useDisplayHealth()
-  const { data: status, isLoading: statusLoading } = useSystemStatus()
   const [logLevel, setLogLevel] = useState<string>('')
   const { data: logs = [], refetch: refetchLogs } = useLogs(logLevel || undefined)
 
@@ -34,7 +32,7 @@ export const System = () => {
 
   return (
     <div class="max-w-7xl mx-auto">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* System Info */}
         <Card title="System Information">
           {systemLoading ? (
@@ -67,21 +65,6 @@ export const System = () => {
           )}
         </Card>
 
-        {/* Cache Stats */}
-        <Card title="Cache Statistics">
-          {statusLoading ? (
-            <p class="text-gray-500 italic text-center py-4">Loading...</p>
-          ) : status ? (
-            <StatusGrid>
-              <StatusItem label="Total Images" value={status.cache_stats?.total_images ?? 0} />
-              <StatusItem label="Cache Size" value={`${status.cache_stats?.total_size_mb ?? 0} MB`} />
-              <StatusItem label="Oldest Image" value={status.cache_stats?.oldest_image ?? 'N/A'} />
-              <StatusItem label="Newest Image" value={status.cache_stats?.newest_image ?? 'N/A'} />
-            </StatusGrid>
-          ) : (
-            <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load cache stats</p>
-          )}
-        </Card>
       </div>
 
       {/* Logs */}
