@@ -34,6 +34,7 @@ dependencies = [
     "psutil>=5.9.0",
     "spidev>=3.6",
     "RPi.GPIO>=0.7.1; platform_machine=='armv7l' or platform_machine=='aarch64'",
+    "google-genai>=1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -105,7 +106,7 @@ warn_no_return = true
 strict_equality = true
 
 [[tool.mypy.overrides]]
-module = ["RPi.*", "spidev", "schedule", "dataclasses_json"]
+module = ["RPi.*", "spidev", "schedule", "dataclasses_json", "google.genai", "google.genai.types"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

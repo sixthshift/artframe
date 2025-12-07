@@ -1,0 +1,84 @@
+{
+  "id": "repaint",
+  "display_name": "Repaint",
+  "class": "Repaint",
+  "description": "Transform Immich photos into art using AI styles. Fetches photos from your Immich album and applies artistic transformations using Google's Gemini API.",
+  "author": "Artframe Team",
+  "version": "1.0.0",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Immich Server",
+        "fields": [
+          {
+            "key": "immich_url",
+            "type": "url",
+            "label": "Server URL",
+            "placeholder": "https://immich.example.com",
+            "required": true,
+            "help": "Your Immich server URL"
+          },
+          {
+            "key": "immich_api_key",
+            "type": "password",
+            "label": "API Key",
+            "required": true,
+            "help": "Get this from Immich Settings → Account Settings → API Keys"
+          },
+          {
+            "key": "album_id",
+            "type": "string",
+            "label": "Album ID",
+            "required": true,
+            "help": "The album ID to pull photos from"
+          }
+        ]
+      },
+      {
+        "title": "AI Settings",
+        "fields": [
+          {
+            "key": "gemini_api_key",
+            "type": "password",
+            "label": "Gemini API Key",
+            "required": true,
+            "help": "Get this from Google AI Studio (ai.google.dev)"
+          },
+          {
+            "key": "gemini_model",
+            "type": "select",
+            "label": "Model",
+            "default": "gemini-2.5-flash-image",
+            "options": [
+              { "value": "gemini-2.5-flash-image", "label": "Gemini 2.5 Flash Image - Free (500/day)" },
+              { "value": "gemini-2.0-flash-preview-image-generation", "label": "Gemini 2.0 Flash - Free (Limited)" },
+              { "value": "gemini-3-pro-image-preview", "label": "Gemini 3 Pro Image - Free (10-20/day)" }
+            ],
+            "help": "AI model to use for style transformation"
+          }
+        ]
+      },
+      {
+        "title": "Timing",
+        "fields": [
+          {
+            "key": "sync_interval_hours",
+            "type": "number",
+            "label": "Sync Interval (hours)",
+            "default": 6,
+            "min": 1,
+            "help": "How often to sync the photo list from Immich"
+          },
+          {
+            "key": "refresh_interval_minutes",
+            "type": "number",
+            "label": "Refresh Interval (minutes)",
+            "default": 60,
+            "min": 5,
+            "help": "How often to display a new styled photo"
+          }
+        ]
+      }
+    ]
+  }
+}

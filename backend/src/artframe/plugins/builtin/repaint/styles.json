@@ -1,0 +1,42 @@
+{
+  "ghibli": {
+    "name": "Studio Ghibli",
+    "prompt": "Transform this photograph into a Studio Ghibli anime style artwork. Use warm, soft watercolor-like colors with hand-painted textures. Capture the whimsical, nostalgic feeling of Hayao Miyazaki films with soft lighting and gentle details. Maintain the composition and subjects but render them in this distinctive animated style."
+  },
+  "oil_painting": {
+    "name": "Oil Painting",
+    "prompt": "Render this photograph as a classical oil painting in the impressionist style. Use visible, expressive brushstrokes with rich, layered colors. Capture the essence of masters like Monet or Renoir - soft edges, dappled light, and a sense of movement. The painting should feel timeless and museum-worthy."
+  },
+  "watercolor": {
+    "name": "Watercolor",
+    "prompt": "Transform this photograph into a delicate watercolor painting. Use soft, translucent washes of color that blend and bleed naturally. Include subtle paper texture and allow some white space to show through. The style should feel loose, artistic, and hand-painted with gentle color gradients."
+  },
+  "pencil_sketch": {
+    "name": "Pencil Sketch",
+    "prompt": "Convert this photograph into a detailed pencil sketch drawing. Use varied line weights - bold confident strokes for outlines and delicate hatching for shading and texture. The drawing should look like it was carefully crafted by a skilled artist in a sketchbook, with high contrast between light and dark areas."
+  },
+  "ukiyo_e": {
+    "name": "Ukiyo-e",
+    "prompt": "Transform this photograph into a traditional Japanese ukiyo-e woodblock print style. Use bold black outlines, flat areas of color, and stylized patterns. Include characteristics like dramatic compositions, decorative clouds or waves where appropriate, and the distinctive aesthetic of artists like Hokusai or Hiroshige."
+  },
+  "pop_art": {
+    "name": "Pop Art",
+    "prompt": "Render this photograph in bold pop art style inspired by Andy Warhol and Roy Lichtenstein. Use bright, saturated colors with strong contrast, bold outlines, and graphic shapes. Include halftone dot patterns where appropriate. The result should be vibrant, eye-catching, and iconic."
+  },
+  "vintage_photograph": {
+    "name": "Vintage Photograph",
+    "prompt": "Transform this into a vintage photograph from the 1950s-1960s. Apply a warm, faded color palette with slight sepia tones, soft vignetting around edges, and subtle film grain. The image should evoke nostalgia and feel like a treasured family photo discovered in an old album."
+  },
+  "stained_glass": {
+    "name": "Stained Glass",
+    "prompt": "Reimagine this photograph as a stained glass window artwork. Use bold black leading lines to separate distinct segments of rich, jewel-toned translucent colors. The composition should feel like light is shining through colored glass, with a luminous, cathedral-like quality."
+  },
+  "art_nouveau": {
+    "name": "Art Nouveau",
+    "prompt": "Transform this photograph into Art Nouveau style artwork inspired by Alphonse Mucha. Use flowing, organic lines and curves, decorative floral and natural motifs, elegant borders, and a harmonious muted color palette. The result should feel ornate, elegant, and romantically stylized."
+  },
+  "charcoal": {
+    "name": "Charcoal Drawing",
+    "prompt": "Convert this photograph into an expressive charcoal drawing. Use rich, velvety blacks and soft grays with dramatic contrast. Include bold, gestural strokes and smudged shading for depth. The drawing should have raw, artistic energy with strong shadows and luminous highlights."
+  }
+}
