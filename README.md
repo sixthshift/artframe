@@ -16,57 +16,69 @@ A Raspberry Pi-based digital photo frame that automatically retrieves daily phot
 
 ### For Raspberry Pi (Production)
 
-1. **Clone and setup**:
+**One-line install:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/sixthshift/artframe/main/backend/scripts/install.sh | sudo bash
+```
+
+**Or clone and install:**
+
+```bash
+git clone https://github.com/sixthshift/artframe.git
+cd artframe
+sudo ./backend/scripts/install.sh
+```
+
+After installation:
+
+1. **Configure** (edit with your settings):
    ```bash
-   git clone https://github.com/yourusername/artframe.git
-   cd artframe
-   sudo ./scripts/install.sh
+   sudo nano /opt/artframe/backend/config/artframe.yaml
    ```
 
-2. **Configure**:
-   ```bash
-   sudo nano /opt/artframe/config/artframe.yaml
-   # Add your API keys and settings
-   ```
-
-3. **Start the service**:
+2. **Start the service**:
    ```bash
    sudo systemctl start artframe
    sudo systemctl status artframe
    ```
 
+3. **Access the web dashboard** at `http://<pi-ip>:8000`
+
 ### For Development
 
 1. **Setup development environment**:
    ```bash
-   git clone https://github.com/yourusername/artframe.git
+   git clone https://github.com/sixthshift/artframe.git
    cd artframe
 
-   # Install in development mode with all dependencies
-   pip install -e .[dev]
+   # Install frontend dependencies and build
+   cd frontend && npm install && npm run build && cd ..
+
+   # Install backend with uv
+   cd backend
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   uv sync --dev
    ```
 
-2. **Configure for development**:
+2. **Run the backend**:
    ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
+   cd backend
+   uv run artframe --config config/artframe-laptop.yaml
+   # Open http://localhost:8000 in browser
    ```
 
 3. **Run tests**:
    ```bash
-   pytest tests/
+   cd backend
+   uv run pytest tests/
    ```
 
-4. **Test manually**:
+4. **Run frontend dev server** (for hot-reload):
    ```bash
-   python -m artframe --config config/artframe-dev.yaml test
-   python -m artframe --config config/artframe-dev.yaml update
-   ```
-
-5. **Run web dashboard**:
-   ```bash
-   python -m artframe serve --port 5000
-   # Open http://localhost:5000 in browser
+   cd frontend
+   npm run dev
+   # Frontend at http://localhost:5173, proxies API to backend
    ```
 
 ## Configuration 📋

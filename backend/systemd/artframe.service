@@ -8,15 +8,16 @@ Wants=network-online.target
 Type=simple
 User=pi
 Group=pi
-WorkingDirectory=/opt/artframe
+WorkingDirectory=/opt/artframe/backend
 
-# Environment
-Environment="PATH=/home/pi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Environment - include both possible uv install locations
+Environment="PATH=/home/pi/.local/bin:/home/pi/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="PYTHONUNBUFFERED=1"
 
 # Main process - using uv run for dependency management
-ExecStart=/home/pi/.local/bin/uv run artframe
-ExecStopPost=/home/pi/.local/bin/uv run python -m artframe.clear_display
+ExecStart=/home/pi/.local/bin/uv run artframe --config /opt/artframe/backend/config/artframe.yaml
+# Use "-" prefix so service stop doesn't fail if display clear fails
+ExecStopPost=-/home/pi/.local/bin/uv run python -m artframe.clear_display
 
 # Restart policy
 Restart=always
@@ -33,8 +34,8 @@ KillSignal=SIGTERM
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/var/log/artframe /var/cache/artframe /opt/artframe/data
+ProtectHome=read-only
+ReadWritePaths=/var/log/artframe /var/cache/artframe /opt/artframe/backend/data
 
 # Resource limits
 MemoryMax=512M

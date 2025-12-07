@@ -1,0 +1,36 @@
+# Artframe Configuration - Raspberry Pi Production
+# Use this on the Raspberry Pi with actual e-ink display
+
+artframe:
+  display:
+    driver: "waveshare"
+    config:
+      model: "epd5in83"
+      width: 600
+      height: 448
+      rotation: 0
+      gpio_pins:
+        busy: 24
+        reset: 17
+        dc: 25
+        cs: 8
+
+  storage:
+    data_dir: "/opt/artframe/backend/data"
+    cache_dir: "/var/cache/artframe"
+    cache_max_mb: 1000
+    cache_retention_days: 30
+
+  logging:
+    level: "INFO"
+    dir: "/var/log/artframe"
+    max_size_mb: 10
+    backup_count: 5
+
+  web:
+    host: "0.0.0.0"
+    port: 8000
+    debug: false
+
+  scheduler:
+    timezone: "Australia/Sydney"

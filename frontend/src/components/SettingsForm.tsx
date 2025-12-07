@@ -1,4 +1,4 @@
-import type { SettingsSchema, SettingsField, SettingsSection } from '@/api/types'
+import type { SettingsSchema, SettingsField, SettingsSection, components } from '@/api/types'
 
 // Field from API may have slightly different shape (null vs undefined)
 type ApiSettingsField = {
@@ -13,8 +13,11 @@ type ApiSettingsField = {
   placeholder?: string | null
 }
 
+// API-generated schema type (sections is optional)
+type ApiSettingsSchema = components['schemas']['SettingsSchema']
+
 // Schema can be either sections-based or flat dict from API
-type SchemaInput = SettingsSchema | { [key: string]: ApiSettingsField }
+type SchemaInput = SettingsSchema | ApiSettingsSchema | { [key: string]: ApiSettingsField }
 
 interface SettingsFormProps {
   schema: SchemaInput
@@ -44,9 +47,27 @@ function normalizeField(key: string, field: ApiSettingsField): SettingsField {
 
 // Convert flat dict schema to sections format
 function normalizeSchema(schema: SchemaInput): SettingsSection[] {
-  // If it already has sections, use them
+  // If it already has sections, use them (normalize fields which may be optional from API)
   if ('sections' in schema && Array.isArray(schema.sections)) {
-    return schema.sections
+    return schema.sections.map(section => ({
+      title: section.title,
+      fields: (section.fields ?? []).map(field => ({
+        key: field.key,
+        type: field.type,
+        label: field.label,
+        description: field.description ?? undefined,
+        help: field.help ?? field.description ?? undefined,
+        required: field.required,
+        default: field.default ?? undefined,
+        min: field.min ?? undefined,
+        max: field.max ?? undefined,
+        placeholder: field.placeholder ?? undefined,
+        options: field.options?.map(opt => ({
+          value: String(opt.value ?? Object.keys(opt)[0] ?? ''),
+          label: String(opt.label ?? Object.values(opt)[0] ?? ''),
+        })),
+      }))
+    }))
   }
 
   // Convert flat dict to a single section
