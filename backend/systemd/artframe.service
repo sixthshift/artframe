@@ -30,6 +30,9 @@ TimeoutStopSec=30
 KillMode=mixed
 KillSignal=SIGTERM
 
+# Allow binding to port 80
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
 # Security settings
 NoNewPrivileges=yes
 PrivateTmp=yes

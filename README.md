@@ -43,7 +43,7 @@ After installation:
    sudo systemctl status artframe
    ```
 
-3. **Access the web dashboard** at `http://<pi-ip>:8000`
+3. **Access the web dashboard** at `http://<pi-ip>`
 
 ### For Development
 

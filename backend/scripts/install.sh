@@ -280,7 +280,7 @@ artframe:
 
   web:
     host: "0.0.0.0"
-    port: 8000
+    port: 80
     debug: false
 
   scheduler:
@@ -359,7 +359,7 @@ EOF
         echo "  sudo journalctl -u $SERVICE_NAME -f"
         echo ""
         echo "Web dashboard will be available at:"
-        echo "  http://$(hostname -I | awk '{print $1}'):8000"
+        echo "  http://$(hostname -I | awk '{print $1}')"
     else
         echo "Run manually:"
         echo "  cd $INSTALL_DIR/backend"
