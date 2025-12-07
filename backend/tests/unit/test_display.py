@@ -124,7 +124,7 @@ class TestDriverInterface:
         optimized = driver.optimize_image_for_display(test_image)
 
         assert optimized.size == (600, 448)
-        assert optimized.mode == "L"  # Should be grayscale
+        assert optimized.mode == "RGB"  # Should preserve color
 
 
 class TestDisplayController:

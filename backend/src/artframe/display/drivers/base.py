@@ -80,10 +80,6 @@ class DriverInterface(ABC):
         # Resize to display dimensions
         image = image.resize(display_size, Image.Resampling.LANCZOS)
 
-        # Convert to grayscale if not already
-        if image.mode != "L":
-            image = image.convert("L")
-
         return image
 
     # Optional capability methods - drivers can override these for additional features

@@ -99,12 +99,14 @@ class Immich(BasePlugin):
 
         # Base directory for plugin data
         base_dir = Path.home() / ".artframe" / "plugins" / "immich" / instance_id
-        self._sync_dir = base_dir
-        self._photos_dir = base_dir / "photos"
-        self._metadata_file = base_dir / "sync_metadata.json"
+        photos_dir = base_dir / "photos"
 
         # Create directories
-        self._photos_dir.mkdir(parents=True, exist_ok=True)
+        photos_dir.mkdir(parents=True, exist_ok=True)
+
+        self._sync_dir = base_dir
+        self._photos_dir = photos_dir
+        self._metadata_file = base_dir / "sync_metadata.json"
 
         # Load or initialize metadata
         self._load_metadata()
@@ -324,7 +326,7 @@ class Immich(BasePlugin):
             if album_id:
                 # Fetch from specific album
                 response = self.session.get(
-                    f"{immich_url}/api/albums/{album_id}", params={"withoutAssets": False}
+                    f"{immich_url}/api/albums/{album_id}", params={"withoutAssets": "false"}
                 )
                 response.raise_for_status()
 
@@ -548,7 +550,9 @@ class Immich(BasePlugin):
 
         return canvas
 
-    def _create_error_image(self, error_message, device_config):
+    def _create_error_image(
+        self, error_message: str, device_config: dict[str, Any]
+    ) -> Image.Image:
         """Create error image with message."""
         from PIL import ImageDraw, ImageFont
 
