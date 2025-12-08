@@ -36,14 +36,12 @@ def main():
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port to run web server on (default: 8000)",
+        help="Port to run web server on (overrides config)",
     )
 
     parser.add_argument(
         "--host",
-        default="0.0.0.0",
-        help="Host to bind to (default: 0.0.0.0 for network access)",
+        help="Host to bind to (overrides config)",
     )
 
     args = parser.parse_args()
@@ -52,6 +50,10 @@ def main():
         # Load configuration first
         config_manager = ConfigManager(args.config)
         logging_config = config_manager.get_logging_config()
+
+        # Get host/port from config, with CLI overrides
+        host = args.host if args.host else config_manager.get_web_host()
+        port = args.port if args.port else config_manager.get_web_port()
 
         # Setup logging from config with CLI overrides
         setup_logging(logging_config, args.log_level, args.log_file)
@@ -68,13 +70,13 @@ def main():
 
         app = create_app(controller)
         print("🖼️  Artframe Starting...")
-        print(f"📡 Web Dashboard: http://{args.host}:{args.port}")
-        print(f"📚 API Docs: http://{args.host}:{args.port}/docs")
+        print(f"📡 Web Dashboard: http://{host}:{port}")
+        print(f"📚 API Docs: http://{host}:{port}/docs")
         print("⏰ Scheduler: Active")
         print("\nPress Ctrl+C to stop")
 
         # Run with uvicorn
-        uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+        uvicorn.run(app, host=host, port=port, log_level="info")
 
     except KeyboardInterrupt:
         print("\nReceived interrupt signal, exiting...")
