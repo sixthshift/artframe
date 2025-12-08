@@ -373,6 +373,32 @@ def mock_controller(
     }
     controller.test_connections.return_value = {"display": True, "storage": True}
     controller.manual_refresh.return_value = True
+
+    # Mock orchestrator for scheduler routes
+    orchestrator = MagicMock()
+    orchestrator.get_scheduler_status.return_value = {
+        "paused": False,
+        "next_update": datetime.now().isoformat(),
+        "last_update": None,
+        "current_time": datetime.now().isoformat(),
+        "timezone": "UTC",
+        "update_time": "00:00",
+    }
+    orchestrator.pause.return_value = None
+    orchestrator.resume.return_value = None
+    controller.orchestrator = orchestrator
+
+    # Mock config_manager for config routes
+    config_manager = MagicMock()
+    config_manager.config = {
+        "display": {"driver": "mock", "update_time": "09:00"},
+        "storage": {"data_dir": str(temp_dir / "data")},
+    }
+    config_manager.update_config.return_value = None
+    config_manager.save_to_file.return_value = None
+    config_manager.revert_to_file.return_value = None
+    controller.config_manager = config_manager
+
     return controller
 
 
@@ -385,10 +411,13 @@ def api_client(mock_controller):
 
     # Patch load_plugins to avoid loading actual plugins
     with patch("src.artframe.web.app.load_plugins"):
+        # Prevent background scheduler thread from starting
+        mock_controller.run_scheduled_loop = lambda: None
         app = create_app(mock_controller)
-        # Prevent scheduler thread from starting
-        app.state.scheduler_started = True
-        return TestClient(app)
+
+        # Use TestClient as context manager so lifespan runs
+        with TestClient(app) as client:
+            yield client
 
 
 # =============================================================================
