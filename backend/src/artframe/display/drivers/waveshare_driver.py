@@ -28,7 +28,8 @@ class WaveshareDriver(DriverInterface):
         """Initialize Waveshare driver with configuration."""
         super().__init__(config)
 
-        # Add the waveshare directory to Python path for epdconfig import
+        # Add waveshare directory to path so vendor EPD modules can find epdconfig
+        # (the EPD files are copied from Waveshare's repo and use `import epdconfig`)
         waveshare_dir = Path(__file__).parent / "waveshare"
         if str(waveshare_dir) not in sys.path:
             sys.path.insert(0, str(waveshare_dir))
@@ -95,7 +96,7 @@ class WaveshareDriver(DriverInterface):
         try:
             # Configure GPIO pins if provided
             if "gpio_pins" in self.config:
-                import epdconfig
+                from .waveshare import epdconfig
 
                 gpio_pins = self.config["gpio_pins"]
                 if "reset" in gpio_pins:
@@ -164,6 +165,12 @@ class WaveshareDriver(DriverInterface):
             # Send to display
             self.epd.display(buffer)
 
+            # CRITICAL: Put display to sleep after refresh to prevent damage
+            # E-ink displays can be permanently damaged if left powered on
+            # See: https://www.waveshare.com/wiki/7.3inch_e-Paper_HAT_(E)_Manual
+            self.epd.sleep()
+            self.initialized = False  # Will need re-init on next display
+
         except Exception as e:
             raise DisplayError(f"Failed to display image: {e}") from e
 
@@ -179,6 +186,10 @@ class WaveshareDriver(DriverInterface):
             # Clear to white (0x11 is white for 7-color displays)
             self.epd.Clear(0x11)
 
+            # CRITICAL: Put display to sleep after clear to prevent damage
+            self.epd.sleep()
+            self.initialized = False
+
         except Exception as e:
             raise DisplayError(f"Failed to clear display: {e}") from e
 
@@ -189,6 +200,7 @@ class WaveshareDriver(DriverInterface):
 
         try:
             self.epd.sleep()
+            self.initialized = False
         except Exception as e:
             raise DisplayError(f"Failed to put display to sleep: {e}") from e
 

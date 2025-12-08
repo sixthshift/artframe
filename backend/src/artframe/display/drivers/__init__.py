@@ -14,7 +14,7 @@ def __getattr__(name):
 
         return MockDriver
     elif name == "WaveshareDriver":
-        from .waveshare import WaveshareDriver
+        from .waveshare_driver import WaveshareDriver
 
         return WaveshareDriver
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
