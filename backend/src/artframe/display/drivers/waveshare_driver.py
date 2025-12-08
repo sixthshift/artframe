@@ -140,6 +140,7 @@ class WaveshareDriver(DriverInterface):
         if self.epd is None:
             raise DisplayError("Display not initialized")
 
+        display_started = False
         try:
             # Prepare image for display
             processed_image = self._prepare_image(image)
@@ -162,17 +163,22 @@ class WaveshareDriver(DriverInterface):
             # Convert to display buffer format
             buffer = self.epd.getbuffer(processed_image)
 
-            # Send to display
+            # Send to display - mark as started so we ensure sleep on any failure
+            display_started = True
             self.epd.display(buffer)
-
-            # CRITICAL: Put display to sleep after refresh to prevent damage
-            # E-ink displays can be permanently damaged if left powered on
-            # See: https://www.waveshare.com/wiki/7.3inch_e-Paper_HAT_(E)_Manual
-            self.epd.sleep()
-            self.initialized = False  # Will need re-init on next display
 
         except Exception as e:
             raise DisplayError(f"Failed to display image: {e}") from e
+        finally:
+            # CRITICAL: Always put display to sleep after refresh attempt to prevent damage
+            # E-ink displays can be permanently damaged if left powered on
+            # See: https://www.waveshare.com/wiki/7.3inch_e-Paper_HAT_(E)_Manual
+            if display_started and self.epd is not None:
+                try:
+                    self.epd.sleep()
+                except Exception:
+                    pass  # Best effort - don't mask original exception
+                self.initialized = False  # Will need re-init on next display
 
     def clear_display(self) -> None:
         """Clear the display to white."""
@@ -182,16 +188,22 @@ class WaveshareDriver(DriverInterface):
         if self.epd is None:
             raise DisplayError("Display not initialized")
 
+        clear_started = False
         try:
             # Clear to white (0x11 is white for 7-color displays)
+            clear_started = True
             self.epd.Clear(0x11)
-
-            # CRITICAL: Put display to sleep after clear to prevent damage
-            self.epd.sleep()
-            self.initialized = False
 
         except Exception as e:
             raise DisplayError(f"Failed to clear display: {e}") from e
+        finally:
+            # CRITICAL: Always put display to sleep after clear attempt
+            if clear_started and self.epd is not None:
+                try:
+                    self.epd.sleep()
+                except Exception:
+                    pass  # Best effort
+                self.initialized = False
 
     def sleep(self) -> None:
         """Put display into deep sleep mode."""
