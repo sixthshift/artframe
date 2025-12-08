@@ -138,7 +138,13 @@ addopts = [
 
 [tool.coverage.run]
 source = ["src/artframe"]
-omit = ["*/tests/*", "*/__pycache__/*", "*/venv/*"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    # Vendor waveshare files - copied from upstream
+    "*/display/drivers/waveshare/*",
+]
 
 [tool.coverage.report]
 exclude_lines = [
