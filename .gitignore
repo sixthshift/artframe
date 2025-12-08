@@ -36,6 +36,7 @@ venv.bak/
 .coverage
 .coverage.*
 htmlcov/
+coverage/
 .tox/
 .nox/
 coverage.xml
