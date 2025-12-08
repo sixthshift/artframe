@@ -131,9 +131,13 @@ addopts = [
     "-v",
     "--strict-markers",
     "--strict-config",
-    "--cov=artframe",
-    "--cov-report=term-missing",
-    "--cov-report=html",
+]
+markers = [
+    "unit: Unit tests (fast, isolated)",
+    "integration: Integration tests (may involve real components)",
+    "slow: Slow tests",
+    "hardware: Tests requiring hardware",
+    "external: Tests requiring external services",
 ]
 
 [tool.coverage.run]
@@ -157,3 +161,5 @@ exclude_lines = [
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
 ]
+# Minimum coverage threshold (will fail if below this)
+fail_under = 60
