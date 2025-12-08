@@ -105,10 +105,22 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 strict_equality = true
+# Exclude vendor Waveshare EPD files from type checking
+exclude = "display/drivers/waveshare/"
 
 [[tool.mypy.overrides]]
-module = ["RPi.*", "spidev", "gpiozero", "schedule", "dataclasses_json", "google.genai", "google.genai.types"]
+module = ["RPi.*", "spidev", "gpiozero", "schedule", "dataclasses_json", "google.genai", "google.genai.types", "yaml"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Vendor Waveshare EPD files - copied from upstream, don't type check
+module = [
+    "artframe.display.drivers.waveshare",
+    "artframe.display.drivers.waveshare.epdconfig",
+    "artframe.display.drivers.waveshare.epd5in83",
+    "artframe.display.drivers.waveshare.epd7in3e",
+]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

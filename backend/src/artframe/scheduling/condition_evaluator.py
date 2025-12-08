@@ -47,7 +47,7 @@ class ConditionEvaluator:
         """
         self._tz = ZoneInfo(timezone)
         self._now = lambda: now_in_tz(self._tz)
-        self._handlers: dict[str, Callable[[dict[str, Any]], bool]] = {
+        self._handlers: dict[str, Callable[..., bool]] = {
             "time_of_day": self._eval_time_of_day,
             "day_of_week": self._eval_day_of_week,
             "date_range": self._eval_date_range,

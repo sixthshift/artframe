@@ -94,19 +94,19 @@ class WaveshareDriver(DriverInterface):
     def initialize(self) -> None:
         """Initialize the Waveshare display."""
         try:
-            # Configure GPIO pins if provided
+            # Configure GPIO pins if provided (mypy can't see epdconfig's dynamic attrs)
             if "gpio_pins" in self.config:
                 from .waveshare import epdconfig
 
                 gpio_pins = self.config["gpio_pins"]
                 if "reset" in gpio_pins:
-                    epdconfig.RST_PIN = gpio_pins["reset"]
+                    epdconfig.RST_PIN = gpio_pins["reset"]  # type: ignore[attr-defined]
                 if "dc" in gpio_pins:
-                    epdconfig.DC_PIN = gpio_pins["dc"]
+                    epdconfig.DC_PIN = gpio_pins["dc"]  # type: ignore[attr-defined]
                 if "cs" in gpio_pins:
-                    epdconfig.CS_PIN = gpio_pins["cs"]
+                    epdconfig.CS_PIN = gpio_pins["cs"]  # type: ignore[attr-defined]
                 if "busy" in gpio_pins:
-                    epdconfig.BUSY_PIN = gpio_pins["busy"]
+                    epdconfig.BUSY_PIN = gpio_pins["busy"]  # type: ignore[attr-defined]
 
             # Create EPD instance
             self.epd = self.epd_module.EPD()
