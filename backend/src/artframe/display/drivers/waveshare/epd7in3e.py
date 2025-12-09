@@ -86,9 +86,18 @@ class EPD:
         """Wait until display is ready (busy pin high)"""
         import epdconfig
 
+        print(f"[DEBUG EPD] ReadBusyH() - waiting for BUSY_PIN {epdconfig.BUSY_PIN} to go HIGH...")
         logger.debug("e-Paper busy")
+        timeout_count = 0
         while epdconfig.digital_read(epdconfig.BUSY_PIN) == 0:
             epdconfig.delay_ms(5)
+            timeout_count += 1
+            if timeout_count % 200 == 0:  # Every ~1 second
+                print(f"[DEBUG EPD] Still waiting... ({timeout_count * 5}ms elapsed, pin still LOW)")
+            if timeout_count > 6000:  # 30 second timeout
+                print("[DEBUG EPD] TIMEOUT! Busy pin never went high after 30s")
+                break
+        print(f"[DEBUG EPD] ReadBusyH() done - pin went HIGH after {timeout_count * 5}ms")
         logger.debug("e-Paper busy release")
 
     def TurnOnDisplay(self):
