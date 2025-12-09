@@ -16,6 +16,8 @@ Environment="PATH=/home/pi/.local/bin:/home/pi/.cargo/bin:/usr/local/sbin:/usr/l
 Environment="PYTHONUNBUFFERED=1"
 # Use system cache dir since ProtectHome=read-only prevents writing to ~/.cache
 Environment="UV_CACHE_DIR=/var/cache/artframe/uv"
+# Force lgpio as the GPIO pin factory (prevents fallback to incompatible factories)
+Environment="GPIOZERO_PIN_FACTORY=lgpio"
 
 # Main process - using uv run for dependency management
 # Use bash -c to resolve uv from PATH (supports both ~/.local/bin and ~/.cargo/bin)
