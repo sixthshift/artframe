@@ -9,6 +9,52 @@
 
 set -e
 
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Output helpers
+info()    { echo -e "${BLUE}[INFO]${NC} $1"; }
+success() { echo -e "${GREEN}[OK]${NC} $1"; }
+warn()    { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error()   { echo -e "${RED}[ERROR]${NC} $1"; }
+step()    { echo -e "\n${CYAN}${BOLD}>>> $1${NC}"; }
+
+# Spinner for long-running operations
+spinner() {
+    local pid=$1
+    local message=$2
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        printf "\r${BLUE}[%s]${NC} %s" "${spin:i++%${#spin}:1}" "$message"
+        sleep 0.1
+    done
+    printf "\r"
+}
+
+# Run command with spinner
+run_with_spinner() {
+    local message=$1
+    shift
+    "$@" > /tmp/artframe_install.log 2>&1 &
+    local pid=$!
+    spinner $pid "$message"
+    wait $pid
+    local status=$?
+    if [ $status -eq 0 ]; then
+        success "$message"
+    else
+        error "$message - see /tmp/artframe_install.log for details"
+        return $status
+    fi
+}
+
 echo ""
 echo "    ╔═══════════════════════════════════════════════════╗"
 echo "    ║                                                   ║"
@@ -31,12 +77,6 @@ echo "    ║                                                   ║"
 echo "    ╚═══════════════════════════════════════════════════╝"
 echo ""
 
-# Check if running as root for system setup
-if [[ $EUID -ne 0 ]]; then
-   echo "ERROR: This script must be run as root (use sudo)"
-   exit 1
-fi
-
 # Configuration
 ARTFRAME_USER=${ARTFRAME_USER:-pi}
 INSTALL_DIR="/opt/artframe"
@@ -46,12 +86,152 @@ CACHE_DIR="/var/cache/artframe"
 REPO_URL="https://github.com/sixthshift/artframe.git"
 REPO_BRANCH="main"
 NEEDS_REBOOT=false
+MIN_DISK_SPACE_MB=500
+
+# Pre-flight checks
+preflight_checks() {
+    local checks_passed=true
+
+    step "Running pre-flight checks"
+
+    # Check if running as root
+    if [[ $EUID -ne 0 ]]; then
+        error "This script must be run as root (use sudo)"
+        exit 1
+    fi
+    success "Running as root"
+
+    # Check internet connectivity
+    if ping -c 1 -W 3 github.com &> /dev/null; then
+        success "Internet connectivity OK"
+    else
+        warn "Cannot reach github.com - installation may fail"
+        checks_passed=false
+    fi
+
+    # Check available disk space
+    local available_mb=$(df -m /opt 2>/dev/null | awk 'NR==2 {print $4}')
+    if [ -z "$available_mb" ]; then
+        available_mb=$(df -m / | awk 'NR==2 {print $4}')
+    fi
+    if [ "$available_mb" -ge "$MIN_DISK_SPACE_MB" ]; then
+        success "Disk space OK (${available_mb}MB available)"
+    else
+        error "Insufficient disk space: ${available_mb}MB available, ${MIN_DISK_SPACE_MB}MB required"
+        checks_passed=false
+    fi
+
+    # Detect Raspberry Pi
+    if [ -f /proc/device-tree/model ]; then
+        local pi_model=$(cat /proc/device-tree/model | tr -d '\0')
+        success "Detected: $pi_model"
+    elif grep -q "Raspberry Pi" /proc/cpuinfo 2>/dev/null; then
+        success "Detected: Raspberry Pi"
+    else
+        warn "Raspberry Pi not detected - e-ink display may not work"
+    fi
+
+    # Check if user exists
+    if id "$ARTFRAME_USER" &>/dev/null; then
+        success "User '$ARTFRAME_USER' exists"
+    else
+        error "User '$ARTFRAME_USER' does not exist. Set ARTFRAME_USER env var or create the user."
+        checks_passed=false
+    fi
+
+    if [ "$checks_passed" = false ]; then
+        echo ""
+        warn "Some pre-flight checks failed. Continue anyway? (y/N)"
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            error "Installation aborted"
+            exit 1
+        fi
+    fi
+
+    echo ""
+}
+
+# Uninstall function
+uninstall() {
+    echo ""
+    echo -e "${RED}${BOLD}Uninstalling Artframe...${NC}"
+    echo ""
+
+    # Stop and disable service
+    if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+        info "Stopping $SERVICE_NAME service..."
+        systemctl stop "$SERVICE_NAME"
+    fi
+    if systemctl is-enabled --quiet "$SERVICE_NAME" 2>/dev/null; then
+        info "Disabling $SERVICE_NAME service..."
+        systemctl disable "$SERVICE_NAME"
+    fi
+    if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+        rm -f "/etc/systemd/system/$SERVICE_NAME.service"
+        systemctl daemon-reload
+        success "Removed systemd service"
+    fi
+
+    # Remove installation directory
+    if [ -d "$INSTALL_DIR" ]; then
+        rm -rf "$INSTALL_DIR"
+        success "Removed $INSTALL_DIR"
+    fi
+
+    # Remove log directory
+    if [ -d "$LOG_DIR" ]; then
+        rm -rf "$LOG_DIR"
+        success "Removed $LOG_DIR"
+    fi
+
+    # Remove cache directory
+    if [ -d "$CACHE_DIR" ]; then
+        rm -rf "$CACHE_DIR"
+        success "Removed $CACHE_DIR"
+    fi
+
+    # Remove logrotate config
+    if [ -f "/etc/logrotate.d/artframe" ]; then
+        rm -f "/etc/logrotate.d/artframe"
+        success "Removed logrotate config"
+    fi
+
+    echo ""
+    success "Artframe has been uninstalled"
+    echo ""
+    info "Note: User-installed tools (Node.js, uv) were not removed"
+    exit 0
+}
+
+# Handle command line arguments
+case "${1:-}" in
+    --uninstall|-u)
+        if [[ $EUID -ne 0 ]]; then
+            error "This script must be run as root (use sudo)"
+            exit 1
+        fi
+        uninstall
+        ;;
+    --help|-h)
+        echo "Artframe Installation Script"
+        echo ""
+        echo "Usage:"
+        echo "  sudo $0              Install Artframe"
+        echo "  sudo $0 --uninstall  Remove Artframe"
+        echo "  $0 --help            Show this help"
+        echo ""
+        echo "Environment variables:"
+        echo "  ARTFRAME_USER        User to run Artframe as (default: pi)"
+        exit 0
+        ;;
+esac
 
 # Detect if we're running from within an existing repo clone
 detect_repo_location() {
     # Check if we're in the repo root (has both backend and frontend dirs)
     if [ -d "backend" ] && [ -d "frontend" ] && [ -f "backend/pyproject.toml" ]; then
-        echo "Running from repository root..."
+        info "Running from repository root..."
         REPO_DIR="$(pwd)"
         return 0
     fi
@@ -59,7 +239,7 @@ detect_repo_location() {
     # Check if we're in the backend directory
     if [ -f "pyproject.toml" ] && grep -q "artframe" pyproject.toml 2>/dev/null; then
         if [ -d "../frontend" ]; then
-            echo "Running from backend directory..."
+            info "Running from backend directory..."
             REPO_DIR="$(cd .. && pwd)"
             return 0
         fi
@@ -68,7 +248,7 @@ detect_repo_location() {
     # Check if we're in backend/scripts
     if [ -f "../pyproject.toml" ] && grep -q "artframe" ../pyproject.toml 2>/dev/null; then
         if [ -d "../../frontend" ]; then
-            echo "Running from scripts directory..."
+            info "Running from scripts directory..."
             REPO_DIR="$(cd ../.. && pwd)"
             return 0
         fi
@@ -80,9 +260,9 @@ detect_repo_location() {
 # Clone or update repository
 setup_repository() {
     if detect_repo_location; then
-        echo "Using existing repository at: $REPO_DIR"
+        success "Using existing repository at: $REPO_DIR"
     else
-        echo "Cloning Artframe repository..."
+        info "Cloning Artframe repository..."
 
         # Install git if not present
         if ! command -v git &> /dev/null; then
@@ -92,7 +272,7 @@ setup_repository() {
 
         # Clone or update the repository
         if [ -d "$INSTALL_DIR/.git" ]; then
-            echo "Repository exists at $INSTALL_DIR, pulling latest changes..."
+            info "Repository exists at $INSTALL_DIR, pulling latest changes..."
             cd "$INSTALL_DIR"
             git pull origin "$REPO_BRANCH"
         else
@@ -100,12 +280,13 @@ setup_repository() {
             git clone --branch "$REPO_BRANCH" "$REPO_URL" "$INSTALL_DIR"
         fi
         REPO_DIR="$INSTALL_DIR"
+        success "Repository ready"
     fi
 }
 
 # Enable SPI for e-ink display (handles both old and new Pi OS)
 enable_spi() {
-    echo "Enabling SPI interface..."
+    info "Enabling SPI interface..."
 
     # Try new location first (Pi 4/5 with newer OS)
     if [ -f "/boot/firmware/config.txt" ]; then
@@ -113,79 +294,80 @@ enable_spi() {
     elif [ -f "/boot/config.txt" ]; then
         BOOT_CONFIG="/boot/config.txt"
     else
-        echo "WARNING: Could not find boot config file"
-        echo "         You may need to enable SPI manually via raspi-config"
+        warn "Could not find boot config file"
+        info "You may need to enable SPI manually via raspi-config"
         return
     fi
 
     if ! grep -q "^dtparam=spi=on" "$BOOT_CONFIG"; then
         echo "dtparam=spi=on" >> "$BOOT_CONFIG"
-        echo "SPI enabled in $BOOT_CONFIG"
+        success "SPI enabled in $BOOT_CONFIG"
         NEEDS_REBOOT=true
     else
-        echo "SPI already enabled"
+        success "SPI already enabled"
     fi
 }
 
 # Install Node.js for frontend build
 install_nodejs() {
-    echo "Setting up Node.js..."
+    info "Setting up Node.js..."
 
     if command -v node &> /dev/null; then
         NODE_VERSION=$(node --version)
-        echo "Node.js already installed: $NODE_VERSION"
+        success "Node.js already installed: $NODE_VERSION"
         return
     fi
 
     # Install Node.js via NodeSource (LTS version)
-    echo "Installing Node.js LTS..."
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-    apt-get install -y nodejs
+    info "Installing Node.js LTS..."
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - > /tmp/artframe_install.log 2>&1
+    apt-get install -y nodejs > /tmp/artframe_install.log 2>&1
 
-    echo "Node.js installed: $(node --version)"
-    echo "npm installed: $(npm --version)"
+    success "Node.js installed: $(node --version)"
+    success "npm installed: $(npm --version)"
 }
 
 # Build frontend
 build_frontend() {
-    echo "Building frontend..."
+    info "Building frontend..."
 
     FRONTEND_DIR="$REPO_DIR/frontend"
     BACKEND_STATIC="$REPO_DIR/backend/src/artframe/web/static/dist"
 
     if [ ! -d "$FRONTEND_DIR" ]; then
-        echo "WARNING: Frontend directory not found at $FRONTEND_DIR"
-        echo "         Web dashboard may not work correctly"
+        warn "Frontend directory not found at $FRONTEND_DIR"
+        info "Web dashboard may not work correctly"
         return
     fi
 
     cd "$FRONTEND_DIR"
 
     # Install dependencies and build
-    sudo -u "$ARTFRAME_USER" npm ci 2>/dev/null || sudo -u "$ARTFRAME_USER" npm install
-    sudo -u "$ARTFRAME_USER" npm run build
+    info "Installing npm dependencies..."
+    sudo -u "$ARTFRAME_USER" npm ci 2>/dev/null || sudo -u "$ARTFRAME_USER" npm install > /tmp/artframe_install.log 2>&1
+    info "Building frontend assets..."
+    sudo -u "$ARTFRAME_USER" npm run build > /tmp/artframe_install.log 2>&1
 
     # Copy built files to backend static directory
-    echo "Copying frontend build to backend..."
+    info "Copying frontend build to backend..."
     rm -rf "$BACKEND_STATIC"
     mkdir -p "$(dirname "$BACKEND_STATIC")"
     cp -r "$FRONTEND_DIR/dist" "$BACKEND_STATIC"
 
-    echo "Frontend built successfully"
+    success "Frontend built successfully"
 }
 
 # Main installation
 main() {
+    preflight_checks
     setup_repository
 
-    echo ""
-    echo "Step 1/8: Updating system packages..."
-    apt-get update
-    apt-get upgrade -y
+    step "Step 1/8: Updating system packages"
+    run_with_spinner "Updating package lists" apt-get update
+    run_with_spinner "Upgrading packages" apt-get upgrade -y
 
-    echo ""
-    echo "Step 2/8: Installing system dependencies..."
-    apt-get install -y \
+    step "Step 2/8: Installing system dependencies"
+    run_with_spinner "Installing system packages" apt-get install -y \
         python3 \
         python3-venv \
         python3-dev \
@@ -201,12 +383,10 @@ main() {
         curl \
         git
 
-    echo ""
-    echo "Step 3/8: Enabling SPI interface..."
+    step "Step 3/8: Enabling SPI interface"
     enable_spi
 
-    echo ""
-    echo "Step 4/8: Creating directories..."
+    step "Step 4/8: Creating directories"
     mkdir -p "$INSTALL_DIR"
     mkdir -p "$LOG_DIR"
     mkdir -p "$CACHE_DIR"
@@ -214,46 +394,48 @@ main() {
     mkdir -p "$CACHE_DIR/styled"
     mkdir -p "$CACHE_DIR/metadata"
     mkdir -p "$INSTALL_DIR/backend/data"
+    success "Created directories"
 
     # Copy repository to install location if not already there
     if [ "$REPO_DIR" != "$INSTALL_DIR" ]; then
-        echo "Copying files to $INSTALL_DIR..."
+        info "Copying files to $INSTALL_DIR..."
         cp -r "$REPO_DIR"/* "$INSTALL_DIR/"
     fi
 
-    echo "Setting up permissions..."
+    info "Setting up permissions..."
     chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$INSTALL_DIR"
     chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$LOG_DIR"
     chown -R "$ARTFRAME_USER:$ARTFRAME_USER" "$CACHE_DIR"
 
     # Add user to required groups for GPIO/SPI access
     usermod -a -G gpio,spi "$ARTFRAME_USER" 2>/dev/null || true
+    success "Permissions configured"
 
-    echo ""
-    echo "Step 5/8: Installing Node.js and building frontend..."
+    step "Step 5/8: Installing Node.js and building frontend"
     install_nodejs
     build_frontend
 
-    echo ""
-    echo "Step 6/8: Setting up Python environment with uv..."
+    step "Step 6/8: Setting up Python environment with uv"
 
     # Install uv for the artframe user
     ARTFRAME_USER_HOME=$(eval echo ~$ARTFRAME_USER)
+    info "Installing uv package manager..."
     sudo -u "$ARTFRAME_USER" bash -c "
         curl -LsSf https://astral.sh/uv/install.sh | sh
-    "
+    " > /tmp/artframe_install.log 2>&1
+    success "uv installed"
 
-    echo "Installing Python dependencies..."
+    info "Installing Python dependencies..."
     # uv sync creates .venv automatically and installs all dependencies
     # Must run from backend directory where pyproject.toml is located
     sudo -u "$ARTFRAME_USER" bash -c "
         export PATH=\"\$HOME/.local/bin:\$HOME/.cargo/bin:\$PATH\"
         cd $INSTALL_DIR/backend
         uv sync
-    "
+    " > /tmp/artframe_install.log 2>&1
+    success "Python dependencies installed"
 
-    echo ""
-    echo "Step 7/8: Setting up configuration..."
+    step "Step 7/8: Setting up configuration"
 
     # Copy Pi-specific configuration if it doesn't exist
     CONFIG_DEST="$INSTALL_DIR/backend/config/artframe.yaml"
@@ -305,14 +487,13 @@ artframe:
 CONFIGEOF
         fi
         chown "$ARTFRAME_USER:$ARTFRAME_USER" "$CONFIG_DEST"
-        echo "Configuration created at $CONFIG_DEST"
-        echo "IMPORTANT: Edit this file to add your API keys and customize settings"
+        success "Configuration created at $CONFIG_DEST"
+        warn "Edit this file to add your API keys and customize settings"
     else
-        echo "Configuration already exists at $CONFIG_DEST"
+        info "Configuration already exists at $CONFIG_DEST"
     fi
 
-    echo ""
-    echo "Step 8/8: Installing systemd service..."
+    step "Step 8/8: Installing systemd service"
 
     SYSTEMD_SRC="$INSTALL_DIR/backend/systemd/artframe.service"
     if [ -f "$SYSTEMD_SRC" ]; then
@@ -326,10 +507,10 @@ CONFIGEOF
         # Enable service
         systemctl daemon-reload
         systemctl enable "$SERVICE_NAME"
-        echo "Systemd service installed and enabled"
+        success "Systemd service installed and enabled"
     else
-        echo "WARNING: Service file not found at $SYSTEMD_SRC"
-        echo "         You'll need to start Artframe manually"
+        warn "Service file not found at $SYSTEMD_SRC"
+        info "You'll need to start Artframe manually"
         SYSTEMD_SKIPPED=true
     fi
 
@@ -351,40 +532,44 @@ EOF
 
     # Print completion message
     echo ""
-    echo "========================================"
-    echo "  Installation Complete!"
-    echo "========================================"
-    echo ""
-    echo "Configuration file: $CONFIG_DEST"
+    echo -e "${GREEN}"
+    echo "    ╔═══════════════════════════════════════════════════╗"
+    echo "    ║                                                   ║"
+    echo "    ║          Installation Complete!                   ║"
+    echo "    ║                                                   ║"
+    echo "    ╚═══════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+
+    info "Configuration file: $CONFIG_DEST"
     echo ""
 
     if [ "$NEEDS_REBOOT" = true ]; then
-        echo "IMPORTANT: SPI was enabled. You must reboot before starting Artframe:"
-        echo "  sudo reboot"
+        warn "SPI was enabled. You must reboot before starting Artframe:"
+        echo -e "  ${BOLD}sudo reboot${NC}"
         echo ""
-        echo "After reboot:"
+        info "After reboot:"
     fi
 
     if [ "$SYSTEMD_SKIPPED" != true ]; then
-        echo "Start the service:"
+        echo -e "${BOLD}Start the service:${NC}"
         echo "  sudo systemctl start $SERVICE_NAME"
         echo ""
-        echo "Check status:"
+        echo -e "${BOLD}Check status:${NC}"
         echo "  sudo systemctl status $SERVICE_NAME"
         echo ""
-        echo "View logs:"
+        echo -e "${BOLD}View logs:${NC}"
         echo "  sudo journalctl -u $SERVICE_NAME -f"
         echo ""
-        echo "Web dashboard will be available at:"
-        echo "  http://$(hostname -I | awk '{print $1}')"
+        echo -e "${BOLD}Web dashboard:${NC}"
+        echo -e "  ${CYAN}http://$(hostname -I | awk '{print $1}')${NC}"
     else
-        echo "Run manually:"
+        echo -e "${BOLD}Run manually:${NC}"
         echo "  cd $INSTALL_DIR/backend"
         echo "  sudo -u $ARTFRAME_USER ~/.local/bin/uv run artframe --config config/artframe.yaml"
     fi
 
     echo ""
-    echo "Happy photo framing!"
+    echo -e "${GREEN}Happy photo framing!${NC}"
 }
 
 # Run main installation
