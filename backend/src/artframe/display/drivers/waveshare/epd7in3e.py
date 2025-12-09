@@ -106,42 +106,60 @@ class EPD:
 
     def init(self):
         """Initialize display"""
+        print("[DEBUG EPD] init() starting...")
         import epdconfig
 
-        if epdconfig.module_init() != 0:
+        print("[DEBUG EPD] Calling epdconfig.module_init()...")
+        init_result = epdconfig.module_init()
+        print(f"[DEBUG EPD] module_init() returned: {init_result}")
+        if init_result != 0:
+            print("[DEBUG EPD] module_init() FAILED, returning -1")
             return -1
 
+        print("[DEBUG EPD] Calling self.reset()...")
         self.reset()
+        print("[DEBUG EPD] reset() completed")
 
+        print("[DEBUG EPD] Sending power setting command (0x01)...")
         self.send_command(0x01)  # Power setting
         self.send_data(0x07)
         self.send_data(0x07)
         self.send_data(0x3F)
         self.send_data(0x3F)
+        print("[DEBUG EPD] Power setting sent")
 
+        print("[DEBUG EPD] Sending power on command (0x04)...")
         self.send_command(0x04)  # Power on
         epdconfig.delay_ms(100)
+        print("[DEBUG EPD] Waiting for busy (ReadBusyH)...")
         self.ReadBusyH()
+        print("[DEBUG EPD] Busy wait completed")
 
+        print("[DEBUG EPD] Sending panel setting (0x00)...")
         self.send_command(0x00)  # Panel setting
         self.send_data(0x0F)
 
+        print("[DEBUG EPD] Sending resolution setting (0x61)...")
         self.send_command(0x61)  # Resolution setting
         self.send_data(0x03)
         self.send_data(0x20)
         self.send_data(0x01)
         self.send_data(0xE0)
 
+        print("[DEBUG EPD] Sending command 0x15...")
         self.send_command(0x15)
         self.send_data(0x00)
 
+        print("[DEBUG EPD] Sending vcom/data interval setting (0x50)...")
         self.send_command(0x50)  # Vcom and data interval setting
         self.send_data(0x10)
         self.send_data(0x07)
 
+        print("[DEBUG EPD] Sending TCON setting (0x60)...")
         self.send_command(0x60)  # TCON setting
         self.send_data(0x22)
 
+        print("[DEBUG EPD] init() completed successfully, returning 0")
         return 0
 
     def getbuffer(self, image):
