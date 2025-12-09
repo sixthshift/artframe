@@ -5,9 +5,9 @@ artframe:
   display:
     driver: "waveshare"
     config:
-      model: "epd5in83"
-      width: 600
-      height: 448
+      model: "epd7in3e"
+      width: 800
+      height: 480
       rotation: 0
       gpio_pins:
         busy: 24
