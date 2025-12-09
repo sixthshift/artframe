@@ -43,6 +43,12 @@ ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/var/log/artframe /var/cache/artframe /opt/artframe/backend/data
 
+# GPIO and SPI access for e-ink display
+SupplementaryGroups=gpio spi
+DeviceAllow=/dev/gpiochip* rw
+DeviceAllow=/dev/gpiomem rw
+DeviceAllow=/dev/spidev* rw
+
 # Resource limits
 MemoryMax=512M
 CPUQuota=50%
