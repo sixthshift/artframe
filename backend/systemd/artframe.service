@@ -8,7 +8,8 @@ Wants=network-online.target
 Type=simple
 User=pi
 Group=pi
-WorkingDirectory=/opt/artframe/backend
+# Use data dir as working directory so lgpio can create notification pipes
+WorkingDirectory=/opt/artframe/backend/data
 
 # Environment - include both possible uv install locations
 Environment="PATH=/home/pi/.local/bin:/home/pi/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
