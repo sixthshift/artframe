@@ -448,6 +448,8 @@ main() {
         python3 \
         python3-venv \
         python3-dev \
+        python3-lgpio \
+        python3-rpi-lgpio \
         libjpeg-dev \
         zlib1g-dev \
         libfreetype6-dev \
