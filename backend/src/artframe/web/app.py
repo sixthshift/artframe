@@ -49,8 +49,13 @@ def create_app(controller: ArtframeController) -> FastAPI:
 
         yield
 
-        # Shutdown: cleanup if needed
-        pass
+        # Shutdown: Put display to sleep before process exits
+        # This must happen in the same process that claimed GPIO to avoid conflicts
+        try:
+            if hasattr(controller, "display_controller") and controller.display_controller:
+                controller.display_controller.sleep()
+        except Exception:
+            pass  # Best effort - don't block shutdown
 
     app = FastAPI(
         title="Artframe API",

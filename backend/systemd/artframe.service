@@ -3,6 +3,8 @@ Description=Artframe Digital Photo Frame
 Documentation=https://github.com/yourusername/artframe
 After=network-online.target
 Wants=network-online.target
+StartLimitBurst=5
+StartLimitIntervalSec=600
 
 [Service]
 Type=simple
@@ -22,14 +24,12 @@ Environment="GPIOZERO_PIN_FACTORY=lgpio"
 # Main process - using uv run for dependency management
 # Use bash -c to resolve uv from PATH (supports both ~/.local/bin and ~/.cargo/bin)
 ExecStart=/bin/bash -c 'exec uv run artframe --config /opt/artframe/backend/config/artframe.yaml'
-# Use "-" prefix so service stop doesn't fail if display clear fails
-ExecStopPost=-/bin/bash -c 'uv run python -m artframe.clear_display'
+# Display cleanup is handled in the main process shutdown (FastAPI lifespan)
+# ExecStopPost is unreliable due to vendor epdconfig claiming GPIO at import time
 
 # Restart policy
 Restart=always
 RestartSec=10
-StartLimitBurst=5
-StartLimitIntervalSec=600
 
 # Graceful shutdown
 TimeoutStopSec=30

@@ -51,7 +51,8 @@
       "Bash(wc:*)",
       "Bash(PYTHONPATH=src python -m pytest:*)",
       "Bash(uv run ruff:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
