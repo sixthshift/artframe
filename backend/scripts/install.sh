@@ -333,29 +333,37 @@ ensure_swap() {
     local total_mem=$(free -m | awk '/^Mem:/{print $2}')
     local swap_size=$(free -m | awk '/^Swap:/{print $2}')
 
-    # If less than 1GB RAM and less than 1GB swap, create temporary swap
-    if [ "$total_mem" -lt 1024 ] && [ "$swap_size" -lt 1024 ]; then
-        info "Low memory detected (${total_mem}MB). Creating temporary swap..."
+    # If less than 2GB RAM and less than 1GB swap, create temporary swap
+    if [ "$total_mem" -lt 2048 ] && [ "$swap_size" -lt 1024 ]; then
+        info "Low memory detected (${total_mem}MB RAM, ${swap_size}MB swap). Creating temporary swap..."
+
+        # Use /var/tmp which is always on disk (not tmpfs like /tmp often is)
+        SWAP_FILE="/var/tmp/artframe_swap"
 
         # Create 1GB swap file if it doesn't exist
-        if [ ! -f /tmp/artframe_swap ]; then
-            dd if=/dev/zero of=/tmp/artframe_swap bs=1M count=1024 status=none
-            chmod 600 /tmp/artframe_swap
-            mkswap /tmp/artframe_swap > /dev/null
+        if [ ! -f "$SWAP_FILE" ]; then
+            info "Allocating 1GB swap file (this may take a moment)..."
+            dd if=/dev/zero of="$SWAP_FILE" bs=1M count=1024 2>/dev/null
+            chmod 600 "$SWAP_FILE"
+            mkswap "$SWAP_FILE" > /dev/null
         fi
 
         # Enable swap
-        swapon /tmp/artframe_swap 2>/dev/null || true
-        SWAP_CREATED=true
-        success "Temporary swap enabled"
+        if swapon "$SWAP_FILE" 2>/dev/null; then
+            SWAP_CREATED=true
+            success "Temporary swap enabled (1GB)"
+        else
+            warn "Could not enable swap file"
+        fi
     fi
 }
 
 # Clean up temporary swap
 cleanup_swap() {
-    if [ "$SWAP_CREATED" = true ] && [ -f /tmp/artframe_swap ]; then
-        swapoff /tmp/artframe_swap 2>/dev/null || true
-        rm -f /tmp/artframe_swap
+    SWAP_FILE="/var/tmp/artframe_swap"
+    if [ "$SWAP_CREATED" = true ] && [ -f "$SWAP_FILE" ]; then
+        swapoff "$SWAP_FILE" 2>/dev/null || true
+        rm -f "$SWAP_FILE"
         info "Temporary swap removed"
     fi
 }
@@ -370,6 +378,29 @@ build_frontend() {
     if [ ! -d "$FRONTEND_DIR" ]; then
         warn "Frontend directory not found at $FRONTEND_DIR"
         info "Web dashboard may not work correctly"
+        return
+    fi
+
+    # Check if pre-built dist exists (from repo or previous build)
+    if [ -d "$FRONTEND_DIR/dist" ]; then
+        info "Found pre-built frontend assets"
+        rm -rf "$BACKEND_STATIC"
+        mkdir -p "$(dirname "$BACKEND_STATIC")"
+        cp -r "$FRONTEND_DIR/dist" "$BACKEND_STATIC"
+        success "Frontend assets installed from pre-built dist"
+        return
+    fi
+
+    # Check available memory - npm needs at least 512MB RAM to build
+    local total_mem=$(free -m | awk '/^Mem:/{print $2}')
+    if [ "$total_mem" -lt 512 ]; then
+        error "Insufficient RAM for frontend build (${total_mem}MB available, 512MB minimum)"
+        warn "This device has very limited memory. Options:"
+        echo "  1. Build frontend on another machine and copy dist/ folder"
+        echo "  2. Use a Raspberry Pi with at least 1GB RAM"
+        echo "  3. Download pre-built assets (if available in releases)"
+        echo ""
+        info "Skipping frontend build - web dashboard will not work"
         return
     fi
 
