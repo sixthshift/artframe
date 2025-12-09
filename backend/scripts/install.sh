@@ -515,6 +515,14 @@ main() {
     " > /tmp/artframe_install.log 2>&1
     success "Python dependencies installed"
 
+    # Install GPIO libraries in the venv (required for Raspberry Pi)
+    info "Installing GPIO libraries..."
+    sudo -u "$ARTFRAME_USER" bash -c "
+        cd $INSTALL_DIR/backend
+        .venv/bin/pip install lgpio rpi-lgpio 2>/dev/null || true
+    " > /tmp/artframe_install.log 2>&1
+    success "GPIO libraries installed"
+
     step "Step 7/8: Setting up configuration"
 
     # Copy Pi-specific configuration if it doesn't exist
