@@ -507,21 +507,14 @@ main() {
 
     info "Installing Python dependencies..."
     # uv sync creates .venv automatically and installs all dependencies
-    # Must run from backend directory where pyproject.toml is located
+    # Use --system-site-packages to access system lgpio for GPIO on Raspberry Pi
     sudo -u "$ARTFRAME_USER" bash -c "
         export PATH=\"\$HOME/.local/bin:\$HOME/.cargo/bin:\$PATH\"
         cd $INSTALL_DIR/backend
+        uv venv --system-site-packages
         uv sync
     " > /tmp/artframe_install.log 2>&1
     success "Python dependencies installed"
-
-    # Install GPIO libraries in the venv (required for Raspberry Pi)
-    info "Installing GPIO libraries..."
-    sudo -u "$ARTFRAME_USER" bash -c "
-        cd $INSTALL_DIR/backend
-        .venv/bin/pip install lgpio rpi-lgpio 2>/dev/null || true
-    " > /tmp/artframe_install.log 2>&1
-    success "GPIO libraries installed"
 
     step "Step 7/8: Setting up configuration"
 
