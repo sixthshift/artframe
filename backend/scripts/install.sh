@@ -86,6 +86,7 @@ CACHE_DIR="/var/cache/artframe"
 REPO_URL="https://github.com/sixthshift/artframe.git"
 REPO_BRANCH="main"
 NEEDS_REBOOT=false
+SWAP_CREATED=false
 MIN_DISK_SPACE_MB=500
 
 # Pre-flight checks
@@ -327,6 +328,38 @@ install_nodejs() {
     success "npm installed: $(npm --version)"
 }
 
+# Ensure adequate swap for npm on low-memory devices
+ensure_swap() {
+    local total_mem=$(free -m | awk '/^Mem:/{print $2}')
+    local swap_size=$(free -m | awk '/^Swap:/{print $2}')
+
+    # If less than 1GB RAM and less than 1GB swap, create temporary swap
+    if [ "$total_mem" -lt 1024 ] && [ "$swap_size" -lt 1024 ]; then
+        info "Low memory detected (${total_mem}MB). Creating temporary swap..."
+
+        # Create 1GB swap file if it doesn't exist
+        if [ ! -f /tmp/artframe_swap ]; then
+            dd if=/dev/zero of=/tmp/artframe_swap bs=1M count=1024 status=none
+            chmod 600 /tmp/artframe_swap
+            mkswap /tmp/artframe_swap > /dev/null
+        fi
+
+        # Enable swap
+        swapon /tmp/artframe_swap 2>/dev/null || true
+        SWAP_CREATED=true
+        success "Temporary swap enabled"
+    fi
+}
+
+# Clean up temporary swap
+cleanup_swap() {
+    if [ "$SWAP_CREATED" = true ] && [ -f /tmp/artframe_swap ]; then
+        swapoff /tmp/artframe_swap 2>/dev/null || true
+        rm -f /tmp/artframe_swap
+        info "Temporary swap removed"
+    fi
+}
+
 # Build frontend
 build_frontend() {
     info "Building frontend..."
@@ -342,11 +375,24 @@ build_frontend() {
 
     cd "$FRONTEND_DIR"
 
-    # Install dependencies and build
+    # Ensure swap is available for low-memory devices
+    ensure_swap
+
+    # Install dependencies with memory-constrained settings
     info "Installing npm dependencies..."
-    sudo -u "$ARTFRAME_USER" npm ci 2>/dev/null || sudo -u "$ARTFRAME_USER" npm install > /tmp/artframe_install.log 2>&1
+    sudo -u "$ARTFRAME_USER" bash -c "
+        export NODE_OPTIONS='--max-old-space-size=512'
+        npm ci 2>/dev/null || npm install
+    " > /tmp/artframe_install.log 2>&1
+
     info "Building frontend assets..."
-    sudo -u "$ARTFRAME_USER" npm run build > /tmp/artframe_install.log 2>&1
+    sudo -u "$ARTFRAME_USER" bash -c "
+        export NODE_OPTIONS='--max-old-space-size=512'
+        npm run build
+    " > /tmp/artframe_install.log 2>&1
+
+    # Clean up swap if we created it
+    cleanup_swap
 
     # Copy built files to backend static directory
     info "Copying frontend build to backend..."
