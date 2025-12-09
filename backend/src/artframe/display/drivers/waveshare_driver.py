@@ -96,7 +96,11 @@ class WaveshareDriver(DriverInterface):
         try:
             # Configure GPIO pins if provided (mypy can't see epdconfig's dynamic attrs)
             if "gpio_pins" in self.config:
-                from .waveshare import epdconfig
+                # Import epdconfig using the same module name as the EPD files use
+                # (they do `import epdconfig` after we add waveshare dir to sys.path)
+                # Using `from .waveshare import epdconfig` creates a DIFFERENT module
+                # in Python's cache, causing GPIO to be claimed twice!
+                import epdconfig  # type: ignore[import-not-found]
 
                 gpio_pins = self.config["gpio_pins"]
                 if "reset" in gpio_pins:
