@@ -45,10 +45,7 @@ ReadWritePaths=/var/log/artframe /var/cache/artframe /opt/artframe/backend/data
 
 # GPIO and SPI access for e-ink display
 SupplementaryGroups=gpio spi
-DevicePolicy=closed
-DeviceAllow=char-gpiochip rw
-DeviceAllow=/dev/gpiomem rw
-DeviceAllow=char-spidev rw
+DevicePolicy=auto
 
 # Resource limits
 MemoryMax=512M
