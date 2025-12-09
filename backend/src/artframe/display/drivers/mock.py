@@ -120,6 +120,97 @@ class MockDriver(DriverInterface):
         """Get info about last plugin that generated content."""
         return self.last_plugin_info
 
+    def run_hardware_test(self) -> dict[str, Any]:
+        """Run hardware test pattern to verify display connectivity.
+
+        For mock driver, draws a test pattern and saves to file.
+
+        Returns:
+            dict with test results including success status and message.
+        """
+        from PIL import ImageDraw, ImageFont
+
+        result = {
+            "success": False,
+            "message": "",
+            "driver": "mock",
+            "display_size": self.get_display_size(),
+        }
+
+        try:
+            # Create test image with white background
+            image = Image.new("RGB", (self.width, self.height), (255, 255, 255))
+            draw = ImageDraw.Draw(image)
+
+            # Try to load fonts, fall back to default
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans"
+            try:
+                font_large: Any = ImageFont.truetype(f"{font_path}-Bold.ttf", 36)
+                font_medium: Any = ImageFont.truetype(f"{font_path}.ttf", 24)
+                font_small: Any = ImageFont.truetype(f"{font_path}.ttf", 18)
+            except OSError:
+                font_large = ImageFont.load_default()
+                font_medium = font_large
+                font_small = font_large
+
+            # Define colors
+            black = (0, 0, 0)
+            colors = {
+                "Black": black,
+                "Red": (255, 0, 0),
+                "Yellow": (255, 255, 0),
+                "Blue": (0, 0, 255),
+                "Green": (0, 255, 0),
+            }
+
+            # Draw title
+            draw.text((20, 10), "ArtFrame Hardware Test", font=font_large, fill=black)
+            size_str = f"Mock Driver ({self.width}x{self.height})"
+            draw.text((20, 55), size_str, font=font_medium, fill=black)
+
+            # Draw color test blocks
+            block_y = 100
+            block_width = 100
+            block_height = 50
+            x_offset = 20
+
+            for i, (name, color) in enumerate(colors.items()):
+                x = x_offset + (i % 3) * (block_width + 15)
+                y = block_y + (i // 3) * (block_height + 25)
+                draw.rectangle([x, y, x + block_width, y + block_height], fill=color, outline=black)
+                draw.text((x, y + block_height + 2), name, font=font_small, fill=black)
+
+            # Draw shapes
+            shapes_y = 240
+            draw.text((20, shapes_y), "Shapes:", font=font_medium, fill=black)
+            circle = [30, shapes_y + 30, 90, shapes_y + 90]
+            draw.ellipse(circle, fill=(255, 0, 0), outline=black)
+            rect = [110, shapes_y + 30, 170, shapes_y + 90]
+            draw.rectangle(rect, fill=(0, 255, 0), outline=black)
+
+            # Success message
+            pos = (self.width - 200, self.height - 35)
+            draw.text(pos, "Test Complete!", font=font_medium, fill=(0, 128, 0))
+
+            # Save test image
+            if self.save_images:
+                test_path = self.output_dir / "hardware_test.png"
+                image.save(test_path)
+                latest_path = self.output_dir / "latest.png"
+                image.save(latest_path)
+                self.current_image_path = latest_path
+                self.current_image = image
+                self.display_count += 1
+
+            result["success"] = True
+            result["message"] = "Hardware test pattern displayed successfully (mock)"
+
+        except Exception as e:
+            result["success"] = False
+            result["message"] = f"Hardware test failed: {e}"
+
+        return result
+
     def _simulate_eink_display(self, image: Image.Image) -> Image.Image:
         """
         Simulate e-ink display characteristics for more realistic preview.

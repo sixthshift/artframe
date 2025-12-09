@@ -120,6 +120,18 @@ class DriverInterface(ABC):
         """
         return {}
 
+    def run_hardware_test(self) -> dict[str, Any]:
+        """
+        Run hardware test pattern to verify display connectivity.
+
+        Returns:
+            Dict with test results including success status and message.
+        """
+        return {
+            "success": False,
+            "message": "Hardware test not supported by this driver",
+        }
+
 
 class DisplayError(Exception):
     """Exception raised by display drivers."""

@@ -126,3 +126,23 @@ export function useClearDisplay() {
     },
   })
 }
+
+export interface HardwareTestResult {
+  success: boolean
+  message: string
+  model?: string
+  driver?: string
+  display_size?: [number, number]
+}
+
+export function useHardwareTest() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => post<HardwareTestResult>('/display/hardware-test'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: displayKeys.current() })
+      queryClient.invalidateQueries({ queryKey: displayKeys.health() })
+    },
+  })
+}

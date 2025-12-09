@@ -4,6 +4,7 @@ import {
   useSystemInfo,
   useDisplayHealth,
   useLogs,
+  useHardwareTest,
 } from '@/queries'
 import { formatDateTime } from '@/utils/date'
 
@@ -12,6 +13,8 @@ export const System = () => {
   const { data: displayHealth, isLoading: healthLoading } = useDisplayHealth()
   const [logLevel, setLogLevel] = useState<string>('')
   const { data: logs = [], refetch: refetchLogs } = useLogs(logLevel || undefined)
+  const hardwareTest = useHardwareTest()
+  const [testResult, setTestResult] = useState<string | null>(null)
 
   const handleExportLogs = async () => {
     try {
@@ -28,6 +31,18 @@ export const System = () => {
     } catch {
       alert('Failed to export logs')
     }
+  }
+
+  const handleHardwareTest = () => {
+    setTestResult(null)
+    hardwareTest.mutate(undefined, {
+      onSuccess: (data) => {
+        setTestResult(data.message)
+      },
+      onError: (error) => {
+        setTestResult(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      },
+    })
   }
 
   return (
@@ -56,10 +71,33 @@ export const System = () => {
           {healthLoading ? (
             <p class="text-gray-500 italic text-center py-4">Loading...</p>
           ) : displayHealth ? (
-            <StatusGrid>
-              <StatusItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
-              <StatusItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
-            </StatusGrid>
+            <>
+              <StatusGrid>
+                <StatusItem label="Total Refreshes" value={displayHealth.refresh_count || 0} />
+                <StatusItem label="Last Refresh" value={formatDateTime(displayHealth.last_refresh) || 'Never'} />
+              </StatusGrid>
+              <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-sm font-medium text-gray-700">Hardware Test</p>
+                    <p class="text-xs text-gray-500">Display test pattern to verify connectivity</p>
+                  </div>
+                  <Button
+                    size="small"
+                    variant="secondary"
+                    onClick={handleHardwareTest}
+                    disabled={hardwareTest.isPending}
+                  >
+                    {hardwareTest.isPending ? 'Testing...' : 'Run Test'}
+                  </Button>
+                </div>
+                {testResult && (
+                  <p class={`mt-2 text-sm ${testResult.startsWith('Error') ? 'text-red-600' : 'text-green-600'}`}>
+                    {testResult}
+                  </p>
+                )}
+              </div>
+            </>
           ) : (
             <p class="text-red-500 p-4 bg-red-50 rounded">Failed to load e-ink health</p>
           )}

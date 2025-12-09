@@ -297,3 +297,138 @@ class WaveshareDriver(DriverInterface):
     def get_last_plugin_info(self) -> dict[str, Any]:
         """Get info about last plugin that generated content."""
         return self.last_plugin_info
+
+    def run_hardware_test(self) -> dict[str, Any]:
+        """Run hardware test pattern to verify display connectivity.
+
+        Draws text and shapes in multiple colors to prove the hardware works.
+        Based on official Waveshare epd_7in3e_test.py example.
+
+        Returns:
+            dict with test results including success status and any error message.
+        """
+        from PIL import Image, ImageDraw, ImageFont
+
+        result = {
+            "success": False,
+            "message": "",
+            "model": self.model,
+            "display_size": self.get_display_size(),
+        }
+
+        try:
+            # Initialize if needed
+            if not self.initialized:
+                self.initialize()
+
+            if self.epd is None:
+                raise DisplayError("Display not initialized")
+
+            # Get display dimensions
+            width, height = self.get_display_size()
+
+            # Create test image with white background
+            image = Image.new("RGB", (width, height), (255, 255, 255))
+            draw = ImageDraw.Draw(image)
+
+            # Try to load fonts, fall back to default
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans"
+            try:
+                font_large = ImageFont.truetype(f"{font_path}-Bold.ttf", 36)
+                font_medium = ImageFont.truetype(f"{font_path}.ttf", 24)
+                font_small = ImageFont.truetype(f"{font_path}.ttf", 18)
+            except OSError:
+                font_large = ImageFont.load_default()
+                font_medium = font_large
+                font_small = font_large
+
+            # Define colors for 7-color display
+            black = (0, 0, 0)
+            colors = {
+                "Black": black,
+                "Red": (255, 0, 0),
+                "Yellow": (255, 255, 0),
+                "Blue": (0, 0, 255),
+                "Green": (0, 255, 0),
+            }
+
+            # Draw title
+            draw.text((20, 10), "ArtFrame Hardware Test", font=font_large, fill=black)
+            model_str = f"Model: {self.model} ({width}x{height})"
+            draw.text((20, 55), model_str, font=font_medium, fill=black)
+
+            # Draw color test blocks with labels
+            block_y = 100
+            block_width = 120
+            block_height = 60
+            x_offset = 20
+
+            for i, (name, color) in enumerate(colors.items()):
+                x = x_offset + (i % 3) * (block_width + 20)
+                y = block_y + (i // 3) * (block_height + 30)
+
+                # Draw colored rectangle
+                rect = [x, y, x + block_width, y + block_height]
+                draw.rectangle(rect, fill=color, outline=black)
+                # Draw label below
+                draw.text((x, y + block_height + 5), name, font=font_small, fill=black)
+
+            # Draw geometric shapes section
+            shapes_y = 280
+            draw.text((20, shapes_y), "Shapes Test:", font=font_medium, fill=black)
+
+            # Circle
+            circle_box = [30, shapes_y + 35, 100, shapes_y + 105]
+            draw.ellipse(circle_box, fill=(255, 0, 0), outline=black)
+
+            # Rectangle
+            rect_box = [130, shapes_y + 35, 200, shapes_y + 105]
+            draw.rectangle(rect_box, fill=(0, 255, 0), outline=black)
+
+            # Triangle (polygon)
+            triangle = [
+                (265, shapes_y + 35),
+                (230, shapes_y + 105),
+                (300, shapes_y + 105),
+            ]
+            draw.polygon(triangle, fill=(0, 0, 255), outline=black)
+
+            # Draw lines of different colors
+            line_y = shapes_y + 130
+            draw.text((20, line_y), "Lines:", font=font_medium, fill=black)
+            for i, (_name, color) in enumerate(colors.items()):
+                y = line_y + 30 + i * 15
+                draw.line([(20, y), (width - 20, y)], fill=color, width=3)
+
+            # Draw success message
+            pos = (width - 250, height - 40)
+            draw.text(pos, "Test Complete!", font=font_medium, fill=(0, 128, 0))
+
+            # Display the test image
+            buffer = self.epd.getbuffer(image)
+            self.epd.display(buffer)
+
+            # Save preview if enabled
+            if self.save_images:
+                test_path = self.output_dir / "hardware_test.png"
+                image.save(test_path)
+                latest_path = self.output_dir / "latest.png"
+                image.save(latest_path)
+                self.current_image_path = latest_path
+
+            result["success"] = True
+            result["message"] = "Hardware test pattern displayed successfully"
+
+        except Exception as e:
+            result["success"] = False
+            result["message"] = f"Hardware test failed: {e}"
+        finally:
+            # Always put display to sleep
+            if self.epd is not None:
+                try:
+                    self.epd.sleep()
+                except Exception:
+                    pass
+                self.initialized = False
+
+        return result

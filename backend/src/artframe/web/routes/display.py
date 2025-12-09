@@ -123,3 +123,21 @@ def clear_display(controller=Depends(get_controller)):
         return {"success": True, "message": "Display cleared"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/hardware-test", response_model=APIResponseWithData)
+def run_hardware_test(controller=Depends(get_controller)):
+    """Run hardware test pattern to verify display connectivity.
+
+    Displays a test pattern with colors, shapes, and text to prove
+    the Raspberry Pi can communicate with the e-ink display.
+    """
+    try:
+        driver = controller.display_controller.driver
+        result = driver.run_hardware_test()
+        return {
+            "success": result.get("success", False),
+            "data": result,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
