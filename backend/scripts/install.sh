@@ -470,6 +470,7 @@ main() {
     mkdir -p "$CACHE_DIR/photos"
     mkdir -p "$CACHE_DIR/styled"
     mkdir -p "$CACHE_DIR/metadata"
+    mkdir -p "$CACHE_DIR/uv"
     mkdir -p "$INSTALL_DIR/backend/data"
     success "Created directories"
 
