@@ -75,6 +75,9 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 
+# Keep pre-built frontend for low-memory Pi devices
+!frontend/dist/
+
 # Artframe Specific
 # Runtime data
 data/
