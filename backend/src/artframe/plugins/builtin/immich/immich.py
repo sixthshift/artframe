@@ -207,7 +207,7 @@ class Immich(BasePlugin):
 
             # Load and prepare image
             image: Image.Image = Image.open(photo_path).convert("RGB")
-            image = self._fit_to_display(image, device_config)
+            image = self._fit_to_display(image, device_config, settings)
 
             return image
 
@@ -548,19 +548,45 @@ class Immich(BasePlugin):
         else:
             return photos[0]
 
-    def _fit_to_display(self, image, device_config):
+    def _fit_to_display(self, image, device_config, settings=None):
         """
-        Resize and fit image to display dimensions.
+        Resize, enhance, and fit image to display dimensions.
+
+        Applies color enhancements to compensate for e-paper display limitations
+        (washed out colors, muted saturation).
 
         Args:
             image: Input image
             device_config: Display configuration
+            settings: Optional plugin settings for enhancement parameters
 
         Returns:
-            PIL.Image: Resized image
+            PIL.Image: Processed image ready for display
         """
+        from PIL import ImageEnhance
+
         display_width = device_config["width"]
         display_height = device_config["height"]
+
+        # Get enhancement settings (defaults tuned for Spectra 6 e-paper)
+        if settings is None:
+            settings = {}
+        saturation_boost = settings.get("saturation_boost", 1.4)  # 1.0 = no change
+        contrast_boost = settings.get("contrast_boost", 1.2)  # 1.0 = no change
+        brightness_boost = settings.get("brightness_boost", 1.0)  # 1.0 = no change
+
+        # Apply color enhancements to compensate for e-paper limitations
+        if saturation_boost != 1.0:
+            enhancer = ImageEnhance.Color(image)
+            image = enhancer.enhance(saturation_boost)
+
+        if contrast_boost != 1.0:
+            enhancer = ImageEnhance.Contrast(image)
+            image = enhancer.enhance(contrast_boost)
+
+        if brightness_boost != 1.0:
+            enhancer = ImageEnhance.Brightness(image)
+            image = enhancer.enhance(brightness_boost)
 
         # Calculate aspect ratios
         image_aspect = image.width / image.height
