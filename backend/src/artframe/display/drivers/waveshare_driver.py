@@ -13,6 +13,40 @@ from PIL import Image
 from .base import DisplayError, DriverInterface
 
 
+# Color palettes for 7-color e-paper displays (Spectra 6 / ACeP)
+# Each palette defines RGB values used for quantization
+#
+# The display has 7 physical colors indexed 0-6:
+#   0=Black, 1=White, 2=Yellow, 3=Red, 4=unused, 5=Blue, 6=Green
+#
+# The palette values determine what RGB colors in the source image
+# get mapped to each display color during quantization.
+
+# Default palette: "ideal" RGB values (what Waveshare vendor code uses)
+# These don't match actual display pigments, causing poor color reproduction
+DEFAULT_PALETTE_7COLOR = {
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "yellow": (255, 255, 0),
+    "red": (255, 0, 0),
+    "blue": (0, 0, 255),
+    "green": (0, 255, 0),
+}
+
+# Calibrated palette: measured RGB values matching actual Spectra 6 display output
+# Source: https://forums.pimoroni.com/t/what-rgb-colors-are-you-using-for-the-colors-on-the-impression-spectra-6/27942
+# Using these values helps PIL's quantization make better color choices because
+# it picks the display color that most closely matches what you'll actually see.
+CALIBRATED_PALETTE_7COLOR = {
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "yellow": (240, 224, 80),  # Muted, slightly orange-tinted yellow
+    "red": (160, 32, 32),  # Much darker/muted than pure red (almost maroon)
+    "blue": (80, 128, 184),  # Shifted towards cyan, quite muted
+    "green": (96, 128, 80),  # Muted olive-ish green
+}
+
+
 class WaveshareDriver(DriverInterface):
     """Universal driver for Waveshare e-Paper displays."""
 
@@ -48,6 +82,12 @@ class WaveshareDriver(DriverInterface):
         self.current_image: Optional[Image.Image] = None
         self.current_image_path: Optional[Path] = None
         self.last_plugin_info: dict[str, Any] = {}
+
+        # Color calibration for 7-color displays
+        # When enabled, uses measured display colors instead of ideal RGB values
+        # This improves color accuracy by accounting for actual e-paper pigment colors
+        self.use_calibrated_colors = self.config.get("use_calibrated_colors", True)
+        self.color_palette = self._load_color_palette()
 
         # Dynamically import the appropriate Waveshare display module
         self.epd_module = self._load_display_module()
@@ -90,6 +130,89 @@ class WaveshareDriver(DriverInterface):
         except ImportError as e:
             msg = f"Failed to load Waveshare display module '{self.model}': {e}"
             raise DisplayError(msg) from e
+
+    def _load_color_palette(self) -> dict[str, tuple[int, int, int]]:
+        """Load the color palette for 7-color displays.
+
+        Returns the palette to use for color quantization. Can be overridden
+        via config with custom RGB values for each color.
+
+        Returns:
+            Dictionary mapping color names to RGB tuples.
+        """
+        spec = self.SUPPORTED_MODELS.get(self.model, {})
+        if spec.get("colors", 2) != 7:
+            # Not a 7-color display, return empty palette
+            return {}
+
+        # Start with the appropriate base palette
+        if self.use_calibrated_colors:
+            palette = CALIBRATED_PALETTE_7COLOR.copy()
+        else:
+            palette = DEFAULT_PALETTE_7COLOR.copy()
+
+        # Allow custom overrides via config
+        # e.g., color_palette: {red: [180, 50, 50], yellow: [220, 200, 60]}
+        custom_palette = self.config.get("color_palette", {})
+        for color_name, rgb in custom_palette.items():
+            if color_name in palette and isinstance(rgb, (list, tuple)) and len(rgb) == 3:
+                palette[color_name] = tuple(int(v) for v in rgb)  # type: ignore[assignment]
+
+        return palette
+
+    def _get_calibrated_buffer(self, image: Image.Image) -> list[int]:
+        """Convert image to display buffer using calibrated color palette.
+
+        This replaces the vendor's getbuffer() for 7-color displays, using
+        the calibrated palette for better color accuracy.
+
+        Args:
+            image: RGB image to convert (must be correct display dimensions)
+
+        Returns:
+            Buffer of packed 4-bit color indices ready for display.
+        """
+        # Build the PIL palette from our color dictionary
+        # Order must match display color indices: black, white, yellow, red, (unused), blue, green
+        pal_colors = [
+            self.color_palette["black"],
+            self.color_palette["white"],
+            self.color_palette["yellow"],
+            self.color_palette["red"],
+            (0, 0, 0),  # Index 4 is unused, use black as placeholder
+            self.color_palette["blue"],
+            self.color_palette["green"],
+        ]
+
+        # Flatten to PIL palette format (R, G, B, R, G, B, ...)
+        flat_palette = []
+        for rgb in pal_colors:
+            flat_palette.extend(rgb)
+        # Pad to 256 colors (768 bytes total)
+        flat_palette.extend([0] * (768 - len(flat_palette)))
+
+        # Create palette image for quantization
+        pal_image = Image.new("P", (1, 1))
+        pal_image.putpalette(flat_palette)
+
+        # Ensure image is RGB
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+
+        # Quantize to our calibrated palette
+        image_quantized = image.quantize(palette=pal_image)
+        buf_indexed = bytearray(image_quantized.tobytes("raw"))
+
+        # Pack 4-bit indices into bytes (2 pixels per byte)
+        width = image.width
+        height = image.height
+        buf = [0x00] * (width * height // 2)
+        idx = 0
+        for i in range(0, len(buf_indexed), 2):
+            buf[idx] = (buf_indexed[i] << 4) + buf_indexed[i + 1]
+            idx += 1
+
+        return buf
 
     def initialize(self) -> None:
         """Initialize the Waveshare display."""
@@ -168,7 +291,11 @@ class WaveshareDriver(DriverInterface):
                 self.current_image_path = latest_path
 
             # Convert to display buffer format
-            buffer = self.epd.getbuffer(processed_image)
+            # Use calibrated buffer for 7-color displays, vendor buffer otherwise
+            if self.color_palette:
+                buffer = self._get_calibrated_buffer(processed_image)
+            else:
+                buffer = self.epd.getbuffer(processed_image)
 
             # Send to display - mark as started so we ensure sleep on any failure
             display_started = True
