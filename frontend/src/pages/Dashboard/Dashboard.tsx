@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { useRef } from 'preact/hooks'
 import { Card, Button, StatusGrid, StatusItem, showToast } from '@/components'
 import {
   useSystemStatus,
@@ -8,6 +9,8 @@ import {
   useToggleScheduler,
   useTriggerRefresh,
   useClearDisplay,
+  useUploadImage,
+  useClearOverride,
 } from '@/queries'
 import { formatDateTime } from '@/utils/date'
 import styles from './Dashboard.module.css'
@@ -21,6 +24,10 @@ export const Dashboard = () => {
   const toggleScheduler = useToggleScheduler()
   const triggerRefresh = useTriggerRefresh()
   const clearDisplay = useClearDisplay()
+  const uploadImage = useUploadImage()
+  const clearOverride = useClearOverride()
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleToggleScheduler = async () => {
     try {
@@ -53,8 +60,46 @@ export const Dashboard = () => {
     }
   }
 
+  const handleUploadClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const file = target.files?.[0]
+    if (!file) return
+
+    try {
+      await uploadImage.mutateAsync(file)
+      showToast('Image uploaded and displayed', 'success')
+    } catch {
+      showToast('Failed to upload image', 'error')
+    }
+
+    // Reset the input so the same file can be selected again
+    target.value = ''
+  }
+
+  const handleClearOverride = async () => {
+    try {
+      await clearOverride.mutateAsync()
+      showToast('Manual override cleared', 'success')
+    } catch {
+      showToast('Failed to clear override', 'error')
+    }
+  }
+
   return (
     <div>
+      {/* Hidden file input for image upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+
       {/* Controls & Status Bar */}
       <div class={styles.controlBar}>
         <div class={styles.controls}>
@@ -65,6 +110,22 @@ export const Dashboard = () => {
           >
             🔄 Refresh Now
           </Button>
+          <Button
+            variant="secondary"
+            onClick={handleUploadClick}
+            loading={uploadImage.isPending}
+          >
+            📤 Upload Image
+          </Button>
+          {display?.manual_override_active && (
+            <Button
+              variant="warning"
+              onClick={handleClearOverride}
+              loading={clearOverride.isPending}
+            >
+              ✖️ Clear Override
+            </Button>
+          )}
           <Button
             variant="secondary"
             onClick={handleClearDisplay}
@@ -143,6 +204,11 @@ export const Dashboard = () => {
 
             {display && (
               <div class={styles.displayInfo}>
+                {display.manual_override_active && (
+                  <div class="bg-amber-100 border border-amber-300 text-amber-800 px-3 py-2 rounded-md text-sm font-medium mb-3">
+                    📤 Manual image active - will revert on next plugin refresh
+                  </div>
+                )}
                 <div class={styles.displayInfoItem}>
                   <span class={styles.label}>Plugin</span>
                   <span class={styles.value}>{display.plugin_name || 'N/A'}</span>

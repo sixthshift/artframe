@@ -111,6 +111,7 @@ class DisplayCurrentData(BaseModel):
     instance_name: str = "Unknown"
     has_preview: bool
     display_count: int = 0
+    manual_override_active: bool = False
 
 
 class DisplayCurrentResponse(APIResponse):

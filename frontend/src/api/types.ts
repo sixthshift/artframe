@@ -67,7 +67,10 @@ export type BulkSlotSetRequest = components['schemas']['BulkSlotSetRequest']
 export type ScheduleCurrentData = components['schemas']['ScheduleCurrentData']
 
 // Display types
-export type DisplayStatus = components['schemas']['DisplayCurrentData']
+// Extend with manual_override_active field (added to backend, may not be in generated types yet)
+export type DisplayStatus = components['schemas']['DisplayCurrentData'] & {
+  manual_override_active?: boolean
+}
 export type DisplayHealth = components['schemas']['DisplayHealthData']
 
 // System types

@@ -79,4 +79,29 @@ export async function del<T>(
   })
 }
 
+// POST file upload helper (multipart/form-data)
+export async function postFile(
+  endpoint: string,
+  file: File,
+  fieldName: string = 'file'
+): Promise<{ message?: string }> {
+  const url = `${API_BASE}${endpoint}`
+  const formData = new FormData()
+  formData.append(fieldName, file)
+
+  const response = await fetch(url, {
+    method: 'POST',
+    body: formData,
+    // Note: Don't set Content-Type header - browser sets it with boundary
+  })
+
+  const result: ApiResponseWithData<{ message?: string }> = await response.json()
+
+  if (!result.success) {
+    throw new ApiError(result.error || 'Upload failed', response.status)
+  }
+
+  return result.data || { message: result.message ?? undefined }
+}
+
 export { ApiError }

@@ -23,6 +23,40 @@ from .schedule_manager import ScheduleManager
 logger = logging.getLogger(__name__)
 
 
+class OverrideAwareDisplayController:
+    """
+    Wrapper around DisplayController that clears manual override on plugin refresh.
+
+    This is passed to plugins instead of the raw DisplayController, so we can
+    intercept display_image() calls and clear any manual override when a plugin
+    refreshes its content.
+    """
+
+    def __init__(self, display_controller, clear_override_callback):
+        """
+        Initialize wrapper.
+
+        Args:
+            display_controller: The actual DisplayController instance
+            clear_override_callback: Callable to clear the manual override flag
+        """
+        self._display_controller = display_controller
+        self._clear_override_callback = clear_override_callback
+
+    def display_image(
+        self, image: Image.Image, plugin_info: Optional[dict[str, Any]] = None
+    ) -> None:
+        """Display image and clear any manual override."""
+        # Clear manual override when plugin refreshes
+        self._clear_override_callback()
+        # Delegate to real controller
+        self._display_controller.display_image(image, plugin_info)
+
+    def __getattr__(self, name):
+        """Delegate all other attributes to the underlying controller."""
+        return getattr(self._display_controller, name)
+
+
 class ContentOrchestrator:
     """
     Unified content orchestration system.
@@ -72,6 +106,10 @@ class ContentOrchestrator:
         self._active_plugin_stop_event: Optional[threading.Event] = None
         self._active_instance_id: Optional[str] = None
         self._display_controller = None  # Set when run_loop starts
+
+        # Manual override state
+        self._manual_override_active: bool = False
+        self._manual_override_lock = threading.Lock()
 
     def get_current_content_source(self) -> ContentSource:
         """
@@ -305,10 +343,16 @@ class ContentOrchestrator:
         device_config: dict[str, Any],
         plugin_info: dict[str, Any],
     ) -> None:
-        """Wrapper to run plugin's run_active method."""
+        """Wrapper to run plugin's run_active method with manual override support."""
         try:
+            # Wrap the display controller so we can intercept display_image calls
+            # and clear any manual override when the plugin refreshes
+            wrapped_controller = OverrideAwareDisplayController(
+                display_controller, clear_override_callback=self.clear_manual_override
+            )
+
             plugin.run_active(
-                display_controller,
+                wrapped_controller,
                 settings,
                 device_config,
                 self._active_plugin_stop_event,
@@ -384,6 +428,64 @@ class ContentOrchestrator:
         """Resume automatic updates."""
         logger.info("Resuming content orchestrator")
         self.paused = False
+
+    # --- Manual Override Methods ---
+
+    def set_manual_override(self) -> None:
+        """Set the manual override flag."""
+        with self._manual_override_lock:
+            self._manual_override_active = True
+            logger.info("Manual override activated")
+
+    def clear_manual_override(self) -> None:
+        """Clear the manual override flag (called when plugin refreshes)."""
+        with self._manual_override_lock:
+            if self._manual_override_active:
+                self._manual_override_active = False
+                logger.info("Manual override cleared")
+
+    def has_manual_override(self) -> bool:
+        """Check if manual override is currently active."""
+        with self._manual_override_lock:
+            return self._manual_override_active
+
+    def display_manual_image(self, image: Image.Image) -> bool:
+        """
+        Display a manual image immediately and set override flag.
+
+        The override will remain active until the current plugin's next refresh,
+        at which point the plugin will display its content and clear the override.
+
+        Args:
+            image: PIL Image to display
+
+        Returns:
+            True if successful
+        """
+        try:
+            if self._display_controller is None:
+                logger.error("Display controller not available")
+                return False
+
+            # Set the override state
+            self.set_manual_override()
+
+            # Display immediately with special plugin info
+            plugin_info = {
+                "plugin_name": "Manual Upload",
+                "instance_name": "User Upload",
+                "instance_id": "manual_override",
+                "plugin_id": "manual",
+            }
+
+            self._display_controller.display_image(image, plugin_info)
+            logger.info("Manual override image displayed")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to display manual image: {e}", exc_info=True)
+            self.clear_manual_override()
+            return False
 
     def get_next_update_time(self) -> datetime:
         """

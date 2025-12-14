@@ -4,10 +4,12 @@ Display API routes for Artframe dashboard.
 Provides endpoints for display info, preview, control, and health at /api/display/*.
 """
 
+import io
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from PIL import Image
 
 from ..dependencies import get_controller
 from ..schemas import (
@@ -30,6 +32,9 @@ def get_current(controller=Depends(get_controller)):
         plugin_info = driver.get_last_plugin_info()
         preview_path = driver.get_current_image_path()
 
+        # Check for manual override status
+        is_manual_override = controller.orchestrator.has_manual_override()
+
         return {
             "success": True,
             "data": {
@@ -41,6 +46,7 @@ def get_current(controller=Depends(get_controller)):
                 "instance_name": plugin_info.get("instance_name", "Unknown"),
                 "has_preview": preview_path is not None,
                 "display_count": driver.get_display_count(),
+                "manual_override_active": is_manual_override,
             },
         }
     except Exception as e:
@@ -141,3 +147,109 @@ def run_hardware_test(controller=Depends(get_controller)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/upload", response_model=APIResponse)
+async def upload_manual_image(
+    file: UploadFile = File(...),
+    controller=Depends(get_controller),
+):
+    """
+    Upload and display a manual image immediately.
+
+    The image will be displayed until the current plugin's next scheduled refresh,
+    at which point normal plugin-based updates resume.
+
+    Accepts: image/jpeg, image/png, image/gif, image/webp
+    """
+    try:
+        # Validate content type
+        valid_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+        if file.content_type not in valid_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid content type: {file.content_type}. Must be one of: {valid_types}",
+            )
+
+        # Read and open image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents)).convert("RGB")
+
+        # Get display dimensions and resize/fit image
+        display_size = controller.display_controller.get_display_size()
+        image = _fit_image_to_display(image, display_size)
+
+        # Display via orchestrator (sets override flag)
+        success = controller.orchestrator.display_manual_image(image)
+
+        if success:
+            return {
+                "success": True,
+                "message": "Image uploaded and displayed. Will revert on next plugin refresh.",
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Failed to display image")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/clear-override", response_model=APIResponse)
+def clear_manual_override(controller=Depends(get_controller)):
+    """
+    Clear any manual image override and resume normal plugin updates.
+
+    If no override is active, this is a no-op.
+    """
+    try:
+        was_active = controller.orchestrator.has_manual_override()
+        controller.orchestrator.clear_manual_override()
+
+        if was_active:
+            return {"success": True, "message": "Manual override cleared"}
+        else:
+            return {"success": True, "message": "No override was active"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+def _fit_image_to_display(
+    image: Image.Image, display_size: tuple[int, int]
+) -> Image.Image:
+    """
+    Resize and fit image to display dimensions (contain mode).
+
+    Args:
+        image: Input PIL Image
+        display_size: (width, height) of display
+
+    Returns:
+        PIL Image fitted to display size with letterboxing if needed
+    """
+    display_width, display_height = display_size
+
+    # Calculate aspect ratios
+    image_aspect = image.width / image.height
+    display_aspect = display_width / display_height
+
+    # Fit image (contain mode)
+    if image_aspect > display_aspect:
+        new_width = display_width
+        new_height = int(display_width / image_aspect)
+    else:
+        new_height = display_height
+        new_width = int(display_height * image_aspect)
+
+    # Resize
+    resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+    # Create canvas and center
+    canvas = Image.new("RGB", (display_width, display_height), "white")
+    x = (display_width - new_width) // 2
+    y = (display_height - new_height) // 2
+    canvas.paste(resized, (x, y))
+
+    return canvas

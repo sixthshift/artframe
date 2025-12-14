@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { get, post } from '@/api/client'
+import { get, post, postFile } from '@/api/client'
 import type {
   SystemStatus,
   SystemInfo,
@@ -143,6 +143,28 @@ export function useHardwareTest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: displayKeys.current() })
       queryClient.invalidateQueries({ queryKey: displayKeys.health() })
+    },
+  })
+}
+
+export function useUploadImage() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => postFile('/display/upload', file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: displayKeys.current() })
+    },
+  })
+}
+
+export function useClearOverride() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => post('/display/clear-override'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: displayKeys.current() })
     },
   })
 }
