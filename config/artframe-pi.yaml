@@ -9,6 +9,7 @@ artframe:
       width: 800
       height: 480
       rotation: 0
+      save_images: true
       gpio_pins:
         busy: 24
         reset: 17

@@ -1,0 +1,35 @@
+artframe:
+  display:
+    driver: mock
+    config:
+      width: 800
+      height: 480
+      rotation: 0
+      save_images: true
+      output_dir: ./data/output
+    width: 600
+    height: 448
+    rotation: 0
+  storage:
+    data_dir: ~/.artframe/data
+    cache_dir: ~/.artframe/cache
+    cache_max_mb: 500
+    cache_retention_days: 30
+  logging:
+    level: DEBUG
+    dir: ~/.artframe/logs
+    max_size_mb: 10
+    backup_count: 5
+    file: ~/.artframe/logs/artframe.log
+  web:
+    host: 127.0.0.1
+    port: 8000
+    debug: true
+  scheduler:
+    timezone: Australia/Sydney
+    default_duration: 3600
+    refresh_interval: 86400
+  cache:
+    cache_directory: ~/.artframe/cache
+    max_size_mb: 500
+    retention_days: 30
