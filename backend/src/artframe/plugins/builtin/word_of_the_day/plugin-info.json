@@ -9,7 +9,7 @@
   "settings_schema": {
     "sections": [
       {
-        "title": "Vocabulary Settings",
+        "title": "Content",
         "fields": [
           {
             "key": "difficulty",
@@ -29,7 +29,7 @@
             "type": "boolean",
             "label": "Same Word All Day",
             "default": true,
-            "help": "If enabled, shows the same word for the entire day. Otherwise, shows a new random word each time."
+            "help": "If enabled, shows the same word for the entire day. Otherwise, shows a new random word each refresh."
           },
           {
             "key": "show_pronunciation",
@@ -82,6 +82,19 @@
             "label": "Background Color",
             "default": "#FFFFFF",
             "help": "Background color"
+          }
+        ]
+      },
+      {
+        "title": "Timing",
+        "fields": [
+          {
+            "key": "refresh_interval_minutes",
+            "type": "number",
+            "label": "Refresh Interval (minutes)",
+            "default": 60,
+            "min": 1,
+            "help": "How often to refresh the display"
           }
         ]
       }

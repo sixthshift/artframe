@@ -62,20 +62,20 @@
         "title": "Timing",
         "fields": [
           {
-            "key": "sync_interval_hours",
-            "type": "number",
-            "label": "Sync Interval (hours)",
-            "default": 6,
-            "min": 1,
-            "help": "How often to sync the photo list from Immich"
-          },
-          {
             "key": "refresh_interval_minutes",
             "type": "number",
             "label": "Refresh Interval (minutes)",
             "default": 60,
             "min": 5,
             "help": "How often to display a new styled photo"
+          },
+          {
+            "key": "sync_interval_hours",
+            "type": "number",
+            "label": "Sync Interval (hours)",
+            "default": 6,
+            "min": 1,
+            "help": "How often to sync the photo list from Immich"
           }
         ]
       }

@@ -3,33 +3,33 @@
   "display_name": "Immich",
   "class": "Immich",
   "description": "Syncs and displays photos from an Immich album. Downloads all photos locally and keeps them in sync with the server.",
-  "author": "Artframe",
+  "author": "Artframe Team",
   "version": "1.0.0",
   "icon": "icon.png",
   "settings_schema": {
     "sections": [
       {
-        "title": "Immich Server Connection",
+        "title": "Immich Server",
         "fields": [
           {
             "key": "immich_url",
-            "type": "string",
-            "label": "Immich Server URL",
+            "type": "url",
+            "label": "Server URL",
             "placeholder": "https://immich.example.com",
             "required": true,
-            "help": "URL of your Immich server (e.g., https://immich.example.com)"
+            "help": "Your Immich server URL"
           },
           {
             "key": "immich_api_key",
             "type": "password",
-            "label": "Immich API Key",
+            "label": "API Key",
             "required": true,
-            "help": "API key from Immich user settings (Settings → Account → API Keys)"
+            "help": "Get this from Immich Settings → Account Settings → API Keys"
           }
         ]
       },
       {
-        "title": "Album Selection",
+        "title": "Album",
         "fields": [
           {
             "key": "album_id",
@@ -41,7 +41,7 @@
           {
             "key": "max_photos",
             "type": "number",
-            "label": "Maximum Photos to Sync",
+            "label": "Maximum Photos",
             "default": 0,
             "min": 0,
             "max": 10000,
@@ -50,12 +50,12 @@
         ]
       },
       {
-        "title": "Display Options",
+        "title": "Display",
         "fields": [
           {
             "key": "selection_mode",
             "type": "select",
-            "label": "Photo Selection Mode",
+            "label": "Photo Selection",
             "default": "random",
             "options": [
               { "value": "random", "label": "Random" },
@@ -63,13 +63,21 @@
               { "value": "newest", "label": "Newest First" },
               { "value": "oldest", "label": "Oldest First" }
             ],
-            "help": "How to select which photo to display from synced collection"
+            "help": "How to select which photo to display"
           }
         ]
       },
       {
-        "title": "Synchronization",
+        "title": "Timing",
         "fields": [
+          {
+            "key": "refresh_interval_minutes",
+            "type": "number",
+            "label": "Refresh Interval (minutes)",
+            "default": 5,
+            "min": 1,
+            "help": "How often to display a new photo"
+          },
           {
             "key": "sync_interval_hours",
             "type": "number",
@@ -77,7 +85,7 @@
             "default": 6,
             "min": 1,
             "max": 168,
-            "help": "How often to check for album changes (1-168 hours)"
+            "help": "How often to check for album changes"
           }
         ]
       }

@@ -81,6 +81,11 @@ class QuoteOfTheDay(BasePlugin):
         if font_size not in ["small", "medium", "large"]:
             return False, "Font size must be 'small', 'medium', or 'large'"
 
+        # Validate refresh interval
+        refresh_interval = settings.get("refresh_interval_minutes", 60)
+        if not isinstance(refresh_interval, (int, float)) or refresh_interval < 1:
+            return False, "Refresh interval must be at least 1 minute"
+
         return True, ""
 
     def generate_image(
@@ -326,11 +331,10 @@ class QuoteOfTheDay(BasePlugin):
         """
         Get refresh interval in seconds.
 
-        If daily_quote is True, refresh every 24 hours.
-        Otherwise, refresh every hour to show new random quotes.
+        Uses refresh_interval_minutes from settings (default 60 minutes).
         """
-        daily_quote = settings.get("daily_quote", True)
-        return 86400 if daily_quote else 3600  # 24 hours or 1 hour
+        refresh_minutes = settings.get("refresh_interval_minutes", 60)
+        return int(refresh_minutes * 60)
 
     def run_active(
         self,

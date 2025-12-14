@@ -58,6 +58,11 @@ class Clock(BasePlugin):
             except Exception:
                 return False, f"Invalid timezone: '{timezone}'"
 
+        # Validate refresh interval
+        refresh_interval = settings.get("refresh_interval_minutes", 1)
+        if not isinstance(refresh_interval, (int, float)) or refresh_interval < 1:
+            return False, "Refresh interval must be at least 1 minute"
+
         return True, ""
 
     def generate_image(
@@ -218,9 +223,10 @@ class Clock(BasePlugin):
         """
         Get refresh interval in seconds.
 
-        Returns 60 seconds (1 minute) to update the clock every minute.
+        Uses refresh_interval_minutes from settings (default 1 minute).
         """
-        return 60
+        refresh_minutes = settings.get("refresh_interval_minutes", 1)
+        return int(refresh_minutes * 60)
 
     def run_active(
         self,

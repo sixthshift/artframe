@@ -9,7 +9,7 @@
   "settings_schema": {
     "sections": [
       {
-        "title": "Quote Selection",
+        "title": "Content",
         "fields": [
           {
             "key": "category",
@@ -30,7 +30,7 @@
             "type": "boolean",
             "label": "Same Quote All Day",
             "default": true,
-            "help": "If enabled, shows the same quote for the entire day. Otherwise, shows a new random quote each time."
+            "help": "If enabled, shows the same quote for the entire day. Otherwise, shows a new random quote each refresh."
           },
           {
             "key": "show_author",
@@ -69,6 +69,19 @@
             "label": "Background Color",
             "default": "#FFFFFF",
             "help": "Background color"
+          }
+        ]
+      },
+      {
+        "title": "Timing",
+        "fields": [
+          {
+            "key": "refresh_interval_minutes",
+            "type": "number",
+            "label": "Refresh Interval (minutes)",
+            "default": 60,
+            "min": 1,
+            "help": "How often to refresh the display"
           }
         ]
       }

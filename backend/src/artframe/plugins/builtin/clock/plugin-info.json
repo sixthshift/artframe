@@ -32,6 +32,23 @@
         ]
       },
       {
+        "title": "Date Display",
+        "fields": [
+          {
+            "key": "date_format",
+            "type": "select",
+            "label": "Date Format",
+            "default": "full",
+            "options": [
+              { "value": "full", "label": "Full (Monday, January 15, 2025)" },
+              { "value": "short", "label": "Short (01/15/2025)" },
+              { "value": "none", "label": "Don't Show Date" }
+            ],
+            "help": "How to display the date below the time"
+          }
+        ]
+      },
+      {
         "title": "Timezone",
         "fields": [
           {
@@ -58,23 +75,6 @@
               { "value": "UTC", "label": "UTC" }
             ],
             "help": "Timezone for the clock display"
-          }
-        ]
-      },
-      {
-        "title": "Date Display",
-        "fields": [
-          {
-            "key": "date_format",
-            "type": "select",
-            "label": "Date Format",
-            "default": "full",
-            "options": [
-              { "value": "full", "label": "Full (Monday, January 15, 2025)" },
-              { "value": "short", "label": "Short (01/15/2025)" },
-              { "value": "none", "label": "Don't Show Date" }
-            ],
-            "help": "How to display the date below the time"
           }
         ]
       },
@@ -107,6 +107,19 @@
             "label": "Background Color",
             "default": "#FFFFFF",
             "help": "Background color"
+          }
+        ]
+      },
+      {
+        "title": "Timing",
+        "fields": [
+          {
+            "key": "refresh_interval_minutes",
+            "type": "number",
+            "label": "Refresh Interval (minutes)",
+            "default": 1,
+            "min": 1,
+            "help": "How often to refresh the display"
           }
         ]
       }
