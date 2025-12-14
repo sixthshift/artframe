@@ -75,6 +75,9 @@ class Immich(BasePlugin):
 
     def on_enable(self, settings: dict[str, Any]) -> None:
         """Initialize plugin when enabled."""
+        self.logger.info(f"Enabling Immich plugin with URL: {settings.get('immich_url')}")
+        self.logger.info(f"Album ID: {settings.get('album_id', 'None (all photos)')}")
+
         self.session = requests.Session()
         self.session.headers.update(
             {"x-api-key": settings["immich_api_key"], "Accept": "application/json"}
@@ -83,7 +86,7 @@ class Immich(BasePlugin):
         # Initialize storage directories
         self._init_storage(settings)
 
-        self.logger.info("Immich plugin enabled")
+        self.logger.info(f"Immich plugin enabled, photos dir: {self._photos_dir}")
 
     def on_disable(self, settings: dict[str, Any]) -> None:
         """Cleanup when plugin is disabled."""
@@ -166,6 +169,7 @@ class Immich(BasePlugin):
         try:
             # Initialize if needed
             if self.session is None:
+                self.logger.info("Session not initialized, calling on_enable")
                 self.on_enable(settings)
 
             # Check if sync is needed
@@ -173,14 +177,18 @@ class Immich(BasePlugin):
                 self.logger.info("Starting sync with Immich server...")
                 self._sync_with_server(settings)
                 self.logger.info("Sync completed")
+            else:
+                self.logger.debug("Sync not needed, using cached photos")
 
             # Get local photos
             local_photos = self._get_local_photos()
+            self.logger.info(f"Found {len(local_photos)} local photos")
 
             if not local_photos:
                 self.logger.warning("No photos available, triggering sync...")
                 self._sync_with_server(settings)
                 local_photos = self._get_local_photos()
+                self.logger.info(f"After sync: {len(local_photos)} local photos")
 
                 if not local_photos:
                     raise RuntimeError("No photos found after sync")
@@ -249,6 +257,9 @@ class Immich(BasePlugin):
 
         immich_url = settings["immich_url"].rstrip("/")
         album_id = settings.get("album_id")
+
+        self.logger.info(f"Sync starting: url={immich_url}, album_id={album_id}")
+        self.logger.debug(f"Settings: {settings}")
 
         # Fetch current assets from server
         server_assets = self._fetch_server_assets(immich_url, album_id)
@@ -322,16 +333,21 @@ class Immich(BasePlugin):
         if self.session is None:
             raise RuntimeError("Session not initialized")
 
+        self.logger.info(f"Fetching assets from {immich_url}, album_id={album_id}")
+
         try:
             if album_id:
                 # Fetch from specific album
-                response = self.session.get(
-                    f"{immich_url}/api/albums/{album_id}", params={"withoutAssets": "false"}
-                )
+                url = f"{immich_url}/api/albums/{album_id}"
+                self.logger.info(f"GET {url}")
+                response = self.session.get(url, params={"withoutAssets": "false"})
+                self.logger.info(f"Response status: {response.status_code}")
                 response.raise_for_status()
 
                 album_data = response.json()
+                self.logger.debug(f"Album response keys: {album_data.keys()}")
                 assets = album_data.get("assets", [])
+                self.logger.info(f"Album contains {len(assets)} assets")
 
             else:
                 # Fetch all assets using search/metadata endpoint
@@ -362,12 +378,19 @@ class Immich(BasePlugin):
 
             # Filter for images only (exclude videos)
             photos = [asset for asset in assets if asset.get("type") == "IMAGE"]
+            videos = [asset for asset in assets if asset.get("type") != "IMAGE"]
 
-            self.logger.info(f"Found {len(photos)} photos on server")
+            self.logger.info(
+                f"Found {len(photos)} photos on server (filtered out {len(videos)} non-images)"
+            )
+            if photos:
+                self.logger.debug(f"First photo: {photos[0].get('originalFileName')}")
             return photos
 
         except requests.RequestException as e:
             self.logger.error(f"Failed to fetch assets from server: {e}")
+            if hasattr(e, "response") and e.response is not None:
+                self.logger.error(f"Response body: {e.response.text[:500]}")
             raise RuntimeError(f"Failed to fetch from Immich: {e}") from e
 
     def _download_asset(self, immich_url, asset):
@@ -402,10 +425,14 @@ class Immich(BasePlugin):
 
         # Download photo
         try:
-            response = self.session.get(f"{immich_url}/api/assets/{asset_id}/original", timeout=60)
+            download_url = f"{immich_url}/api/assets/{asset_id}/original"
+            self.logger.info(f"Downloading {filename} from {download_url}")
+            response = self.session.get(download_url, timeout=60)
+            self.logger.debug(f"Download response status: {response.status_code}")
             response.raise_for_status()
 
             # Save to disk
+            self.logger.debug(f"Saving {len(response.content)} bytes to {local_path}")
             with open(local_path, "wb") as f:
                 f.write(response.content)
 
