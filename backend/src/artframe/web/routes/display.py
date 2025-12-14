@@ -160,11 +160,11 @@ async def upload_manual_image(
     The image will be displayed until the current plugin's next scheduled refresh,
     at which point normal plugin-based updates resume.
 
-    Accepts: image/jpeg, image/png, image/gif, image/webp
+    Accepts: image/jpeg, image/png, image/gif, image/webp, image/bmp
     """
     try:
         # Validate content type
-        valid_types = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+        valid_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp"]
         if file.content_type not in valid_types:
             raise HTTPException(
                 status_code=400,

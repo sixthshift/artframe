@@ -95,7 +95,7 @@ export const Dashboard = () => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp"
+        accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
         onChange={handleFileChange}
         style={{ display: 'none' }}
       />
