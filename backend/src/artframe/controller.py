@@ -84,6 +84,7 @@ class ArtframeController:
             "rotation": display_config.get("rotation", 0),
             "color_mode": "grayscale",  # E-ink displays are typically grayscale
             "timezone": self.config_manager.get_timezone(),
+            "cache_dir": str(self.config_manager.get_cache_dir()),
         }
 
     def initialize(self, skip_connection_test: bool = False) -> None:

@@ -83,10 +83,7 @@ class Immich(BasePlugin):
             {"x-api-key": settings["immich_api_key"], "Accept": "application/json"}
         )
 
-        # Initialize storage directories
-        self._init_storage(settings)
-
-        self.logger.info(f"Immich plugin enabled, photos dir: {self._photos_dir}")
+        self.logger.info("Immich plugin enabled")
 
     def on_disable(self, settings: dict[str, Any]) -> None:
         """Cleanup when plugin is disabled."""
@@ -95,16 +92,22 @@ class Immich(BasePlugin):
             self.session = None
         self.logger.info("Immich plugin disabled")
 
-    def _init_storage(self, settings):
+    def _init_storage(self, settings: dict[str, Any], device_config: dict[str, Any]):
         """Initialize storage directories for this instance."""
         # Use instance-specific directory
         instance_id = settings.get("_instance_id", "default")
 
-        # Base directory for plugin data
-        base_dir = Path.home() / ".artframe" / "plugins" / "immich" / instance_id
+        # Use cache_dir from config, fall back to ~/.artframe for development
+        cache_dir = device_config.get("cache_dir")
+        if cache_dir:
+            base_dir = Path(cache_dir) / "plugins" / "immich" / instance_id
+        else:
+            base_dir = Path.home() / ".artframe" / "plugins" / "immich" / instance_id
+
         photos_dir = base_dir / "photos"
 
         # Create directories
+        self.logger.info(f"Creating storage directories at {base_dir}")
         photos_dir.mkdir(parents=True, exist_ok=True)
 
         self._sync_dir = base_dir
@@ -171,6 +174,11 @@ class Immich(BasePlugin):
             if self.session is None:
                 self.logger.info("Session not initialized, calling on_enable")
                 self.on_enable(settings)
+
+            # Initialize storage on first call (needs device_config for cache_dir)
+            if self._photos_dir is None:
+                self._init_storage(settings, device_config)
+                self.logger.info(f"Storage initialized, photos dir: {self._photos_dir}")
 
             # Check if sync is needed
             if self._should_sync(settings):
