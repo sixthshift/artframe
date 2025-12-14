@@ -38,14 +38,12 @@ class EPD:
         """Hardware reset"""
         import epdconfig
 
-        print("[DEBUG EPD] reset() starting...")
         epdconfig.digital_write(self.reset_pin, 1)
         epdconfig.delay_ms(20)
         epdconfig.digital_write(self.reset_pin, 0)
         epdconfig.delay_ms(2)
         epdconfig.digital_write(self.reset_pin, 1)
         epdconfig.delay_ms(20)
-        print("[DEBUG EPD] reset() completed")
 
     def send_command(self, command):
         """Send command to display"""
@@ -78,23 +76,18 @@ class EPD:
         """Wait until display is ready (busy pin high)"""
         import epdconfig
 
-        print(f"[DEBUG EPD] ReadBusyH() - waiting for busy_pin {self.busy_pin} to go HIGH...")
         logger.debug("e-Paper busy H")
         timeout_count = 0
         while epdconfig.digital_read(self.busy_pin) == 0:  # 0: busy, 1: idle
             epdconfig.delay_ms(5)
             timeout_count += 1
-            if timeout_count % 200 == 0:  # Every ~1 second
-                print(f"[DEBUG EPD] Still waiting... ({timeout_count * 5}ms elapsed, pin still LOW)")
             if timeout_count > 6000:  # 30 second timeout
-                print("[DEBUG EPD] TIMEOUT! Busy pin never went high after 30s")
+                logger.warning("Timeout waiting for busy pin after 30s")
                 break
-        print(f"[DEBUG EPD] ReadBusyH() done after {timeout_count * 5}ms")
         logger.debug("e-Paper busy H release")
 
     def TurnOnDisplay(self):
         """Turn on display and refresh"""
-        print("[DEBUG EPD] TurnOnDisplay() starting...")
         self.send_command(0x04)  # POWER_ON
         self.ReadBusyH()
 
@@ -105,28 +98,19 @@ class EPD:
         self.send_command(0x02)  # POWER_OFF
         self.send_data(0x00)
         self.ReadBusyH()
-        print("[DEBUG EPD] TurnOnDisplay() completed")
 
     def init(self):
         """Initialize display - official Waveshare sequence"""
         import epdconfig
 
-        print("[DEBUG EPD] init() starting...")
-
-        print("[DEBUG EPD] Calling epdconfig.module_init()...")
         if epdconfig.module_init() != 0:
-            print("[DEBUG EPD] module_init() FAILED!")
             return -1
-        print("[DEBUG EPD] module_init() succeeded")
 
         # EPD hardware init start
         self.reset()
 
-        print("[DEBUG EPD] Waiting for busy after reset...")
         self.ReadBusyH()
         epdconfig.delay_ms(30)
-
-        print("[DEBUG EPD] Sending init commands...")
 
         self.send_command(0xAA)
         self.send_data(0x49)
@@ -189,11 +173,9 @@ class EPD:
         self.send_command(0xE3)
         self.send_data(0x2F)
 
-        print("[DEBUG EPD] Sending power on command (0x04)...")
         self.send_command(0x04)
         self.ReadBusyH()
 
-        print("[DEBUG EPD] init() completed successfully")
         return 0
 
     def getbuffer(self, image):
@@ -236,28 +218,22 @@ class EPD:
 
     def display(self, image):
         """Display image buffer on screen"""
-        print("[DEBUG EPD] display() starting...")
         self.send_command(0x10)
         self.send_data2(image)
         self.TurnOnDisplay()
-        print("[DEBUG EPD] display() completed")
 
     def Clear(self, color=0x11):
         """Clear display to specified color"""
-        print(f"[DEBUG EPD] Clear(color={hex(color)}) starting...")
         self.send_command(0x10)
         self.send_data2([color] * int(self.height) * int(self.width / 2))
         self.TurnOnDisplay()
-        print("[DEBUG EPD] Clear() completed")
 
     def sleep(self):
         """Put display in sleep mode"""
         import epdconfig
 
-        print("[DEBUG EPD] sleep() starting...")
         self.send_command(0x07)  # DEEP_SLEEP
         self.send_data(0xA5)
 
         epdconfig.delay_ms(2000)
         epdconfig.module_exit()
-        print("[DEBUG EPD] sleep() completed")
