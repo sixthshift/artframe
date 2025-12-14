@@ -11,40 +11,7 @@ from typing import Any, Optional
 from PIL import Image
 
 from .base import DisplayError, DriverInterface
-
-
-# Color palettes for 7-color e-paper displays (Spectra 6 / ACeP)
-# Each palette defines RGB values used for quantization
-#
-# The display has 7 physical colors indexed 0-6:
-#   0=Black, 1=White, 2=Yellow, 3=Red, 4=unused, 5=Blue, 6=Green
-#
-# The palette values determine what RGB colors in the source image
-# get mapped to each display color during quantization.
-
-# Default palette: "ideal" RGB values (what Waveshare vendor code uses)
-# These don't match actual display pigments, causing poor color reproduction
-DEFAULT_PALETTE_7COLOR = {
-    "black": (0, 0, 0),
-    "white": (255, 255, 255),
-    "yellow": (255, 255, 0),
-    "red": (255, 0, 0),
-    "blue": (0, 0, 255),
-    "green": (0, 255, 0),
-}
-
-# Calibrated palette: measured RGB values matching actual Spectra 6 display output
-# Source: https://forums.pimoroni.com/t/what-rgb-colors-are-you-using-for-the-colors-on-the-impression-spectra-6/27942
-# Using these values helps PIL's quantization make better color choices because
-# it picks the display color that most closely matches what you'll actually see.
-CALIBRATED_PALETTE_7COLOR = {
-    "black": (0, 0, 0),
-    "white": (255, 255, 255),
-    "yellow": (240, 224, 80),  # Muted, slightly orange-tinted yellow
-    "red": (160, 32, 32),  # Much darker/muted than pure red (almost maroon)
-    "blue": (80, 128, 184),  # Shifted towards cyan, quite muted
-    "green": (96, 128, 80),  # Muted olive-ish green
-}
+from .color_calibration import ColorPalette, get_palette_for_display
 
 
 class WaveshareDriver(DriverInterface):
@@ -131,34 +98,28 @@ class WaveshareDriver(DriverInterface):
             msg = f"Failed to load Waveshare display module '{self.model}': {e}"
             raise DisplayError(msg) from e
 
-    def _load_color_palette(self) -> dict[str, tuple[int, int, int]]:
+    def _load_color_palette(self) -> ColorPalette | None:
         """Load the color palette for 7-color displays.
 
-        Returns the palette to use for color quantization. Can be overridden
-        via config with custom RGB values for each color.
+        Returns the palette to use for color quantization. Uses calibrated
+        values from color_calibration module when available.
 
         Returns:
-            Dictionary mapping color names to RGB tuples.
+            Color palette for 7-color displays, None for other displays.
         """
         spec = self.SUPPORTED_MODELS.get(self.model, {})
         if spec.get("colors", 2) != 7:
-            # Not a 7-color display, return empty palette
-            return {}
+            # Not a 7-color display, no palette needed
+            return None
 
-        # Start with the appropriate base palette
-        if self.use_calibrated_colors:
-            palette = CALIBRATED_PALETTE_7COLOR.copy()
-        else:
-            palette = DEFAULT_PALETTE_7COLOR.copy()
-
-        # Allow custom overrides via config
-        # e.g., color_palette: {red: [180, 50, 50], yellow: [220, 200, 60]}
-        custom_palette = self.config.get("color_palette", {})
-        for color_name, rgb in custom_palette.items():
-            if color_name in palette and isinstance(rgb, (list, tuple)) and len(rgb) == 3:
-                palette[color_name] = tuple(int(v) for v in rgb)  # type: ignore[assignment]
-
-        return palette
+        # Get palette from color_calibration module
+        # Supports model-specific calibration and custom overrides
+        custom_overrides = self.config.get("color_palette", {})
+        return get_palette_for_display(
+            model=self.model,
+            use_calibrated=self.use_calibrated_colors,
+            custom_overrides=custom_overrides,
+        )
 
     def _get_calibrated_buffer(self, image: Image.Image) -> list[int]:
         """Convert image to display buffer using calibrated color palette.
