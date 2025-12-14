@@ -611,9 +611,7 @@ class Immich(BasePlugin):
 
         return canvas
 
-    def _create_error_image(
-        self, error_message: str, device_config: dict[str, Any]
-    ) -> Image.Image:
+    def _create_error_image(self, error_message: str, device_config: dict[str, Any]) -> Image.Image:
         """Create error image with message."""
         from PIL import ImageDraw, ImageFont
 
@@ -679,7 +677,7 @@ class Immich(BasePlugin):
         within generate_image based on sync_interval_hours.
         """
         # Get refresh interval in seconds (default 5 minutes)
-        refresh_minutes = settings.get("refresh_interval_minutes", 5)
+        refresh_minutes = settings.get("refresh_interval_minutes", 60)
         refresh_interval = int(refresh_minutes * 60)
 
         self.logger.info(f"Immich slideshow starting with {refresh_minutes}min refresh interval")

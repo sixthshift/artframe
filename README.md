@@ -1,20 +1,19 @@
-# Artframe 🎨📷
+# Artframe
 
-A Raspberry Pi-based digital photo frame that automatically retrieves daily photos from your photo management system (like Immich), applies beautiful AI-powered artistic styles, and displays them on an e-ink display.
+A Raspberry Pi-based digital photo frame with a modular plugin system for displaying content on e-ink displays. Supports photo sources like Immich, clocks, quotes, and AI-generated content through an extensible plugin architecture.
 
-## Features ✨
+## Features
 
-- **Automated Photo Retrieval**: Connects to Immich (or other photo sources) to fetch your photos
-- **AI Style Transformation**: Uses AI services like NanoBanana to apply artistic styles (Studio Ghibli, watercolor, oil painting, etc.)
-- **E-ink Display Support**: Optimized for e-ink displays like Spectra 6 with power-efficient refresh cycles
-- **Modular Plugin Architecture**: Easy to add new photo sources and AI style services
-- **Smart Caching**: Local caching system with automatic cleanup and size management
-- **Configurable Scheduling**: Daily updates at your preferred time with multiple rotation strategies
-- **Development-Friendly**: Mock drivers and comprehensive testing for easy development
+- **Plugin-Based Content**: Modular system supporting multiple content types (photos, clocks, quotes, AI art)
+- **E-ink Display Support**: Optimized for Waveshare e-ink displays (Spectra 6, 7in3e)
+- **Slot-Based Scheduling**: 7-day × 24-hour weekly schedule with one plugin per hour slot
+- **Web Dashboard**: Configure plugins, manage schedules, and monitor system status
+- **Multiple Plugin Instances**: Create multiple configurations per plugin type
+- **Development-Friendly**: Mock display driver for development without hardware
 
-## Quick Start 🚀
+## Quick Start
 
-### For Raspberry Pi (Production)
+### Raspberry Pi (Production)
 
 **One-line install:**
 
@@ -45,7 +44,7 @@ After installation:
 
 3. **Access the web dashboard** at `http://<pi-ip>`
 
-### For Development
+### Development
 
 1. **Setup development environment**:
    ```bash
@@ -81,138 +80,279 @@ After installation:
    # Frontend at http://localhost:5173, proxies API to backend
    ```
 
-## Configuration 📋
+## Architecture
 
-Configuration is done via YAML files. See `config/artframe.yaml` for production settings and `config/artframe-dev.yaml` for development.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Web Dashboard                            │
+│              (Preact + TypeScript + Tailwind CSS)               │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      FastAPI Web Server                         │
+│    /api/plugins  /api/instances  /api/schedules  /api/display   │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌───────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│PluginRegistry │    │ InstanceManager  │    │ ScheduleManager  │
+│               │    │                  │    │                  │
+│ Discovery &   │    │ CRUD for plugin  │    │ 7×24 slot grid   │
+│ Loading       │    │ configurations   │    │ Weekly schedule  │
+└───────────────┘    └──────────────────┘    └──────────────────┘
+        │                       │                       │
+        └───────────────────────┼───────────────────────┘
+                                │
+                                ▼
+                 ┌──────────────────────────┐
+                 │   ContentOrchestrator    │
+                 │                          │
+                 │ - Determines what to     │
+                 │   display each hour      │
+                 │ - Manages plugin threads │
+                 │ - Handles transitions    │
+                 └──────────────────────────┘
+                                │
+                                ▼
+                 ┌──────────────────────────┐
+                 │    DisplayController     │
+                 │                          │
+                 │ - MockDriver (dev)       │
+                 │ - WaveshareDriver (prod) │
+                 └──────────────────────────┘
+```
 
-### Key Configuration Sections
+### Core Components
 
-- **Source**: Photo retrieval settings (Immich server, API keys, album selection)
-- **Style**: AI transformation settings (NanoBanana API, available styles, rotation strategy)
-- **Display**: E-ink display settings (GPIO pins, rotation, metadata overlay)
-- **Cache**: Local storage settings (directory, size limits, retention)
-- **Schedule**: Update timing (daily schedule, timezone)
+| Component | Purpose |
+|-----------|---------|
+| **PluginRegistry** | Discovers and loads plugins from `plugins/builtin/` |
+| **InstanceManager** | Manages plugin instances (multiple configs per plugin) |
+| **ScheduleManager** | Handles 7-day × 24-hour slot assignments |
+| **ContentOrchestrator** | Coordinates scheduling and plugin execution |
+| **DisplayController** | Manages e-ink display hardware |
+
+## Built-in Plugins
+
+| Plugin | Description |
+|--------|-------------|
+| **clock** | Digital clock with customizable time/date formats |
+| **immich** | Photo display from Immich self-hosted photo server |
+| **quote_of_the_day** | Daily inspirational quotes |
+| **word_of_the_day** | Vocabulary learning with definitions |
+| **repaint** | AI-generated art via Google Gemini |
+
+## Configuration
+
+Configuration is done via YAML files in `config/`.
 
 ### Example Configuration
 
 ```yaml
 artframe:
-  schedule:
-    update_time: "06:00"
-    timezone: "America/New_York"
-
-  source:
-    provider: "immich"
-    config:
-      server_url: "https://your-immich-server.com"
-      api_key: "${IMMICH_API_KEY}"
-      album_id: "family-photos"
-      selection: "random"
-
-  style:
-    provider: "nanobanana"
-    config:
-      api_url: "https://api.nanobanana.com"
-      api_key: "${NANOBANANA_API_KEY}"
-      styles: ["ghibli", "watercolor", "oil_painting"]
-      rotation: "daily"
-
   display:
-    driver: "spectra6"
+    driver: mock  # or "waveshare" for production
     config:
-      gpio_pins:
-        busy: 24
-        reset: 17
-        dc: 25
-        cs: 8
+      width: 800
+      height: 480
+      save_images: true
+      output_dir: ./data/output
+
+  storage:
+    data_dir: ~/.artframe/data
+    cache_dir: ~/.artframe/cache
+    cache_max_mb: 500
+    cache_retention_days: 30
+
+  logging:
+    level: DEBUG
+    file: ~/.artframe/logs/artframe.log
+
+  web:
+    host: 127.0.0.1  # 0.0.0.0 for RPi
+    port: 8000
+    debug: true
+
+  scheduler:
+    timezone: "Australia/Sydney"
 ```
 
-## Architecture 🏗️
+### Key Configuration Sections
 
-Artframe follows a modular plugin architecture:
+| Section | Purpose |
+|---------|---------|
+| **display** | Display driver and dimensions |
+| **storage** | Data and cache directories |
+| **logging** | Log level and file location |
+| **web** | Web server host/port |
+| **scheduler** | Timezone for scheduling |
+
+## Project Structure
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Source Plugin │    │   Style Plugin   │    │ Display Driver  │
-│   (Immich, etc) │    │ (NanoBanana,etc) │    │ (Spectra6,Mock) │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────────┐
-                    │ Main Controller     │
-                    │ - Scheduling        │
-                    │ - Workflow          │
-                    │ - Error Handling    │
-                    └─────────────────────┘
-                                 │
-                    ┌─────────────────────┐
-                    │ Cache Manager       │
-                    │ - Image Storage     │
-                    │ - Cleanup           │
-                    │ - Statistics        │
-                    └─────────────────────┘
+artframe/
+├── backend/
+│   ├── src/artframe/
+│   │   ├── plugins/              # Plugin system
+│   │   │   ├── base_plugin.py    # Base class for all plugins
+│   │   │   ├── plugin_registry.py
+│   │   │   ├── instance_manager.py
+│   │   │   └── builtin/          # Built-in plugins
+│   │   │       ├── clock/
+│   │   │       ├── immich/
+│   │   │       ├── quote_of_the_day/
+│   │   │       ├── word_of_the_day/
+│   │   │       └── repaint/
+│   │   ├── scheduling/           # Content orchestration
+│   │   │   ├── content_orchestrator.py
+│   │   │   └── schedule_manager.py
+│   │   ├── display/              # Display management
+│   │   │   ├── controller.py
+│   │   │   └── drivers/
+│   │   │       ├── mock.py
+│   │   │       └── waveshare_driver.py
+│   │   ├── web/                  # FastAPI web server
+│   │   │   ├── app.py
+│   │   │   └── routes/
+│   │   ├── config/               # Configuration management
+│   │   ├── storage/              # Local storage
+│   │   └── main.py               # CLI entry point
+│   ├── tests/
+│   └── config/                   # Config files
+├── frontend/
+│   ├── src/
+│   │   ├── pages/                # Dashboard, Plugins, Schedule, System
+│   │   ├── components/
+│   │   ├── api/                  # API client
+│   │   └── App.tsx
+│   └── package.json
+└── README.md
 ```
 
-## Usage Examples 💡
+## Web API
 
-### Command Line Interface
+### Plugin Management
+- `GET /api/plugins` - List available plugins
+- `GET /api/plugins/{id}` - Get plugin details and settings schema
+
+### Instance Management
+- `GET /api/instances` - List all instances
+- `POST /api/instances` - Create new instance
+- `PUT /api/instances/{id}` - Update instance
+- `DELETE /api/instances/{id}` - Delete instance
+- `POST /api/instances/{id}/test` - Test run instance
+
+### Schedule Management
+- `GET /api/schedules` - Get all slots
+- `POST /api/schedules/slot` - Set slot
+- `DELETE /api/schedules/slot` - Clear slot
+- `POST /api/schedules/bulk` - Bulk set slots
+
+### Display Control
+- `GET /api/display/current` - Current display state
+- `POST /api/display/refresh` - Trigger refresh
+
+### System
+- `GET /api/system/status` - System health
+- `GET /api/system/info` - System information
+
+## CLI Usage
 
 ```bash
-# Run the main scheduled loop
-artframe run
+# Development
+uv run artframe --config config/artframe-laptop.yaml
 
-# Trigger immediate photo update
-artframe update
-
-# Check system status
-artframe status
-
-# Test connections to external services
-artframe test
-
-# Clear the display
-artframe clear
-
-# Run web dashboard
-artframe serve --port 5000
+# With options
+artframe --config CONFIG_FILE \
+         --log-level {DEBUG,INFO,WARNING,ERROR} \
+         --host HOST \
+         --port PORT
 ```
 
-### Programmatic Usage
+## Creating a Plugin
+
+Each plugin needs:
+1. A directory in `plugins/builtin/`
+2. `plugin-info.json` with metadata and settings schema
+3. Python module implementing the plugin class
+
+### plugin-info.json
+
+```json
+{
+  "id": "my_plugin",
+  "display_name": "My Plugin",
+  "class": "MyPlugin",
+  "description": "Description of my plugin",
+  "version": "1.0.0",
+  "settings_schema": {
+    "sections": [
+      {
+        "title": "Settings",
+        "fields": [
+          {
+            "key": "option",
+            "type": "select",
+            "label": "Option",
+            "options": [
+              {"value": "a", "label": "Option A"},
+              {"value": "b", "label": "Option B"}
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### Plugin Class
 
 ```python
-from artframe.controller import ArtframeController
+from artframe.plugins.base_plugin import BasePlugin
+from PIL import Image
 
-# Initialize controller
-controller = ArtframeController("config/artframe.yaml")
-controller.initialize()
+class MyPlugin(BasePlugin):
+    def generate_image(
+        self,
+        settings: dict,
+        device_config: dict
+    ) -> Image.Image:
+        """Generate content image."""
+        width = device_config.get("width", 800)
+        height = device_config.get("height", 480)
 
-# Manual photo update
-success = controller.manual_refresh()
+        image = Image.new("RGB", (width, height), "white")
+        # Draw content...
+        return image
 
-# Get system status
-status = controller.get_status()
-print(f"Last update: {status['last_update']}")
-print(f"Running: {status['running']}")
+    def get_refresh_interval(self, settings: dict) -> int:
+        """Return seconds between refreshes."""
+        return 3600  # 1 hour
 ```
 
-## Hardware Setup 🔧
+## Hardware Setup
 
 ### Supported E-ink Displays
 
-- **Spectra 6**: 600x448 pixel e-ink display with SPI interface
-- **Mock Driver**: For development without hardware
+| Display | Resolution | Driver |
+|---------|------------|--------|
+| Spectra 6 | 600×448 | waveshare |
+| 7in3e | 800×480 | waveshare |
+| Mock | Configurable | mock |
 
-### Raspberry Pi GPIO Connections (Spectra 6)
+### Raspberry Pi GPIO Connections (Waveshare)
 
 | Display Pin | Pi GPIO | Function |
 |-------------|---------|----------|
-| BUSY        | 24      | Busy signal |
-| RST         | 17      | Reset |
-| DC          | 25      | Data/Command |
-| CS          | 8       | Chip Select |
-| CLK         | 11      | SPI Clock |
-| DIN         | 10      | SPI Data |
+| BUSY | 24 | Busy signal |
+| RST | 17 | Reset |
+| DC | 25 | Data/Command |
+| CS | 8 | Chip Select |
+| CLK | 11 | SPI Clock |
+| DIN | 10 | SPI Data |
 
 ### Enable SPI
 
@@ -221,78 +361,18 @@ sudo raspi-config
 # Interface Options -> SPI -> Enable
 ```
 
-## Development 👨‍💻
+## Data Storage
 
-### Project Structure
+Artframe stores data in `~/.artframe/`:
 
-```
-artframe/
-├── src/artframe/           # Main source code
-│   ├── plugins/           # Plugin system (source, style)
-│   ├── display/           # Display management
-│   ├── cache/             # Cache management
-│   ├── config/            # Configuration system
-│   └── utils/             # Utilities (scheduler, etc)
-├── tests/                 # Test suite
-│   ├── unit/              # Unit tests
-│   └── integration/       # Integration tests
-├── config/                # Configuration files
-├── scripts/               # Setup and utility scripts
-└── examples/              # Example code
-```
+| Path | Purpose |
+|------|---------|
+| `data/plugin_instances.json` | Plugin instance configurations |
+| `data/schedules.json` | Schedule slot assignments |
+| `cache/` | Cached images and data |
+| `logs/` | Application logs |
 
-### Running Tests
-
-```bash
-# All tests
-pytest
-
-# Unit tests only
-pytest tests/unit/
-
-# With coverage
-pytest --cov=src/artframe
-
-# Specific test file
-pytest tests/unit/test_config.py -v
-```
-
-### Code Quality
-
-```bash
-# Format code
-black src/ tests/
-
-# Type checking
-mypy src/artframe
-
-# Security scan
-bandit -r src/
-```
-
-### Adding New Plugins
-
-1. **Source Plugin** (for new photo sources):
-   ```python
-   from artframe.plugins.source.base import SourcePlugin
-
-   class MySourcePlugin(SourcePlugin):
-       def fetch_photo(self) -> Photo:
-           # Implement photo fetching logic
-           pass
-   ```
-
-2. **Style Plugin** (for new AI services):
-   ```python
-   from artframe.plugins.style.base import StylePlugin
-
-   class MyStylePlugin(StylePlugin):
-       def apply_style(self, image_path, style, output_path) -> bool:
-           # Implement style transformation logic
-           pass
-   ```
-
-## Troubleshooting 🔍
+## Troubleshooting
 
 ### Common Issues
 
@@ -305,19 +385,12 @@ bandit -r src/
 2. **Display Not Updating**:
    - Check GPIO connections
    - Verify SPI is enabled
-   - Check service logs: `journalctl -u artframe -f`
+   - Check logs: `journalctl -u artframe -f`
 
-3. **API Connection Issues**:
-   ```bash
-   artframe test  # Test all connections
-   ```
-
-4. **Cache Issues**:
-   ```bash
-   # Clear cache
-   sudo rm -rf /var/cache/artframe/*
-   sudo systemctl restart artframe
-   ```
+3. **Plugin Not Loading**:
+   - Verify `plugin-info.json` is valid JSON
+   - Check plugin class name matches `"class"` field
+   - Check logs for import errors
 
 ### Logs and Debugging
 
@@ -326,35 +399,63 @@ bandit -r src/
 journalctl -u artframe -f
 
 # Application logs
-tail -f /var/log/artframe/artframe.log
+tail -f ~/.artframe/logs/artframe.log
 
 # Debug mode
-artframe --log-level DEBUG run
+artframe --log-level DEBUG --config config/artframe-laptop.yaml
 ```
 
-## Contributing 🤝
+## Development
+
+### Running Tests
+
+```bash
+cd backend
+
+# All tests
+uv run pytest
+
+# Unit tests only
+uv run pytest tests/unit/
+
+# With coverage
+uv run pytest --cov=src/artframe
+```
+
+### Code Quality
+
+```bash
+cd backend
+
+# Format code
+uv run ruff format src/ tests/
+
+# Lint
+uv run ruff check src/ tests/
+
+# Type checking
+uv run mypy src/artframe
+```
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
 4. Add tests for new functionality
-5. Run the test suite: `pytest`
-6. Format code: `black src/ tests/`
+5. Run the test suite: `uv run pytest`
+6. Format code: `uv run ruff format src/ tests/`
 7. Commit changes: `git commit -m "Add amazing feature"`
 8. Push to branch: `git push origin feature/amazing-feature`
 9. Open a Pull Request
 
-## License 📄
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments 👏
+## Acknowledgments
 
-- [Immich](https://immich.app/) for photo management
-- [NanoBanana](https://nanobanana.com/) for AI style transformations
+- [Immich](https://immich.app/) for self-hosted photo management
 - [Waveshare](https://www.waveshare.com/) for e-ink display hardware
-- The Raspberry Pi Foundation for amazing hardware
-
----
-
-Made with ❤️ for digital art and family memories
+- [FastAPI](https://fastapi.tiangolo.com/) for the web framework
+- [Preact](https://preactjs.com/) for the lightweight frontend
