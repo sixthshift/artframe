@@ -94,60 +94,37 @@ class WaveshareDriver(DriverInterface):
     def initialize(self) -> None:
         """Initialize the Waveshare display."""
         try:
-            print("[DEBUG] initialize() starting...")
-            print(f"[DEBUG] self.config = {self.config}")
-            print(f"[DEBUG] self.model = {self.model}")
-
             # Configure GPIO pins if provided (mypy can't see epdconfig's dynamic attrs)
             if "gpio_pins" in self.config:
-                print("[DEBUG] gpio_pins found in config, importing epdconfig...")
                 # Import epdconfig using the same module name as the EPD files use
                 # (they do `import epdconfig` after we add waveshare dir to sys.path)
                 # Using `from .waveshare import epdconfig` creates a DIFFERENT module
                 # in Python's cache, causing GPIO to be claimed twice!
                 import epdconfig  # type: ignore[import-not-found]
 
-                print("[DEBUG] epdconfig imported successfully")
                 gpio_pins = self.config["gpio_pins"]
-                print(f"[DEBUG] gpio_pins = {gpio_pins}")
 
                 if "reset" in gpio_pins:
-                    print(f"[DEBUG] Setting RST_PIN = {gpio_pins['reset']}")
                     epdconfig.RST_PIN = gpio_pins["reset"]  # type: ignore[attr-defined]
                 if "dc" in gpio_pins:
-                    print(f"[DEBUG] Setting DC_PIN = {gpio_pins['dc']}")
                     epdconfig.DC_PIN = gpio_pins["dc"]  # type: ignore[attr-defined]
                 if "cs" in gpio_pins:
-                    print(f"[DEBUG] Setting CS_PIN = {gpio_pins['cs']}")
                     epdconfig.CS_PIN = gpio_pins["cs"]  # type: ignore[attr-defined]
                 if "busy" in gpio_pins:
-                    print(f"[DEBUG] Setting BUSY_PIN = {gpio_pins['busy']}")
                     epdconfig.BUSY_PIN = gpio_pins["busy"]  # type: ignore[attr-defined]
 
-                print("[DEBUG] GPIO pins configured")
-            else:
-                print("[DEBUG] No gpio_pins in config, skipping pin configuration")
-
             # Create EPD instance
-            print(f"[DEBUG] Creating EPD instance from {self.epd_module}...")
             self.epd = self.epd_module.EPD()
-            print(f"[DEBUG] EPD instance created: {self.epd}")
 
             # Initialize display
-            print("[DEBUG] Calling self.epd.init()...")
             init_result = self.epd.init()
-            print(f"[DEBUG] self.epd.init() returned: {init_result}")
 
             if init_result != 0:
                 raise DisplayError("Failed to initialize Waveshare display")
 
             self.initialized = True
-            print("[DEBUG] initialize() completed successfully")
 
         except Exception as e:
-            print(f"[DEBUG] initialize() FAILED with exception: {type(e).__name__}: {e}")
-            import traceback
-            traceback.print_exc()
             raise DisplayError(f"Failed to initialize Waveshare display: {e}") from e
 
     def get_display_size(self) -> tuple[int, int]:
