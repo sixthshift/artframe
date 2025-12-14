@@ -34,7 +34,7 @@ After installation:
 
 1. **Configure** (edit with your settings):
    ```bash
-   sudo nano /opt/artframe/backend/config/artframe.yaml
+   sudo nano /opt/artframe/config/artframe-pi.yaml
    ```
 
 2. **Start the service**:

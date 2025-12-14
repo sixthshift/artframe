@@ -15,9 +15,8 @@ def main():
 
         # Try to find config file
         config_paths = [
-            Path("/opt/artframe/backend/config/artframe.yaml"),
-            Path("/opt/artframe/config/artframe.yaml"),
-            Path.home() / "artframe" / "config" / "artframe-pi.yaml",
+            Path("/opt/artframe/config/artframe-pi.yaml"),
+            Path("config/artframe-pi.yaml"),
         ]
 
         config_path = None

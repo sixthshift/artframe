@@ -518,60 +518,15 @@ main() {
 
     step "Step 7/8: Setting up configuration"
 
-    # Copy Pi-specific configuration if it doesn't exist
-    CONFIG_DEST="$INSTALL_DIR/backend/config/artframe.yaml"
-    if [ ! -f "$CONFIG_DEST" ]; then
-        # Try to find a Pi config template
-        if [ -f "$INSTALL_DIR/config/artframe-pi.yaml" ]; then
-            cp "$INSTALL_DIR/config/artframe-pi.yaml" "$CONFIG_DEST"
-        elif [ -f "$INSTALL_DIR/backend/config/artframe-pi.yaml" ]; then
-            cp "$INSTALL_DIR/backend/config/artframe-pi.yaml" "$CONFIG_DEST"
-        else
-            # Create a minimal default config
-            cat > "$CONFIG_DEST" << 'CONFIGEOF'
-# Artframe Configuration
-# Edit this file with your settings
-
-artframe:
-  display:
-    driver: "waveshare"
-    config:
-      model: "epd5in83"
-      width: 600
-      height: 448
-      rotation: 0
-      gpio_pins:
-        busy: 24
-        reset: 17
-        dc: 25
-        cs: 8
-
-  storage:
-    data_dir: "/opt/artframe/backend/data"
-    cache_dir: "/var/cache/artframe"
-    cache_max_mb: 1000
-    cache_retention_days: 30
-
-  logging:
-    level: "INFO"
-    dir: "/var/log/artframe"
-    max_size_mb: 10
-    backup_count: 5
-
-  web:
-    host: "0.0.0.0"
-    port: 80
-    debug: false
-
-  scheduler:
-    timezone: "UTC"
-CONFIGEOF
-        fi
-        chown "$ARTFRAME_USER:$ARTFRAME_USER" "$CONFIG_DEST"
-        success "Configuration created at $CONFIG_DEST"
-        warn "Edit this file to add your API keys and customize settings"
+    # Config is tracked in git at config/artframe-pi.yaml
+    CONFIG_FILE="$INSTALL_DIR/config/artframe-pi.yaml"
+    if [ -f "$CONFIG_FILE" ]; then
+        chown "$ARTFRAME_USER:$ARTFRAME_USER" "$CONFIG_FILE"
+        success "Configuration found at $CONFIG_FILE"
+        warn "Edit this file to customize settings"
     else
-        info "Configuration already exists at $CONFIG_DEST"
+        error "Configuration file missing: $CONFIG_FILE"
+        error "This should have been installed with git clone"
     fi
 
     step "Step 8/8: Installing systemd service"
